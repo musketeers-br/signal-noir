@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentai Nexus: Trace da Sessão</title>
+<meta name="description" content="Keepsake do brainstorming que fechou as 6 lacunas da proposta Sentai Nexus antes do PRD (18/10/2026).">
+<style>
+:root{
+  --bg:#f4f1ea; --paper:#fbf9f4; --ink:#1d1f22; --ink2:#4c5058; --ink3:#80858e;
+  --rule:#d9d3c6; --rule2:#e8e3d8;
+  --clean:#0f7c86; --clean-bg:#dff1f1;
+  --dirty:#b4531c; --dirty-bg:#f8e4d6;
+  --ok:#2f7d3a; --bad:#b3261e; --warn:#a86a00; --warn-bg:#fbefd2;
+  --acc:#3b4cc0; --acc-bg:#e4e7fa;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#121417; --paper:#1a1d21; --ink:#e8e6e1; --ink2:#b3b6bc; --ink3:#7d828a;
+    --rule:#33373e; --rule2:#262a30;
+    --clean:#4fc3cc; --clean-bg:#14302f;
+    --dirty:#f08a4b; --dirty-bg:#3a2316;
+    --ok:#6cc47a; --bad:#ff7a70; --warn:#e6b450; --warn-bg:#352a12;
+    --acc:#8f9cff; --acc-bg:#22264a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121417; --paper:#1a1d21; --ink:#e8e6e1; --ink2:#b3b6bc; --ink3:#7d828a;
+  --rule:#33373e; --rule2:#262a30;
+  --clean:#4fc3cc; --clean-bg:#14302f;
+  --dirty:#f08a4b; --dirty-bg:#3a2316;
+  --ok:#6cc47a; --bad:#ff7a70; --warn:#e6b450; --warn-bg:#352a12;
+  --acc:#8f9cff; --acc-bg:#22264a;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans);overflow-x:hidden}
+a{color:var(--acc)}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.15;margin:0}
+h2{font-size:clamp(1.6rem,4.5vw,2.4rem)}
+h3{font-size:1.2rem}
+p{margin:.6em 0}
+.mono{font-family:var(--mono)}
+.small{font-size:.86rem;color:var(--ink2)}
+.tiny{font-size:.75rem;color:var(--ink3);font-family:var(--mono);letter-spacing:.02em}
+.est{display:inline-block;font-family:var(--mono);font-size:.72em;font-weight:700;color:var(--warn);background:var(--warn-bg);border:1px dashed var(--warn);border-radius:3px;padding:0 .3em;margin-left:.25em;vertical-align:.1em}
+
+/* ---------- gap rail ---------- */
+.rail{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-bottom:1px solid var(--rule)}
+.rail .wrap{display:flex;align-items:center;gap:10px;padding-top:8px;padding-bottom:8px;overflow-x:auto;scrollbar-width:none}
+.rail .wrap::-webkit-scrollbar{display:none}
+.rail .lbl{font:600 .7rem var(--mono);color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.gap{display:flex;align-items:center;gap:6px;white-space:nowrap;font:.74rem var(--mono);color:var(--ink3);padding:3px 8px;border:1px solid var(--rule);border-radius:99px;transition:all .35s}
+.gap i{width:8px;height:8px;border-radius:50%;background:var(--rule);flex:none;transition:all .35s}
+.gap.closed{color:var(--ink)}
+.gap.closed i{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
+.gap.live{border-color:var(--acc);color:var(--acc)}
+.gap.live i{background:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 30%,transparent)}
+.gap span.n{font-weight:700}
+.gap span.t{display:inline}
+@media (max-width:560px){.gap span.t{display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding:42px 0 28px}
+.msh{font:.78rem/1.6 var(--mono);color:var(--ink2);background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:10px 12px;overflow-wrap:anywhere}
+.msh b{color:var(--clean)}
+.msh .sep{color:var(--dirty);font-weight:700}
+.hero h1{font-size:clamp(2.1rem,7vw,4rem);margin:22px 0 8px;letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:var(--clean)}
+.hero h1 .d{color:var(--dirty)}
+.lede{font-size:1.08rem;color:var(--ink2);max-width:46em}
+
+.sim{margin-top:24px;background:var(--paper);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.sim-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--rule)}
+.sim-title{font:600 .82rem var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink2)}
+.toggle{display:inline-flex;border:1px solid var(--rule);border-radius:99px;padding:3px;background:var(--bg)}
+.toggle button{all:unset;cursor:pointer;font:600 .8rem var(--mono);padding:6px 12px;border-radius:99px;color:var(--ink2)}
+.toggle button[aria-pressed="true"].c{background:var(--clean);color:#fff}
+.toggle button[aria-pressed="true"].s{background:var(--dirty);color:#fff}
+.toggle button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.lanes{display:grid;gap:0}
+.lane{display:grid;grid-template-columns:150px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--rule2)}
+.lane:last-child{border-bottom:0}
+.lane .who{font:600 .82rem var(--mono)}
+.tokens{display:flex;gap:6px;flex-wrap:wrap}
+.tok{width:30px;height:30px;border-radius:5px;display:grid;place-items:center;font:700 .8rem var(--mono);border:1px solid var(--rule);background:var(--bg);transition:all .4s}
+.tok.ok{background:color-mix(in srgb,var(--ok) 18%,var(--paper));border-color:var(--ok);color:var(--ok)}
+.tok.bad{background:color-mix(in srgb,var(--bad) 15%,var(--paper));border-color:var(--bad);color:var(--bad)}
+.tok.rev{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+.score{font:700 1.05rem var(--mono);white-space:nowrap}
+.sim-foot{padding:10px 14px;font-size:.85rem;color:var(--ink2);background:var(--bg);border-top:1px solid var(--rule)}
+body.sujo .glitch{animation:jit 2.4s infinite steps(1)}
+@keyframes jit{0%,92%{transform:none;filter:none}93%{transform:translateX(2px);filter:hue-rotate(40deg)}95%{transform:translateX(-2px)}97%{transform:none}}
+@media (max-width:560px){.lane{grid-template-columns:1fr auto}.lane .who{grid-column:1/-1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.legend-row{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:14px}
+.legend-row .tiny{display:flex;align-items:center;gap:6px}
+
+/* ---------- section shell ---------- */
+section.tech{padding:56px 0 24px;border-top:1px solid var(--rule)}
+.tech-head{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;align-items:end;margin-bottom:18px}
+.stepno{font:700 3.2rem/1 var(--mono);color:var(--rule);grid-row:span 2}
+.closes{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{font:.72rem var(--mono);padding:2px 8px;border-radius:99px;border:1px solid var(--rule);color:var(--ink2);background:var(--paper)}
+.chip.g{border-color:var(--ok);color:var(--ok)}
+.chip.c{border-color:var(--clean);color:var(--clean);background:var(--clean-bg)}
+.chip.s{border-color:var(--dirty);color:var(--dirty);background:var(--dirty-bg)}
+.sub{margin:34px 0 10px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sub .k{font:700 .72rem var(--mono);color:var(--paper);background:var(--ink);padding:2px 7px;border-radius:3px}
+.note{border-left:3px solid var(--acc);background:var(--acc-bg);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;font-size:.95rem}
+.note.warn{border-color:var(--warn);background:var(--warn-bg)}
+.note.dirty{border-color:var(--dirty);background:var(--dirty-bg)}
+.note b.lab{font:700 .72rem var(--mono);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:2px;color:var(--ink2)}
+
+/* premissas: segment ribbon */
+.segs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.seg{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:9px 11px;font-size:.88rem}
+.seg .cat{font:700 .68rem var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--clean);display:block;margin-bottom:3px}
+
+/* inversões explorer */
+.pgrid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.pbtn{all:unset;cursor:pointer;font:700 .85rem var(--mono);min-width:44px;text-align:center;padding:8px 6px;border-radius:6px;border:1px solid var(--rule);background:var(--paper);position:relative}
+.pbtn::after{content:"";position:absolute;left:6px;right:6px;bottom:3px;height:3px;border-radius:2px;background:var(--fx)}
+.pbtn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.pbtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.pcard{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--paper)}
+.pcard>div{padding:14px 16px}
+.pcard .clean{background:var(--clean-bg);border-right:1px solid var(--rule)}
+.pcard .dirtyc{background:var(--dirty-bg)}
+.pcard .row2{grid-column:1/-1;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;background:var(--paper)}
+.pcard h4{margin:0 0 6px;font:700 .72rem var(--mono);text-transform:uppercase;letter-spacing:.07em}
+.pcard .clean h4{color:var(--clean)} .pcard .dirtyc h4{color:var(--dirty)}
+.pcard .big{font-family:var(--serif);font-size:1.15rem;line-height:1.3}
+.verdict{font:700 .72rem var(--mono);text-transform:uppercase;letter-spacing:.07em}
+.verdict.r{color:var(--bad)} .verdict.a{color:var(--ok)}
+@media (max-width:640px){.pcard{grid-template-columns:1fr}.pcard .clean{border-right:0;border-bottom:1px solid var(--rule)}.pcard .row2{grid-template-columns:1fr}}
+.faixas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.faixa{border:1px solid var(--rule);border-radius:8px;padding:10px 12px;background:var(--paper);border-top:4px solid var(--fx)}
+.faixa b{font-family:var(--mono);font-size:.8rem}
+@media (max-width:640px){.faixas{grid-template-columns:1fr}}
+.designs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:640px){.designs{grid-template-columns:1fr}}
+.design{border:1px dashed var(--ink3);border-radius:8px;padding:12px 14px;background:var(--paper)}
+.design .mono{font-size:.8rem;color:var(--acc)}
+.thesis{font-family:var(--serif);font-size:clamp(1.2rem,3.4vw,1.6rem);line-height:1.3;padding:18px 0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);margin:26px 0}
+
+/* starburst */
+.star-wrap{display:grid;grid-template-columns:minmax(260px,380px) 1fr;gap:20px;align-items:start}
+@media (max-width:760px){.star-wrap{grid-template-columns:1fr}}
+.star svg{width:100%;height:auto;display:block}
+.ray{cursor:pointer}
+.ray polygon{fill:var(--acc-bg);stroke:var(--acc);stroke-width:1.2;transition:fill .2s}
+.ray.on polygon,.ray:hover polygon{fill:var(--acc)}
+.ray text{font:700 12px var(--mono);fill:var(--ink)}
+.ray .cnt{font:700 11px var(--mono);fill:var(--ink2)}
+.ray:focus{outline:none}.ray:focus-visible polygon{stroke-width:3}
+.qlist{max-height:430px;overflow:auto;border:1px solid var(--rule);border-radius:8px;background:var(--paper);padding:6px 0;margin:0;list-style:none;counter-reset:q}
+.qlist li{padding:7px 14px 7px 44px;position:relative;font-size:.9rem;border-bottom:1px solid var(--rule2)}
+.qlist li:last-child{border-bottom:0}
+.qlist li::before{counter-increment:q;content:counter(q,decimal-leading-zero);position:absolute;left:12px;top:8px;font:.72rem var(--mono);color:var(--ink3)}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+
+.dlist{display:grid;gap:8px}
+.dec{display:grid;grid-template-columns:52px 1fr;border:1px solid var(--rule);border-radius:8px;background:var(--paper);overflow:hidden}
+.dec .id{font:700 1rem var(--mono);display:grid;place-items:center;background:var(--ink);color:var(--paper)}
+.dec .tx{padding:10px 14px;font-size:.93rem}
+.layers{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.layers span{font:.72rem var(--mono);padding:3px 7px;background:var(--acc-bg);color:var(--acc);border-radius:3px}
+.layers span+span::before{content:"→ ";color:var(--ink3)}
+
+/* state machine */
+.sm-wrap{display:grid;grid-template-columns:minmax(280px,420px) 1fr;gap:20px;align-items:start}
+@media (max-width:760px){.sm-wrap{grid-template-columns:1fr}}
+.sm svg{width:100%;height:auto;display:block;background:var(--paper);border:1px solid var(--rule);border-radius:10px}
+.sm .st rect{fill:var(--bg);stroke:var(--ink2);stroke-width:1.2;rx:6}
+.sm .st text{font:600 11.5px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.sm .st.term rect{stroke:var(--ok)}
+.sm .st.q rect{stroke-dasharray:4 3}
+.sm .ed{stroke:var(--ink3);stroke-width:1.3;fill:none;marker-end:url(#ah)}
+.sm .ghost{opacity:0;transition:opacity .35s}
+.sm .ghost.on{opacity:1}
+.sm .ghost rect{fill:var(--dirty-bg);stroke:var(--dirty);stroke-dasharray:5 4;stroke-width:1.5}
+.sm .ghost text{font:600 11px var(--mono);fill:var(--dirty);text-anchor:middle;dominant-baseline:central}
+.sm .ghost path{stroke:var(--dirty);stroke-dasharray:4 3;stroke-width:1.4;fill:none;marker-end:url(#ahd)}
+.sm .jam{fill:none;stroke:var(--bad);stroke-width:2.5;opacity:0;transition:opacity .3s}
+.sm .jam.on{opacity:1;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{stroke-width:5;opacity:.5}}
+.tests{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tests button{all:unset;cursor:pointer;font:700 .82rem var(--mono);padding:7px 12px;border-radius:6px;border:1px solid var(--dirty);color:var(--dirty);background:var(--paper)}
+.tests button[aria-pressed="true"]{background:var(--dirty);color:#fff}
+.tests button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.testcard{border:1px solid var(--rule);border-radius:8px;padding:12px 14px;background:var(--paper)}
+.testcard dt{font:700 .7rem var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-top:8px}
+.testcard dd{margin:2px 0 0}
+
+/* JTBD */
+.personas{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:640px){.personas{grid-template-columns:1fr}}
+.persona{border:1px solid var(--rule);border-radius:10px;padding:14px 16px;background:var(--paper)}
+.persona .role{font:700 .72rem var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--acc)}
+.persona .job{font-family:var(--serif);font-size:1.12rem;line-height:1.35;margin-top:6px}
+.reel-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.reel-tabs button{all:unset;cursor:pointer;font:600 .8rem var(--mono);padding:6px 11px;border:1px solid var(--rule);border-radius:99px;background:var(--paper);color:var(--ink2)}
+.reel-tabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.reel-tabs button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.reel{background:#16181b;border-radius:10px;padding:14px 0;position:relative}
+.reel::before,.reel::after{content:"";position:absolute;left:0;right:0;height:8px;background:repeating-linear-gradient(90deg,transparent 0 10px,#3a3d42 10px 18px)}
+.reel::before{top:3px}.reel::after{bottom:3px}
+.frames{display:flex;gap:10px;overflow-x:auto;padding:6px 12px;scroll-snap-type:x mandatory}
+.frame{flex:0 0 210px;scroll-snap-align:start;background:#f4f1ea;color:#1d1f22;border-radius:4px;padding:10px 12px;min-height:170px;display:flex;flex-direction:column;gap:6px}
+.frame .mk{font:700 .72rem var(--mono);color:#b4531c;display:flex;justify-content:space-between}
+.frame .ft{font-family:var(--serif);font-size:1rem;font-weight:600;line-height:1.2}
+.frame .fd{font-size:.82rem;color:#4c5058}
+.frame .fq{margin-top:auto;font:italic .8rem var(--serif);color:#0f7c86}
+.clock{display:flex;align-items:center;gap:12px;margin:10px 0 0;color:var(--ink2);font-size:.86rem}
+.clock svg{flex:none}
+
+/* backcasting */
+.count{position:relative;padding-left:0}
+.ms{display:grid;grid-template-columns:96px 1fr;gap:0 16px;position:relative;padding-bottom:22px}
+.ms::before{content:"";position:absolute;left:47px;top:44px;bottom:0;width:2px;background:var(--rule)}
+.ms:last-child::before{display:none}
+.ms .date{text-align:center}
+.ms .date .dd{font:700 1.6rem/1 var(--mono);display:block;padding:10px 0 4px;border:2px solid var(--ink);border-radius:8px;background:var(--paper)}
+.ms .date .tm{font:.72rem var(--mono);color:var(--ink3);display:block;margin-top:4px}
+.ms .date .live{font:700 .7rem var(--mono);color:var(--acc);display:block}
+.ms .body{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:12px 14px}
+.ms .body h3{font-size:1.05rem;margin-bottom:4px}
+.cut{margin-top:10px;padding:8px 10px;border:1px dashed var(--bad);border-radius:6px;font-size:.88rem;position:relative;background:color-mix(in srgb,var(--bad) 6%,var(--paper))}
+.cut b{font:700 .7rem var(--mono);color:var(--bad);text-transform:uppercase;letter-spacing:.06em;margin-right:6px}
+.ms.goal .date .dd{border-color:var(--clean);color:var(--clean)}
+@media (max-width:520px){.ms{grid-template-columns:70px 1fr}.ms::before{left:34px}.ms .date .dd{font-size:1.2rem}}
+.nfr{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:10px}
+.gauge{border:1px solid var(--rule2);border-radius:8px;padding:10px 12px;background:var(--bg)}
+.gauge .v{font:700 1.25rem var(--mono)}
+.gauge .k{font-size:.8rem;color:var(--ink2)}
+.bar{height:8px;border-radius:4px;background:var(--rule2);margin-top:8px;position:relative;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;border-radius:4px}
+.dlq{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.dlq span{font:.78rem var(--mono);padding:4px 8px;border-radius:4px;background:var(--bg);border:1px solid var(--rule);color:var(--ink3);text-decoration:line-through;text-decoration-color:var(--bad)}
+
+/* synthesis */
+section.climax{padding:64px 0 32px;border-top:3px double var(--ink);background:linear-gradient(180deg,var(--paper),var(--bg) 70%)}
+.climax h2{font-size:clamp(2rem,6vw,3.2rem)}
+.receipts{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:22px}
+.rcpt{background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:14px 16px 18px;position:relative;font-size:.93rem;
+  -webkit-mask:radial-gradient(circle 6px at 50% 100%,transparent 5.5px,#000 6px) bottom/14px 100% repeat-x;mask:radial-gradient(circle 6px at 50% 100%,transparent 5.5px,#000 6px) bottom/14px 100% repeat-x}
+.rcpt .hdr{display:flex;justify-content:space-between;font:.7rem var(--mono);color:var(--ink3);border-bottom:1px dashed var(--rule);padding-bottom:6px;margin-bottom:8px}
+.rcpt .hdr b{color:var(--ok)}
+.rcpt.risk .hdr b{color:var(--bad)}
+.rcpt .gl{margin-top:10px;display:flex;gap:4px;flex-wrap:wrap}
+.final{margin-top:28px;border:2px solid var(--ink);border-radius:12px;padding:20px;background:var(--paper)}
+.final .big{font-family:var(--serif);font-size:clamp(1.4rem,4.4vw,2.1rem);line-height:1.2;margin:4px 0 14px}
+.final .big em{font-style:normal;color:var(--clean)} .final .big .d{color:var(--dirty)}
+.pack{display:flex;flex-wrap:wrap;gap:6px}
+.pack span{font:.8rem var(--mono);padding:5px 9px;border-radius:5px;background:var(--acc-bg);color:var(--acc)}
+.pending{margin-top:26px}
+.pending ul{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px}
+.pending li{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;background:var(--paper);border:1px dashed var(--warn);border-radius:6px;padding:8px 10px;font-size:.92rem}
+.pending li .q{font:700 1rem var(--mono);color:var(--warn);text-align:center}
+.pending li .src{display:block;font:.7rem var(--mono);color:var(--ink3)}
+footer{padding:26px 0 48px;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink2)}
+footer .disc{border:1px solid var(--warn);background:var(--warn-bg);border-radius:8px;padding:10px 14px;color:var(--ink)}
+.themebtn{all:unset;cursor:pointer;font:.72rem var(--mono);color:var(--ink3);border:1px solid var(--rule);border-radius:99px;padding:3px 9px;white-space:nowrap;margin-left:auto}
+</style>
+</head>
+<body>
+
+<nav class="rail" aria-label="Lacunas">
+  <div class="wrap" id="rail">
+    <span class="lbl">Lacunas</span>
+    <span class="gap" data-g="1"><i></i><span class="n">1</span><span class="t">agente vs regras</span></span>
+    <span class="gap" data-g="2"><i></i><span class="n">2</span><span class="t">contratos de dados</span></span>
+    <span class="gap" data-g="3"><i></i><span class="n">3</span><span class="t">ciclo de vida do caso</span></span>
+    <span class="gap" data-g="4"><i></i><span class="n">4</span><span class="t">critérios do concurso</span></span>
+    <span class="gap" data-g="5"><i></i><span class="n">5</span><span class="t">NFRs quantificados</span></span>
+    <span class="gap" data-g="6"><i></i><span class="n">6</span><span class="t">risco de prazo</span></span>
+    <button class="themebtn" id="themebtn" type="button">tema</button>
+  </div>
+</nav>
+
+<header class="hero" data-gaps="">
+  <div class="wrap">
+    <div class="msh glitch">MSH<span class="sep">|</span>^~\&amp;<span class="sep">|</span><b>BRAINSTORM</b><span class="sep">|</span>SENTAI-NEXUS<span class="sep">|</span>PRD<span class="sep">|</span>20261018<span class="sep">|</span>EXC^LACUNAS<span class="sep">|</span>6<span class="sep">|</span>STATUS=complete<span class="sep">|</span>MODE=facilitator<span class="sep">|</span>FONTE=proposta-Musketeers 16/10/2026</div>
+    <h1>Empata no mundo <em>limpo</em>,<br>diferencia no <span class="d">sujo</span>.</h1>
+    <p class="lede">Registro de uma sessão para fechar as 6 lacunas da proposta Sentai Nexus, um agente do IRIS AI Hub que resolve exceções de interoperabilidade dentro de uma Production, antes de escrever o PRD. Quatro técnicas em sequência: Assumption Reversal, Starbursting, Job to Be Done do avaliador e Backcasting.</p>
+
+    <div class="sim" id="sim">
+      <div class="sim-head">
+        <span class="sim-title">Simulador · benchmark meta</span>
+        <div class="toggle" role="group" aria-label="Mundo do simulador">
+          <button class="c" aria-pressed="true" data-w="limpo">mundo limpo</button>
+          <button class="s" aria-pressed="false" data-w="sujo">mundo sujo</button>
+        </div>
+      </div>
+      <div class="lanes">
+        <div class="lane"><span class="who">Regras</span><div class="tokens" id="tk-r"></div><span class="score" id="sc-r"></span></div>
+        <div class="lane"><span class="who">Regras + Agente</span><div class="tokens" id="tk-a"></div><span class="score" id="sc-a"></span></div>
+      </div>
+      <div class="sim-foot" id="sim-foot"></div>
+    </div>
+    <div class="legend-row">
+      <span class="tiny"><span class="tok ok" style="width:14px;height:14px"></span>resolução correta</span>
+      <span class="tiny"><span class="tok bad" style="width:14px;height:14px"></span>erra</span>
+      <span class="tiny"><span class="tok rev" style="width:14px;height:14px"></span>revisão segura</span>
+      <span class="tiny">Números com <span class="est">?</span> são estimativas, não medições.</span>
+    </div>
+  </div>
+</header>
+
+<!-- =============== 1. ASSUMPTION REVERSAL =============== -->
+<section class="tech" id="ar" data-gaps="1">
+<div class="wrap">
+  <div class="tech-head">
+    <span class="stepno">01</span>
+    <h2>Assumption Reversal</h2>
+    <div class="closes"><span class="chip g">fecha a lacuna 1 · agente vs regras</span></div>
+  </div>
+  <p>Ponto de partida: o objetivo tem duas camadas. Na <b>competição</b>, demonstrar a decisão contextual de um agente AI Hub dentro de uma Production IRIS, com percurso completo, reproduzível e fácil de avaliar. No <b>produto</b>, levar uma exceção interrompida até uma resolução rastreável e verificável, apoiada nos controles do SentaiTask.</p>
+  <div class="note dirty"><b class="lab">Tensão de abertura</b>O “contextual” não aparece em nenhum dos 4 cenários. É a lacuna 1.</div>
+
+  <div class="sub"><span class="k">PASSO 1</span><h3>16 premissas declaradas</h3><span class="tiny">segmentos visíveis da mensagem</span></div>
+  <div class="segs" id="premissas"></div>
+  <div class="note"><b class="lab">Insight</b>As 16 premissas cobrem equipe, arquitetura, governança e escopo. Nenhuma trata da natureza da falha nem de como se descobre a ação certa, que é onde estaria o valor do agente.</div>
+
+  <div class="sub"><span class="k">PASSO 2 → 3 → 4</span><h3>13 premissas ocultas, invertidas, viram cenários</h3></div>
+  <p class="small">Escolha um P. À esquerda, o mundo limpo que a proposta assume sem dizer. À direita, a inversão. Embaixo, o cenário do simulador em que a regra ingênua erra. A cor da barra indica a faixa de prioridade.</p>
+  <div class="pgrid" id="pgrid" role="group" aria-label="Inversões P1 a P13"></div>
+  <div class="pcard" id="pcard" aria-live="polite"></div>
+  <div class="faixas" id="faixas"></div>
+
+  <div class="note warn"><b class="lab">Síntese do usuário</b>A proposta assume um mundo de erros sinceros, evidência completa, causas que não se misturam e gabarito único. Num simulador limpo assim, Regras e Regras+Agente empatam em 100% no benchmark.</div>
+  <div class="note dirty"><b class="lab">Tensão emergente</b>P2 (HOLD em lote, suspensão da fila) e P4 (localizar o nó corrompido) extrapolam o catálogo fechado de 4 ações por caso.</div>
+
+  <div class="sub"><span class="k">RESPOSTA</span><h3>Dois desenhos para a tensão</h3></div>
+  <div class="designs">
+    <div class="design"><b>Desenho A</b><p>Manter o catálogo de 4 ações. O agente emite também um <i>diagnóstico operacional estruturado</i>, separado da ação.</p><div class="mono">ação: HOLD · diagnóstico: “corrupção no nó TransformX”</div></div>
+    <div class="design"><b>Desenho B</b><p>Ações em dois níveis: a ação do caso (4 verbos) e uma recomendação sistêmica opcional.</p><div class="mono">scope: single_case | batch | queue_segment</div></div>
+  </div>
+  <p class="small" style="margin-top:12px"><b>Princípio do simulador:</b> não gerar variações cosméticas de erro, e sim estruturas de decisão que quebram heurísticas locais.</p>
+  <p class="thesis">Tese: o benchmark só diferencia o agente das regras quando o simulador introduz decisões não locais, evidência imperfeita e contexto mutável. Fora disso, o catálogo fechado é automação determinística com custo extra.</p>
+</div>
+</section>
+
+<!-- =============== 2. STARBURSTING =============== -->
+<section class="tech" id="sb" data-gaps="2,3">
+<div class="wrap">
+  <div class="tech-head">
+    <span class="stepno">02</span>
+    <h2>Starbursting</h2>
+    <div class="closes"><span class="chip g">lacuna 2 · contratos de dados</span><span class="chip g">lacuna 3 · ciclo de vida do caso</span></div>
+  </div>
+  <p>Uma estrela de seis pontas em volta de uma palavra só: <b>Caso</b>. O tamanho de cada ponta é o número de perguntas. Toque numa ponta para ler as perguntas.</p>
+  <div class="star-wrap">
+    <div class="star"><svg id="star" viewBox="-200 -200 400 400" role="img" aria-label="Estrela de 92 perguntas"></svg></div>
+    <div>
+      <div class="qhead"><h3 id="qtitle">Quem</h3><span class="tiny" id="qcount"></span></div>
+      <ol class="qlist" id="qlist"></ol>
+    </div>
+  </div>
+
+  <div class="sub"><span class="k">CONVERGÊNCIA</span><h3>7 decisões centrais</h3><span class="tiny">92 perguntas → D1–D7</span></div>
+  <div class="dlist" id="dlist"></div>
+  <div class="note warn"><b class="lab">Em aberto após Starbursting</b>Critério de Caso novo vs mesmo Caso; formato e necessidade da confiança; estado Failed; e a máquina de estados ainda não testada contra cenários sujos (lote, mundo mudando, duplicidade disfarçada).</div>
+
+  <div class="sub"><span class="k">STRESS TEST</span><h3>A máquina D6 contra o mundo sujo</h3></div>
+  <div class="sm-wrap">
+    <div class="sm"><svg id="sm" viewBox="0 0 380 640" role="img" aria-label="Máquina de estados D6"></svg></div>
+    <div>
+      <div class="tests" role="group" aria-label="Cenários de teste">
+        <button data-t="none" aria-pressed="true">D6 pura</button>
+        <button data-t="P2" aria-pressed="false">× P2</button>
+        <button data-t="P3" aria-pressed="false">× P3</button>
+        <button data-t="P9" aria-pressed="false">× P9</button>
+      </div>
+      <div class="testcard" id="testcard" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- =============== 3. JTBD =============== -->
+<section class="tech" id="jtbd" data-gaps="4">
+<div class="wrap">
+  <div class="tech-head">
+    <span class="stepno">03</span>
+    <h2>Job to Be Done do avaliador</h2>
+    <div class="closes"><span class="chip g">fecha a lacuna 4 · critérios do concurso</span></div>
+  </div>
+  <p>Quem avalia: júri técnico da InterSystems (ou curadoria) e a comunidade, que vota até 15/11. Pesos e critérios formais do edital não foram confirmados <span class="est">?</span></p>
+  <div class="personas">
+    <div class="persona"><div class="role">Júri técnico</div><div class="job">Em 4 minutos + README reproduzível, provar uso real do AI Hub dentro de uma Production mudando o resultado do workflow, com aprovação, idempotência e rastreabilidade sérias.</div><p class="small">Não quer ver um chat acoplado a automação trivial.</p></div>
+    <div class="persona"><div class="role">Comunidade</div><div class="job">Entender rápido por que é útil, diferente e confiável.</div><p class="small">Lembrar como uma demo clara de IA resolvendo um problema operacional real, sem parecer perigosa ou artificial.</p></div>
+  </div>
+  <div class="note dirty"><b class="lab">Insight</b>O roteiro atual da demo (p.7) abre com <span class="mono">código desconhecido → mapeamento aprovado</span>, justamente o cenário em que a regra ingênua resolve igual. Contradiz o JTBD do júri. Decisão: tirar da abertura; no máximo como contraste limpo ou fallback se a demo principal falhar.</div>
+
+  <div class="sub"><span class="k">ROTEIRO</span><h3>A demo de 4 minutos, redesenhada</h3></div>
+  <div class="reel-tabs" role="group" aria-label="Versões do roteiro">
+    <button data-r="full" aria-pressed="true">8 momentos</button>
+    <button data-r="lean" aria-pressed="false">versão enxuta</button>
+    <button data-r="final" aria-pressed="false">o que sobrevive (Backcasting)</button>
+  </div>
+  <div class="reel"><div class="frames" id="frames"></div></div>
+  <div class="clock">
+    <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="4"/><circle id="clockarc" cx="22" cy="22" r="19" fill="none" stroke="var(--dirty)" stroke-width="4" stroke-dasharray="119.4" stroke-dashoffset="0" transform="rotate(-90 22 22)"/><text x="22" y="26" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="currentColor">4:00</text></svg>
+    <span id="reelnote"></span>
+  </div>
+  <p class="thesis">Espinha: abrir com um erro que parece simples, provar que não é, mostrar o Caso estruturando a descoberta, impedir a execução errada por mudança de contexto e fechar com evidência de que o resultado muda onde as regras falham.</p>
+  <div class="note warn"><b class="lab">Insight · custo</b>A nova demo depende de 5 cenários sujos (P2, P3, P5, P8, P9), mais a entidade Incidente/Lote e a revalidação, muito além do backlog P0 original. Isso pressiona os marcos de 25/10 e 29/10.</div>
+</div>
+</section>
+
+<!-- =============== 4. BACKCASTING =============== -->
+<section class="tech" id="bc" data-gaps="5,6">
+<div class="wrap">
+  <div class="tech-head">
+    <span class="stepno">04</span>
+    <h2>Backcasting</h2>
+    <div class="closes"><span class="chip g">lacuna 5 · NFRs quantificados</span><span class="chip g">lacuna 6 · risco de prazo</span></div>
+  </div>
+  <p>Começa no fim e conta para trás. Cada marco tem uma entrega e uma tesoura: o que cai se a entrega não estiver pronta. A contagem “T−” parte do dia da sessão, 18/10.</p>
+
+  <div class="count" id="count">
+    <div class="ms goal" data-date="2026-11-07">
+      <div class="date"><span class="dd">07/11</span><span class="tm">T−20</span><span class="live"></span></div>
+      <div class="body">
+        <h3>Destino: submetível</h3>
+        <p class="small">5 cenários sujos ativos e reproduzíveis no benchmark (P2, P3, P5, P8, P9); P1 talvez como variação embutida <span class="est">?</span></p>
+        <div class="nfr">
+          <div class="gauge"><div class="k">Orçamento por investigação</div><div class="v">≤ 4 ferramentas · 20 s</div><div class="k">acima disso, REQUEST_REVIEW</div></div>
+          <div class="gauge"><div class="k">Exceção → proposta validada</div><div class="v">p50 18 s · p95 45 s<span class="est">?</span></div>
+            <div class="bar"><i style="left:0;width:20%;background:var(--clean)"></i><i style="left:20%;width:30%;background:color-mix(in srgb,var(--clean) 45%,transparent)"></i></div><div class="tiny">escala 0–90 s</div></div>
+          <div class="gauge"><div class="k">Com aprovação humana</div><div class="v">p50 35 s · p95 90 s<span class="est">?</span></div>
+            <div class="bar"><i style="left:0;width:38.9%;background:var(--dirty)"></i><i style="left:38.9%;width:61.1%;background:color-mix(in srgb,var(--dirty) 45%,transparent)"></i></div><div class="tiny">escala 0–90 s</div></div>
+          <div class="gauge"><div class="k">Custo por Caso resolvido</div><div class="v">US$ 0,01–0,04<span class="est">?</span></div><div class="k">com agente · regras ≈ zero marginal</div></div>
+          <div class="gauge"><div class="k">Meta do benchmark</div><div class="v">2/5 vs 4/5</div><div class="k">regras vs agente nos 5 sujos, +1/5 em revisão segura; empate no limpo</div></div>
+        </div>
+        <p class="small" style="margin-top:10px">Demo final: sobrevivem 6 momentos (contraste, P5+P8, P9, decisão estruturada, revalidação P3, benchmark); a rajada P2 entra como flash de 15 s <span class="est">?</span></p>
+        <div class="tiny" style="margin-top:8px">FORA DA SUBMISSÃO · fila morta</div>
+        <div class="dlq"><span>System 1 sombra</span><span>HL7/FHIR</span><span>busca semântica</span><span>múltiplos provedores/modelos</span><span>canvas genérico</span><span>diagnóstico de nó corrompido P4</span><span>documentação não estruturada P7</span><span>ações fora do catálogo fechado</span></div>
+      </div>
+    </div>
+    <div class="ms" data-date="2026-11-05">
+      <div class="date"><span class="dd">05/11</span><span class="tm">T−18</span><span class="live"></span></div>
+      <div class="body">
+        <h3>Freeze</h3>
+        <p>Benchmark reproduzível com 5 cenários sujos; Caso canônico persistido (diagnóstico, ação, scope, aprovação, execução); demo de 6 momentos ensaiável; métricas de latência, custo e placar.</p>
+        <div class="cut"><b>✂ corte</b>P2 deixa de ser momento próprio; reduzir a 3 cenários fortes (P3, P5/P8, P9), sem comparação ampla.</div>
+      </div>
+    </div>
+    <div class="ms" data-date="2026-11-02">
+      <div class="date"><span class="dd">02/11</span><span class="tm">T−15</span><span class="live"></span></div>
+      <div class="body">
+        <h3>Governança de ponta a ponta</h3>
+        <p>Aprovação durável da versão exata, revalidação pré-execução, execução com chave de idempotência, reconciliação por recibo/timeout, incluindo P3.</p>
+        <div class="cut"><b>✂ corte</b>Execução automática só para uma ação comprovada; o resto em modo demonstrativo, com bloqueio seguro antes do efeito externo.</div>
+      </div>
+    </div>
+    <div class="ms" data-date="2026-10-29">
+      <div class="date"><span class="dd">29/10</span><span class="tm">T−11</span><span class="live"></span></div>
+      <div class="body">
+        <h3>Um Caso real na UI</h3>
+        <p>Um Caso real de ponta a ponta na UI (falha, evidências, investigação, proposta validada, aprovação, execução, resultado) em pelo menos 1 cenário sujo principal.</p>
+        <div class="cut"><b>✂ corte</b>System 1, P2, cenários simultâneos e refinamento visual. Manter só a trilha mais forte.</div>
+      </div>
+    </div>
+    <div class="ms" data-date="2026-10-25">
+      <div class="date"><span class="dd">25/10</span><span class="tm">T−7</span><span class="live"></span></div>
+      <div class="body">
+        <h3>A menor prova</h3>
+        <p>Pedido sintético entra na Production → exceção abre Caso persistido → BO chama de verdade o AI Hub build 154 → agente consulta ≥ 1 ferramenta → retorna proposta do catálogo → proposta persistida com evidência e recuperável após reinício.</p>
+        <div class="cut"><b>✂ corte</b>Sem isso, abandonar múltiplos cenários, UI rica, benchmark comparativo e a narrativa de agente operacional até a prova passar.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- =============== SÍNTESE =============== -->
+<section class="climax" id="sint" data-gaps="1,2,3,4,5,6">
+<div class="wrap">
+  <span class="tiny">ACK · batch de 4 técnicas concluído · as 6 lacunas têm material</span>
+  <h2>Síntese</h2>
+  <p class="lede">Sete recibos emitidos no fim da sessão, e depois a direção escolhida. A última linha de cada recibo indica quais lacunas ele toca.</p>
+  <div class="receipts" id="receipts"></div>
+
+  <div class="final">
+    <span class="tiny">DIREÇÃO ESCOLHIDA · entrada para o PRD</span>
+    <p class="big">Entrar no PRD com a tese <em>“empata no mundo limpo</em>, <span class="d">diferencia no sujo”</span>.</p>
+    <div class="pack">
+      <span>Caso canônico D1–D7</span><span>+ Incidente</span><span>+ revalidação</span><span>+ dedup</span><span>demo redesenhada</span><span>NFRs numéricos</span><span>4 marcos com corte</span>
+    </div>
+  </div>
+
+  <div class="pending">
+    <h3>Ainda pendente <span class="est">?</span></h3>
+    <ul id="pending"></ul>
+  </div>
+</div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p class="disc"><b>Dados sintéticos.</b> Pedidos, parceiros e cenários descritos aqui pertencem a um simulador; não há dado clínico real. Valores marcados com <span class="est">?</span> (latência, custo, placar, critérios do edital) são estimativas ou metas da sessão, não medições.</p>
+    <p class="tiny">Fonte única: .memlog.md da sessão “Fechar as 6 lacunas da proposta Sentai Nexus para o PRD” · atualizado 2026-10-18 21:15 · equipe: José Roberto, Henrique, Henry.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function q(s){return esc(s).replace(/\(\?\)|\s\?(?=\s|$|\))/g,' <span class="est">?</span>')}
+
+/* theme toggle */
+var root=document.documentElement;
+$("#themebtn").addEventListener("click",function(){
+  var dark=root.getAttribute("data-theme")?root.getAttribute("data-theme")==="dark":matchMedia("(prefers-color-scheme: dark)").matches;
+  root.setAttribute("data-theme",dark?"light":"dark");
+});
+
+/* ---------- hero simulator ---------- */
+function renderSim(w){
+  var r=$("#tk-r"),a=$("#tk-a"),f=$("#sim-foot");
+  var mk=function(cls,t){return '<span class="tok '+cls+'">'+t+'</span>'};
+  if(w==="limpo"){
+    var all="";for(var i=0;i<5;i++)all+=mk("ok","✓");
+    r.innerHTML=all;a.innerHTML=all;
+    $("#sc-r").textContent="100%";$("#sc-a").textContent="100%";
+    f.innerHTML="Erros sinceros, evidência completa, causa única, gabarito único. Regras e agente <b>empatam</b>. O agente é só custo extra.";
+    document.body.classList.remove("sujo");
+  }else{
+    r.innerHTML=mk("ok","✓")+mk("ok","✓")+mk("bad","✗")+mk("bad","✗")+mk("bad","✗");
+    a.innerHTML=mk("ok","✓")+mk("ok","✓")+mk("ok","✓")+mk("ok","✓")+mk("rev","R");
+    $("#sc-r").innerHTML='2/5<span class="est">?</span>';$("#sc-a").innerHTML='4/5<span class="est">?</span>';
+    f.innerHTML="Cenários P2, P3, P5, P8, P9: tempestade, mundo mudando, erro mentiroso, evidência conflitante, duplicidade disfarçada. Meta da sessão: agente 4/5 correto + 1/5 em revisão segura. Ordem dos quadrados ilustrativa.";
+    document.body.classList.add("sujo");
+  }
+  $$("#sim .toggle button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.w===w)});
+}
+$$("#sim .toggle button").forEach(function(b){b.addEventListener("click",function(){renderSim(b.dataset.w)})});
+renderSim("limpo");
+
+/* ---------- premissas ---------- */
+var PREM=[
+["equipe","3 integrantes (José Roberto, Henrique, Henry) com disponibilidade recorrente de 16/10 a 15/11"],
+["equipe","UI e simulador evoluem em paralelo ao backend via contratos/fixtures; integração real até 29/10"],
+["equipe","Instalação limpa via Docker a partir do README é critério inegociável de aceite"],
+["equipe","Freeze funcional em 05/11, submetível em 07/11, 08/11 só margem operacional"],
+["técnica","Build 154 (EAP) do AI Hub funcional e permite agente dentro de um BO; risco exige prova até 25/10"],
+["técnica","Production nativa IRIS mantém estado durável e correlação; WQM do SentaiTask não vira segunda camada de orquestração"],
+["técnica","Grande parte do SentaiTask (SvelteKit/Svelte Flow, REST+SSE, FlowValidator, StepType, RunNarrator, testes, Docker) é reaproveitável sem reescrever"],
+["técnica","Agente sem estado em memória: decisão, evidência e aprovação persistidas antes de qualquer efeito externo"],
+["governança","IA propõe, aplicação governa: agente sem poder de execução direta"],
+["governança","Mensagens e logs são dados potencialmente hostis, nunca instruções"],
+["governança","Espaço de ação fechado: só RETRY, APPLY_APPROVED_MAPPING, REQUEST_REVIEW, HOLD; sem gerar código ou editar conteúdo"],
+["governança","Fail-safe: qualquer anomalia do LLM (timeout, recusa, alucinação, falta de evidência) cai em REQUEST_REVIEW"],
+["governança","Timeouts e cliques repetidos vão ocorrer; idempotência obrigatória"],
+["produto","Decisão estritamente operacional, sem inferência clínica"],
+["produto","JSON sintético + parceiro HTTP simulado bastam para provar valor; HL7/FHIR só P2"],
+["produto","MVP se sustenta com regras determinísticas + agente; System 1 só entra se provar ganho em benchmark sem afetar P0"]];
+$("#premissas").innerHTML=PREM.map(function(p,i){return '<div class="seg"><span class="cat">'+String(i+1).padStart(2,"0")+' · '+p[0]+'</span>'+esc(p[1])+'</div>'}).join("");
+
+/* ---------- P1..P13 ---------- */
+var FX={A:"var(--ok)",B:"var(--warn)",C:"var(--dirty)"};
+var P=[
+{f:"A",tag:"falha",hid:"Monocausalidade: cada mensagem tem uma única causa raiz limpa; não prevê falhas compostas (timeout + código desconhecido + identidade ambígua).",inv:"Multicausal: o agente checa a integridade semântica do payload contra o catálogo antes de propor RETRY cego por erro de rede.",cen:"Parceiro indisponível por 90 s com timeout, e o payload traz um código fora do catálogo.",rule:"“timeout → RETRY” gasta tentativas e mascara a causa semântica."},
+{f:"C",tag:"falha",hid:"Falha atômica: cada falha é de um pedido isolado; ignora cascatas (500 falhas em 1 min pedem circuit breaker, não 500 RETRYs).",inv:"Tempestade sistêmica: o agente correlaciona com a janela de casos recentes do parceiro/lote e recomenda HOLD em lote ou suspensão da fila em vez de RETRY individual.",cen:"20–40 mensagens do mesmo parceiro/lote falham em 3 min (timeout, latência subindo, entrega caindo).",rule:"RETRY individual gera tempestade de retries."},
+{f:"B",tag:"falha",hid:"Mundo parado: a evidência de T0 continua verdadeira até a execução; revalidação estática basta.",inv:"O mundo muda durante a análise: o agente avalia tendência (parceiro voltou, mas 80% de erro nos últimos 2 min) e condiciona a ação a pré-condições dinâmicas verificáveis na execução.",cen:"Healthcheck vira DOWN→UP durante a investigação, mas a taxa de erro segue alta; ou entra uma janela de manutenção; ou o pedido é cancelado na origem.",rule:"Decide com um snapshot obsoleto."},
+{f:"C",tag:"falha",hid:"Falha auto-contida no passo atual; ignora corrupção silenciosa em etapas anteriores do pipeline.",inv:"Corrupção upstream: o agente rastreia mutações do payload BS→BP→BO (Visual Trace), compara entrada original e saída e localiza o nó corrompido.",cen:"Erro final “payload inválido” no conector HTTP, mas uma transformação intermediária truncou ou trocou um campo duas etapas antes.",rule:"Reage ao último erro e não localiza o nó."},
+{f:"A",tag:"sintoma",hid:"Sinceridade semântica do erro: o parceiro sinaliza a causa certa (não HTTP 500 genérico nem 200 OK com erro escondido).",inv:"Erro mentiroso: o agente ignora o status HTTP e interpreta corpo e stack trace para deduzir a falha real.",cen:"Parceiro devolve 500 para erro de validação de negócio e 200 com rejeição em texto livre.",rule:"Faz retry indevido e registra falso sucesso."},
+{f:"C",tag:"sintoma",hid:"Sintoma pré-classificado: o agente já começa sabendo qual das 4 Situações é; pula log bruto → situação tipada.",inv:"Erro bruto não classificado (idiomas misturados, códigos proprietários): o agente atua como tradutor diagnóstico e classifica dinamicamente nas categorias operacionais.",cen:"Erros em texto bruto, siglas, PT/EN misturados, códigos proprietários.",rule:"Regra por substring classifica errado ou explode a revisão humana."},
+{f:"C",tag:"evidência",hid:"Evidência existe, é suficiente e acessível por ferramenta; ignora contexto tácito (lab X cai às 14h, código combinado por e-mail).",inv:"Pista decisiva em texto livre (avisos de manutenção, release notes, justificativas de aprovações anteriores): o agente lê o não estruturado para achar a regra que ainda não virou código.",cen:"A ferramenta estruturada não explica, mas um boletim em texto livre diz que o código foi descontinuado e usa mapeamento aprovado.",rule:"Manda REQUEST_REVIEW e perde a resolução."},
+{f:"A",tag:"evidência",hid:"Evidências coerentes entre si; ignora status ONLINE com 10 Connection Reset, ou dois mapeamentos aprovados dependendo do convênio.",inv:"Evidências conflitantes (healthcheck UP vs 100% timeout; 2 mapeamentos aprovados): o agente pondera a confiabilidade das fontes e desambigua o mapeamento por outros campos (idade, tipo de coleta, unidade).",cen:"Healthcheck UP com 100% de timeout nos logs; ou 2 mapeamentos aprovados distinguíveis só por contexto.",rule:"Confia na 1ª fonte ou aplica o 1º mapeamento."},
+{f:"A",tag:"evidência",hid:"Caminho de busca óbvio: o agente sabe quais ferramentas chamar e com quais parâmetros, dentro de limites curtos.",inv:"Caminho de busca desconhecido: investigação multi-hop por hipóteses (código válido → hipótese de duplicidade disfarçada → acha recibo 3 min antes com outro ID).",cen:"Código válido → pista de duplicidade → recibo recente do mesmo paciente/pedido com outro ID.",rule:"Para em “código válido → RETRY” e reprocessa o que já foi entregue."},
+{f:"B",tag:"ação",hid:"Bijeção situação→ação 1:1 na tabela da p.1; se é determinístico, 4 if/else em ObjectScript bastam.",inv:"A mesma situação pede ações diferentes por contexto (urgência, horário, SLA, histórico): o agente pondera trade-offs entre RETRY, HOLD e REQUEST_REVIEW.",cen:"Mesma categoria “destino indisponível”: um urgente, fora de manutenção, poucas tentativas; outro não urgente, janela ruim, tentativas esgotadas.",rule:"Dá a mesma ação para os dois."},
+{f:"C",tag:"ação",hid:"Existe gabarito inequívoco (oráculo) por caso, conhecido de antemão, para medir “resolução correta”.",inv:"Zona cinzenta / 70% de certeza: o agente explicita confiança e hipóteses concorrentes e justifica a escolha conservadora.",cen:"Casos deliberadamente ambíguos, com evidência parcial para mapeamento e sinais de erro de origem.",rule:"Força resposta binária com falsa precisão."},
+{f:"B",tag:"ação",hid:"Sucesso medido logo após a execução (recibo/200); ignora ação tecnicamente ok mas semanticamente errada (glicose jejum → pós-prandial).",inv:"200 OK mas semântica errada: o agente checa a coerência semântica do mapeamento com a amostra (sangue vs urina) antes de APPLY_APPROVED_MAPPING.",cen:"Mapeamento aprovado aceito pelo parceiro, mas semanticamente correto só para certo tipo de amostra/unidade.",rule:"Aplica e gera 200 com distorção."},
+{f:"A",tag:"ação",hid:"Transferência mágica ao humano: o operador de integrações saberia resolver o que o agente não resolveu; na prática precisa ligar para a origem.",inv:"O operador também não sabe: o agente entrega um dossiê de revisão (cadastros colididos, campos divergentes, o que já foi descartado, próximo passo humano sugerido).",cen:"Identidade ambígua com 2+ cadastros plausíveis.",rule:"REQUEST_REVIEW seco, handoff pobre e revisão lenta."}];
+var FAIXA={A:"Faixa A · alto valor, implementável",B:"Faixa B · mais infra",C:"Faixa C · escopo perigoso, bom para artigo"};
+var pg=$("#pgrid");
+pg.innerHTML=P.map(function(p,i){return '<button class="pbtn" style="--fx:'+FX[p.f]+'" data-i="'+i+'" aria-pressed="false" title="'+FAIXA[p.f]+'">P'+(i+1)+'</button>'}).join("");
+function showP(i){
+  var p=P[i];
+  $$(".pbtn",pg).forEach(function(b){b.setAttribute("aria-pressed",+b.dataset.i===i)});
+  $("#pcard").innerHTML=
+   '<div class="clean"><h4>Premissa oculta · '+p.tag+'</h4><div class="big">'+esc(p.hid)+'</div></div>'+
+   '<div class="dirtyc"><h4>Inversão P'+(i+1)+'</h4><div class="big">'+esc(p.inv)+'</div></div>'+
+   '<div class="row2"><div><h4>Cenário do simulador</h4>'+esc(p.cen)+'</div><div><div class="verdict r">✗ regra ingênua</div>'+esc(p.rule)+'<div class="tiny" style="margin-top:8px">'+FAIXA[p.f]+'</div></div></div>';
+}
+pg.addEventListener("click",function(e){var b=e.target.closest(".pbtn");if(b)showP(+b.dataset.i)});
+showP(4);
+var groups={A:[],B:[],C:[]};P.forEach(function(p,i){groups[p.f].push("P"+(i+1))});
+groups.C=["P2","P4","P7","P11","P6"]; /* ordem do log */
+$("#faixas").innerHTML=["A","B","C"].map(function(k){return '<div class="faixa" style="--fx:'+FX[k]+'"><b>'+FAIXA[k]+'</b><div class="mono" style="margin-top:4px">'+groups[k].join(" · ")+'</div></div>'}).join("")+'';
+
+/* ---------- starburst ---------- */
+var Q={
+"Quem":["Quem cria formalmente o Caso: OrderIntake/BS, BP, Agent BO ou qualquer BO que falhar?","Quem é o dono operacional do Caso aberto e quem o herda em troca de turno, reinício ou falha de sessão?","Quem vê o Caso completo vs partes (dados sensíveis, prompts, versões de modelo, rastros do agente)? Há perfis?","Quem pode alterar estado, anexar, invalidar ou substituir evidências?","Quem registra o diagnóstico, define/altera scope e atribui/recalcula confiança?","Quem aprova (pessoa, papel, fila, serviço), quem nega/sobrescreve uma aprovação já emitida?","Quem pode reabrir, cancelar, encerrar forçadamente ou arquivar Caso órfão/travado?","Quem executa a ação aprovada e qual componente anexa o recibo e marca resolvido?","Quem é autor da decisão quando o agente propõe e o humano edita, ou quando executa sem aprovação humana?","Quem responde por efeito externo duplicado: executor, aprovador, workflow ou o Caso?","Quem decide se mensagens pertencem ao mesmo Caso, correlaciona duplicados e decide passar de mensagem para lote?","Quem recebe REQUEST_REVIEW, decide prioridade e é notificado de mudança de fase ou expiração de aprovação?","Quem declara o Caso pronto para execução, pronto para benchmark e definitivamente encerrado? Quem audita rastreabilidade suficiente?","Quem pode exportar o Caso para benchmark, artigo ou submissão?","Quem representa o parceiro no Caso: identificador técnico, entidade de negócio ou ambos?","Quem é a fonte da verdade quando a Production IRIS e o banco de estado da aplicação divergem?"],
+"O quê":["O que é um Caso: mensagem, tentativa, exceção, pedido inteiro ou contêiner de investigação? Qual a unidade mínima?","O que distingue Caso de execução, tentativa de entrega, decisão e incidente sistêmico?","O que define a chave de unicidade/identidade estável do Caso (ID mensagem IRIS, ID pedido, pedido+tipo de falha, cada tentativa)? Identidade interna vs externa?","Quais são todos os estados da máquina de estados do Caso, e o que é estado vs evento?","O que é obrigatório e o que é opcional na criação do Caso? O que do pedido é copiado vs referenciado?","O que constitui a falha no Caso: evento, snapshot, histórico ou interpretação?","O que conta e o que não conta como evidência? Persiste-se o JSON bruto das ferramentas no instante ou só referências?","Qual a diferença estrutural entre Diagnóstico e Decisão no schema?","O que é scope: alcance da recomendação, execução, observação ou bloqueio? Mensagem, lote, paciente ou endpoint do parceiro?","O que a confiança mede (agente, sistema, robustez da evidência, adequação da ação) e qual o formato (float 0-1, ALTA/MEDIA/BAIXA, score do validador)?","O que persistir sobre investigação, ferramentas consultadas, versões de política/prompt/modelo, aprovação, execução, reconciliação e recibo?","O que é formalmente um recibo, quais campos provam idempotência e quando dois recibos são equivalentes?","O que define dois Casos idênticos vs relacionados? Mensagens subsequentes do mesmo pedido entram no mesmo Caso?","Com APPLY_APPROVED_MAPPING, guarda-se payload original e transformado ou só diff?","O que o Caso armazena para: erros mentirosos/contraditórios/multilíngues, ambiguidade não resolvida, hipóteses concorrentes, sem ação segura, regra vs agente discordando, rejeição humana e nova proposta, ambiente mudando, decisão condicional","O que o Caso armazena quando o agente dá timeout ou resposta inválida antes de diagnosticar?","Como o System 1 em sombra aparece no Caso: sub-objeto invisível ou na linha do tempo?","O que é imutável, mutável, derivado/recalculável; o que é fonte primária vs anotação?","O que o Caso precisa para servir de benchmark reproduzível e de prova técnica na demo? O que fica fora por escopo do MVP?"],
+"Quando":["Quando o Caso nasce: no recebimento do pedido pelo OrderIntake ou só na primeira exceção? Quando recebe ID definitivo?","Quando nova falha do mesmo pedido atualiza o Caso, cria fase nova, Caso filho ou Caso novo?","Quando capturar a primeira evidência, congelar o snapshot do pedido e amostrar o estado do ambiente?","Quando a investigação do agente começa e termina; quando a proposta é válida e quando expira?","Quando confiança e scope são definidos e quando podem mudar (ex.: caso único → lote)?","Quando aprovação é obrigatória, qual TTL, o que dispara expiração e quando revalidar antes de executar?","Quando bloquear execução mesmo após aprovação? Quando evidências viram obsoletas e exigem nova investigação?","Quando um timeout vira evidência e não ruído transitório? Quando reconciliar após timeout?","Quando um Caso em HOLD acorda e qual evento dispara a reavaliação? Quando entra/sai de retenção?","Quando encerrar como resolvido (HTTP 200, confirmação assíncrona, validação pós-entrega), não resolvido ou cancelado? Quando reabrir?","Quando múltiplas decisões coexistem e quando uma decisão ou evidência fica obsoleta? Novo snapshot vs sobrescrever?","Quando anexar recibo tardio a Caso encerrado?","Quando o Caso entra no benchmark, sai por invalidação e permite comparação justa regra vs agente?","Quando o relógio de SLA do Caso começa, pausa e termina? Quando expurgar ou anonimizar payloads?"],
+"Onde":["Onde vive a fonte de verdade do Caso: classes persistentes no namespace Nexus ou Message Log/Visual Trace nativos?","Onde ficam dados brutos, snapshots do pipeline, evidências estruturadas e não estruturadas, consultas e respostas das ferramentas?","Versões de política/prompt/modelo ficam embutidas por valor em cada Caso ou por chave estrangeira?","Onde ficam diagnóstico, scope, confiança, decisão, aprovação, execução, recibo e correlação Caso-mensagem-tentativa-parceiro?","Onde fica a fronteira entre dados do Caso e telemetria, Visual Trace e dados operacionais do simulador?","Onde a chave de idempotência é gerada e onde é conferida antes do disparo pelo Execution BO?","Mensagens em aprovação ou HOLD ficam na fila nativa IRIS suspensa ou só persistidas no Caso para reenvio?","Onde o operador vê o Caso inteiro vs resumo, o aprovador vê a versão exata da proposta, e onde aparecem hipóteses, contradições e divergências regra vs agente?","Onde o Caso referencia incidente de lote/parceiro, Casos relacionados e nó suspeito do pipeline? Onde ficam pré-condições dinâmicas?","Onde entram anexos textuais e grandes, onde dados sintéticos são marcados e sensíveis mascarados?","Onde o Caso é lido para benchmark, demo, auditoria e replay? Onde abre o Visual Trace exato a partir da UI SvelteKit?","Onde um estado transitório vira histórico persistido e onde o Caso deixa de existir?"],
+"Por quê":["Por que o Caso precisa ser entidade própria e não soma de logs, mensagens e estados de workflow?","Por que o Caso deve ser a unidade de avaliação do benchmark em vez de comparar outputs?","Por que separar Diagnóstico e Decisão se só há 4 ações (quais casos têm dois diagnósticos → mesma ação ou um diagnóstico → ações diferentes)?","Por que scope explícito, e por que um operador aprovaria scope maior que uma mensagem no MVP?","Por que persistir confiança se validador e políticas são determinísticos?","Por que aprovação pertence ao Caso e não só ao fluxo de execução? Por que execução e recibo no mesmo contêiner?","Por que uma proposta validada seria rejeitada na revalidação pré-execução?","Por que manter múltiplas decisões/aprovações, versionar decisão e aprovação e preservar histórico na reabertura?","Por que o Caso sobrevive a reinício e serve ao mesmo tempo operação, demo e benchmark?","Por que mensagens semelhantes deveriam (ou não) compartilhar um Caso? Por que ligar a lote/incidente e Casos correlatos?","Por que conviver fontes conflitantes, registrar hipóteses descartadas, ou só o que levou à decisão final?","Por que mostrar incerteza, esconder complexidade do operador e expor tudo ao auditor? Por que a revisão humana precisa ser mastigada?","Por que distinguir observado vs inferido, fato vs política, política vigente vs consultada, sucesso técnico vs semântico, contexto temporal vs estado final?","Por que algumas informações do Caso expiram e outras nunca?"],
+"Como":["Como o Caso correlaciona os 5 IDs (Caso, Mensagem, Decisão, Aprovação, Tentativa) e evita duplicar a si mesmo?","Como agregar eventos assíncronos sem perder ordem e como o RunNarrator/SSE exibe eventos paralelos?","Como registrar snapshots sucessivos sem sobrescrever e separar fato bruto, evidência, hipótese e interpretação?","Como representar hipóteses concorrentes, contradições, decisão com pré-condições futuras e confiança sem falsa precisão?","Como representar scope sem quebrar o catálogo fechado e diagnóstico sem duplicar texto da decisão?","Como diferenciar ação proposta, aprovada e executada; negação; revisão com nova proposta; timeout com reconciliação tardia?","Como representar sucesso técnico com dúvida semântica, falso positivo de healthcheck, 200 OK mentiroso, causa múltipla, causalidade não local e nó suspeito sem prova absoluta?","Como ligar evidência não estruturada a decisões auditáveis sem virar depósito caótico?","Como garantir concorrência (lock otimista/pessimista) com dois operadores aprovando juntos ou retry automático junto com ação manual?","Como reconstruir o estado exato após reinício do container IRIS no meio da investigação ou de um timeout de entrega?","Como um Caso com scope coletivo vincula, bloqueia e libera pedidos individuais sem duplicar chamadas ao agente?","Como o operador resolve um Caso em REQUEST_REVIEW: escolhe uma das 4 ações, edita o JSON ou cancela?","Como o Caso suporta mudança de política/modelo no meio da vida, reinício da Production e evolução de schema sem invalidar histórico?","Como o Caso indica evidência suficiente para agir, investigação incompleta, dependência de contexto externo não consultado, que só resta esperar, ou benchmark contaminado por informação futura?","Como o Caso é serializado para exportação, minimizado para demo, anonimizado e encerrado para que outro integrante reconstitua a história?","Como diferenciar execução real de replay identificado na demo/benchmark?","Como o Caso falha como abstração e como saberão que está simples demais para o mundo sujo do simulador?"]};
+var keys=Object.keys(Q),svgNS="http://www.w3.org/2000/svg",star=$("#star");
+var total=keys.reduce(function(s,k){return s+Q[k].length},0);
+var maxN=Math.max.apply(null,keys.map(function(k){return Q[k].length}));
+var g="";
+keys.forEach(function(k,i){
+  var ang=(-90+i*60)*Math.PI/180, n=Q[k].length, L=70+ (n/maxN)*95, w=26;
+  var tip=[Math.cos(ang)*L,Math.sin(ang)*L];
+  var a1=ang+Math.PI/2;
+  var b1=[Math.cos(ang)*40+Math.cos(a1)*w,Math.sin(ang)*40+Math.sin(a1)*w];
+  var b2=[Math.cos(ang)*40-Math.cos(a1)*w,Math.sin(ang)*40-Math.sin(a1)*w];
+  var lx=Math.cos(ang)*(L+18), ly=Math.sin(ang)*(L+18);
+  var anchor=Math.abs(Math.cos(ang))<.2?"middle":(Math.cos(ang)>0?"start":"end");
+  g+='<g class="ray" tabindex="0" role="button" data-k="'+k+'" aria-label="'+k+', '+n+' perguntas"><polygon points="'+b1+' '+tip+' '+b2+' 0,0"/>'+
+     '<text x="'+lx.toFixed(1)+'" y="'+(ly-2).toFixed(1)+'" text-anchor="'+anchor+'">'+k+'</text>'+
+     '<text class="cnt" x="'+lx.toFixed(1)+'" y="'+(ly+12).toFixed(1)+'" text-anchor="'+anchor+'">'+n+'</text></g>';
+});
+g+='<circle r="42" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"/><text y="-4" text-anchor="middle" style="font:700 26px ui-monospace,monospace;fill:var(--ink)">'+total+'</text><text y="16" text-anchor="middle" style="font:600 11px ui-monospace,monospace;fill:var(--ink2)">Caso</text>';
+star.innerHTML=g;
+function showQ(k){
+  $$(".ray",star).forEach(function(r){r.classList.toggle("on",r.dataset.k===k)});
+  $("#qtitle").textContent=k;$("#qcount").textContent=Q[k].length+" de "+total+" perguntas";
+  $("#qlist").innerHTML=Q[k].map(function(s){return "<li>"+esc(s)+"</li>"}).join("");
+}
+$$(".ray",star).forEach(function(r){
+  r.addEventListener("click",function(){showQ(r.dataset.k)});
+  r.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();showQ(r.dataset.k)}});
+});
+showQ("Quem");
+
+/* ---------- D1..D7 ---------- */
+var D=[
+"<b>Caso</b> = unidade durável de resolução de uma exceção operacional ligada a uma mensagem/pedido correlacionado num ponto de falha; contêiner de tentativas/execuções, não é nenhuma delas. MVP: 1 pedido sintético com 1 exceção principal por vez.",
+"<b>Fonte de verdade</b> = modelo persistente próprio do Nexus na Production (não UI, não estado do agente, não só Visual Trace); Visual Trace, logs e respostas de ferramentas são evidências referenciadas/anexadas.",
+"<b>Nascimento</b>: na 1ª exceção operacional relevante após correlação; tentativas, evidências, aprovação, execução e reconciliação enriquecem o mesmo Caso; novo Caso só com nova mensagem distinta ou novo episódio independente <span class='est'>? critério em aberto</span>",
+"<b>Contrato mínimo</b>: CaseId, CorrelationIds, snapshot do pedido, falha inicial, evidências, diagnóstico, ação proposta, scope, confiança <span class='est'>?</span>, estado, aprovação, execução, recibo/reconciliação, timeline, versões política/prompt/modelo; o resto fica fora do schema inicial.",
+"<b>Camadas explícitas</b> no Caso:<div class='layers'><span>fatos/evidências observadas</span><span>diagnóstico operacional</span><span>decisão proposta (ação + parâmetros + scope)</span><span>aprovação</span><span>execução/resultado</span></div>",
+"<b>Ciclo mínimo</b>: Open → Investigating → DecisionProposed → PendingApproval → Approved/Rejected → Executing → Resolved | Held | ReviewRequired | Failed <span class='est'>?</span>; detalhes na timeline; reabertura como evento/transição posterior.",
+"<b>Um único Caso canônico</b> persistido com projeções: UI operacional, export de benchmark reproduzível, visão resumida para demo."];
+$("#dlist").innerHTML=D.map(function(t,i){return '<div class="dec"><span class="id">D'+(i+1)+'</span><div class="tx">'+t+'</div></div>'}).join("");
+
+/* ---------- state machine ---------- */
+var S={Open:[190,30],Investigating:[190,90],DecisionProposed:[190,150],PendingApproval:[190,210],Approved:[120,280],Rejected:[290,280],Executing:[120,350]};
+var T=[["Resolved",50,440,1],["Held",140,440,1],["ReviewRequired",226,440,1],["Failed ?",335,440,2]];
+var sv='<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ink3)"/></marker><marker id="ahd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--dirty)"/></marker></defs>';
+function box(x,y,w,label,cls){return '<g class="st '+(cls||"")+'"><rect x="'+(x-w/2)+'" y="'+(y-14)+'" width="'+w+'" height="28" rx="6"/><text x="'+x+'" y="'+y+'">'+label+'</text></g>'}
+function ed(x1,y1,x2,y2){return '<path class="ed" d="M'+x1+','+y1+' L'+x2+','+y2+'"/>'}
+sv+=ed(190,44,190,74)+ed(190,104,190,134)+ed(190,164,190,194)+ed(170,224,130,264)+ed(210,224,280,264)+ed(120,294,120,334);
+T.forEach(function(t){sv+=ed(120,364,t[1],424)});
+Object.keys(S).forEach(function(k){var w=k.length*7.6+22;sv+=box(S[k][0],S[k][1],w,k)});
+T.forEach(function(t){sv+=box(t[1],t[2],t[0].length*7.2+16,t[0].replace(" ?",""),"term"+(t[3]===2?" q":""))});
+sv+='<text x="335" y="463" text-anchor="middle" style="font:700 10px ui-monospace,monospace;fill:var(--warn)">?</text>';
+sv+='<text x="190" y="500" text-anchor="middle" style="font:11px ui-monospace,monospace;fill:var(--ink3)">reabertura = evento/transição posterior</text>';
+/* jams */
+sv+='<rect class="jam" id="jam-P2" x="40" y="12" width="300" height="168" rx="10"/>';
+sv+='<rect class="jam" id="jam-P3" x="50" y="262" width="140" height="106" rx="10"/>';
+sv+='<rect class="jam" id="jam-P9" x="105" y="72" width="170" height="36" rx="10"/>';
+/* ghosts */
+sv+='<g class="ghost" id="gh-P2"><rect x="10" y="540" width="170" height="40" rx="6"/><text x="95" y="560">Incidente / Batch</text><path d="M95,540 C40,420 10,200 70,95"/><text x="95" y="600" style="font-size:10px">+ evento de correlação sistêmica</text></g>';
+sv+='<g class="ghost" id="gh-P3"><rect x="200" y="314" width="174" height="48" rx="6"/><text x="287" y="331">revalidação pré-exec.</text><text x="287" y="349" style="font-size:10px">→ Held · Failed/Cancelled ?</text><path d="M180,315 L200,330"/><path d="M240,362 L150,424"/><path d="M330,362 L335,424"/></g>';
+sv+='<g class="ghost" id="gh-P9"><rect x="190" y="540" width="180" height="40" rx="6"/><text x="280" y="560">ResolvedByPriorReceipt ?</text><path d="M260,100 C360,140 370,420 300,540"/><text x="280" y="600" style="font-size:10px">evento de dedup/reconciliação</text></g>';
+$("#sm").innerHTML=sv;
+var TEST={
+none:{t:"D6 como decidida",at:"—",miss:"Caminho linear de um Caso unitário. Ainda não testado contra lote, mundo mudando ou duplicidade disfarçada.",gap:"3"},
+P2:{t:"× P2 · tempestade sistêmica",at:"Open/Investigating → DecisionProposed",miss:"A máquina só vê o caso unitário. Falta a entidade/escopo de Incidente ou Batch e um evento de correlação sistêmica para que um controlador segure os 30 Casos de uma vez.",gap:"2, 3"},
+P3:{t:"× P3 · o mundo muda",at:"Approved → Executing",miss:"A aprovação fica stale antes do efeito externo. Falta um evento de revalidação pré-execução com transição para Held ou Failed/Cancelled (?) quando o parceiro cai ou o pedido é cancelado na origem.",gap:"3"},
+P9:{t:"× P9 · duplicidade disfarçada",at:"dentro de Investigating",miss:"Um recibo prévio com outro ID muda o Caso de falha ativa para já resolvido/duplicado. Falta um evento de deduplicação/reconciliação por correlação tardia e talvez um estado terminal ResolvedByPriorReceipt (?).",gap:"2, 3"}};
+function showT(k){
+  ["P2","P3","P9"].forEach(function(p){$("#jam-"+p).classList.toggle("on",p===k);$("#gh-"+p).classList.toggle("on",p===k)});
+  $$(".tests button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.t===k)});
+  var t=TEST[k];
+  $("#testcard").innerHTML='<h3>'+esc(t.t)+'</h3><dl><dt>trava em</dt><dd class="mono">'+esc(t.at)+'</dd><dt>o que falta</dt><dd>'+q(t.miss)+'</dd><dt>lacunas</dt><dd class="mono">'+t.gap+'</dd></dl>';
+}
+$$(".tests button").forEach(function(b){b.addEventListener("click",function(){showT(b.dataset.t)})});
+showT("none");
+
+/* ---------- reel ---------- */
+var REEL={
+full:{note:"8 momentos propostos. Só o M1 tem duração no log (10–15 s).",f:[
+["M1","Abertura: “mundo limpo empata”","10–15 s de caso limpo em que regra e agente dão a mesma resposta.","","10–15s"],
+["M2","Caso principal P5+P8","HTTP 500 com body de validação semântica; healthcheck UP, mas os logs mostram degradação.","“A superfície diz uma coisa, as evidências outra.”"],
+["M3","Investigação multi-step P9+P1","O agente não propõe RETRY de cara: consulta política, histórico e catálogo e mostra por que a 1ª hipótese caiu.",""],
+["M4","Decisão estruturada","Tela do Caso com evidências, diagnóstico, ação, scope e confiança separados.","“Proposta verificável e governada.”"],
+["M5","Reviravolta P3","Após Approved, o parceiro oscila e o contexto muda; a revalidação impede a execução stale.","“Aprovação não congela o mundo.”"],
+["M6","Segundo caso P9","Recibo de 3 min antes com outro ID; o Caso vira já processado/reconciliado sem reexecutar.",""],
+["M7","Momento sistêmico P2","Rajada de 30 Casos do mesmo parceiro; o sistema detecta o padrão e sugere HOLD/incidente em vez de 30 retries.",""],
+["M8","Fecho: benchmark honesto","Regras vs agente: empata no limpo; o agente muda o resultado em contradição, revalidação e correlação tardia.",""]]},
+lean:{note:"Versão enxuta de 4 min, proposta no JTBD.",f:[
+["1","Contraste limpo vs sujo","","",""],["2","P5+P8","","",""],["3","P9 iterativo","","",""],["4","Decisão estruturada","","",""],["5","Revalidação P3","","",""],["6","Benchmark + rajada P2","numa só tela","",""]]},
+final:{note:"O que sobrevive ao Backcasting. A rajada P2 vira flash de 15 s (?).",f:[
+["1","Contraste","","",""],["2","P5+P8","","",""],["3","P9","","",""],["4","Decisão estruturada","","",""],["5","Revalidação P3","","",""],["6","Benchmark","","",""],["flash","Rajada P2","flash de 15 s","","15s ?"]]}};
+function showR(k){
+  var r=REEL[k];
+  $$(".reel-tabs button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.r===k)});
+  $("#frames").innerHTML=r.f.map(function(f){return '<div class="frame"><div class="mk"><span>'+esc(f[0])+'</span><span>'+esc(f[4]||"")+'</span></div><div class="ft">'+esc(f[1])+'</div>'+(f[2]?'<div class="fd">'+esc(f[2])+'</div>':"")+(f[3]?'<div class="fq">'+esc(f[3])+'</div>':"")+'</div>'}).join("");
+  $("#reelnote").innerHTML=q(r.note)+" "+r.f.length+" quadros em 4:00.";
+  $("#clockarc").style.strokeDashoffset=String(119.4*(1-Math.min(1,r.f.length/8)));
+}
+$$(".reel-tabs button").forEach(function(b){b.addEventListener("click",function(){showR(b.dataset.r)})});
+showR("full");
+
+/* ---------- live countdown ---------- */
+var now=new Date();now.setHours(0,0,0,0);
+$$(".ms").forEach(function(m){
+  var d=new Date(m.dataset.date+"T00:00:00"),diff=Math.round((d-now)/864e5),el=$(".live",m);
+  el.textContent=diff>0?"hoje: faltam "+diff+"d":(diff===0?"é hoje":"passou há "+(-diff)+"d");
+});
+
+/* ---------- receipts ---------- */
+var R=[
+["1, 2","ok","Diagnóstico separado (D5), scope explícito e entidade Incidente/Lote são uma só ideia: a saída do agente é um diagnóstico estruturado e o catálogo de 4 ações continua fechado. Isso resolve a tensão P2/P4 sem abrir o catálogo."],
+["1, 6","ok","O diferencial do agente (lacuna 1) mora no simulador, não no agente. A frente de Henry (simulador/fixtures/benchmark) vira caminho crítico da tese, e os cenários sujos devem ser contrato definido junto com a frente IRIS desde 16–25/10."],
+["1, 3","ok","O dossiê de revisão (P13) é a vitória mais barata do mundo sujo: transforma o fail-safe REQUEST_REVIEW em feature de valor, funciona mesmo quando o agente não decide, e a qualidade do handoff pode virar métrica do benchmark."],
+["3, 4","ok","A revalidação pré-execução (P3) já estava nos controles obrigatórios da proposta (aprovação da versão exata + revalidação). O momento “aprovação não congela o mundo” sai quase de graça dos controles herdados do SentaiTask."],
+["6","risco","A menor prova de 25/10 só exercita o caminho limpo. Se possível, a ferramenta consultada na prova já devolve um erro mentiroso (P5), validando a tese do mundo sujo 4 dias antes de 29/10."],
+["1, 5","risco","Placar 4/5 vs 2/5 com um caso por cenário é anedota. O benchmark precisa de várias variantes por família de falha (a própria proposta pede separar por famílias, parceiros e padrões)."],
+["2, 3","ok","Confiança ganha papel concreto como roteador: abaixo de um limiar, o Caso vai para ReviewRequired. Isso responde “por que persistir confiança” com um validador determinístico."]];
+$("#receipts").innerHTML=R.map(function(r,i){
+  var risk=r[1]==="risco";
+  return '<div class="rcpt'+(risk?" risk":"")+'"><div class="hdr"><span>RCPT-'+String(i+1).padStart(2,"0")+'</span><b>'+(risk?"⚠ RISCO":"✓ SÍNTESE")+'</b></div>'+esc(r[2])+
+  '<div class="gl">'+r[0].split(", ").map(function(n){return '<span class="chip">lacuna '+n+'</span>'}).join("")+'</div></div>';
+}).join("");
+
+/* ---------- pending ---------- */
+var PEND=[
+["Critério de Caso novo vs mesmo Caso","D3 · síntese final"],
+["Formato (e necessidade) da confiança","D4 · síntese final"],
+["Estados Failed / Cancelled / ResolvedByPriorReceipt","D6 · stress test P3 e P9"],
+["Quem avalia, critérios e pesos do edital (júri vs votação)","JTBD · verificar no edital"],
+["P1 como variação embutida no freeze de 07/11","Backcasting"],
+["Latências p50/p95 e custo por Caso","NFRs marcados com ?"],
+["Rajada P2 como flash de 15 s na demo final","Backcasting"]];
+$("#pending").innerHTML=PEND.map(function(p){return '<li><span class="q">?</span><span>'+esc(p[0])+'<span class="src">'+esc(p[1])+'</span></span></li>'}).join("");
+
+/* ---------- gap rail: scroll-driven ---------- */
+var gapsEl={};$$(".gap").forEach(function(g){gapsEl[g.dataset.g]=g});
+var secs=$$("[data-gaps]");
+function onScroll(){
+  var mid=window.innerHeight*0.4,live=[],closed={};
+  secs.forEach(function(s){
+    var r=s.getBoundingClientRect(),gs=s.dataset.gaps?s.dataset.gaps.split(","):[];
+    if(r.top<mid){gs.forEach(function(g){closed[g]=1})}
+    if(r.top<mid&&r.bottom>mid)live=gs;
+  });
+  Object.keys(gapsEl).forEach(function(k){
+    gapsEl[k].classList.toggle("closed",!!closed[k]&&live.indexOf(k)<0);
+    gapsEl[k].classList.toggle("live",live.indexOf(k)>=0);
+  });
+}
+window.addEventListener("scroll",onScroll,{passive:true});window.addEventListener("resize",onScroll);onScroll();
+})();
+</script>
+</body>
+</html>
