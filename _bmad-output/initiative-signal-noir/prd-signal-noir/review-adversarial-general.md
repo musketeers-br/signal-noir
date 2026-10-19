@@ -1,6 +1,6 @@
 # Revisão adversarial: PRD Sentai Nexus
 
-Data: 2026-10-18. Escopo: `prd-sentai-nexus.md` e `addendum.md`, com `research-edital.md` como referência de regras. O PRD não foi editado.
+Data: 2026-10-18. Escopo: `prd-signal-noir.md` e `addendum.md`, com `research-edital.md` como referência de regras. O PRD não foi editado.
 
 ## Veredito
 

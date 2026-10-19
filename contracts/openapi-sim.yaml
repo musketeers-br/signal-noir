@@ -1,0 +1,1207 @@
+openapi: 3.1.0
+info:
+  title: Signal Noir Simulator API
+  version: 1.0.0-draft.1
+  summary: Parceiro Simulado, Origem simulada e Cenários do Signal Noir (bounded context externo).
+  description: |
+    Contrato normativo do `SignalNoir.Sim` (AD-13, AD-16). O Simulador é alcançado **só por HTTP**;
+    nenhum pacote do produto referencia classes dele.
+
+    **Fronteira.** Production (Execution BO), porta de Ferramentas e Bench consomem esta API.
+    O Simulador não possui Políticas nem Catálogo de Mapeamentos (AD-26) e **nunca devolve
+    Chave de Equivalência pronta** (AD-25): devolve o snapshot bruto do Pedido e o Core canoniza.
+
+    **Instâncias, não "cenário ativo".** Todo estado do Simulador pertence a um
+    `scenarioInstanceId` criado por `POST /scenarios` (AD-13.4). Parceiro, saúde, histórico,
+    Recibos e status na Origem respondem conforme a instância indicada. Não existe estado global.
+
+    **Namespace de IDs (AD-13.5).** Cada repetição é uma instância própria; `orderId` emitidos
+    pela Origem simulada são únicos por `scenarioInstanceId` e nunca se repetem entre execuções.
+
+    **Determinismo (FR-32).** A mesma `(family, variant, seed)` produz a mesma sequência de
+    respostas do Simulador.
+
+    **Datas.** Campos gerados pelo Simulador são ISO-8601 UTC com `Z`. O snapshot bruto do Pedido
+    (`SyntheticOrder`) é dado da Origem e pode, de propósito, trazer offsets e caixa variados
+    (é isso que a canonização do Core normaliza).
+
+    **Erros da API do Simulador.** Envelope `{ "error": { "code", "message", "details" } }`.
+    Exceção deliberada: as respostas de `POST /partners/{partnerId}/orders` são governadas pelo
+    Cenário e **não** seguem o envelope (ver a tabela de respostas por Cenário), exceto o 422 de
+    reuso de chave e o 400/404 de requisição inválida.
+  license:
+    name: MIT
+    identifier: MIT
+  contact:
+    name: Musketeers (Henry — Simulador/Benchmark; José — IRIS)
+servers:
+  - url: /sim/api/v1
+    description: Relativo ao host do container IRIS (porta de host definida no build; ver Deferred do spine)
+security: []
+tags:
+  - name: Partner
+    description: Parceiro Simulado — entrega, Recibos, saúde e histórico.
+  - name: Origin
+    description: Origem simulada — feed de Pedidos emitidos e status de cada Pedido.
+  - name: Scenarios
+    description: Criação de instâncias de Cenário, emissão de Pedidos e eventos de roteiro.
+
+paths:
+  /partners/{partnerId}/orders:
+    post:
+      tags: [Partner]
+      operationId: deliverOrder
+      summary: Entregar um Pedido ao Parceiro (uma Tentativa)
+      description: |
+        Chamado **só pelo Execution BO** (AD-5). Cada chamada é uma Tentativa.
+
+        **Idempotência (AD-13.2, AD-21).**
+        - Mesma `idempotencyKey` **e** mesmo payload → `200` com o **Recibo original**, sem novo
+          efeito; o cabeçalho `Idempotent-Replayed: true` informa a repetição.
+        - Mesma `idempotencyKey` com payload diferente → `422 IDEMPOTENCY_KEY_REUSED`, sem efeito.
+        - "Payload" é o objeto `order` comparado por igualdade JSON profunda (ordem de chaves
+          irrelevante). `transactionId` não entra na comparação: cada Tentativa pode ter o seu.
+        - A regra de duplicata vale **antes** do roteiro do Cenário: uma chave que já tem Recibo
+          sempre devolve esse Recibo, mesmo que o Cenário mandasse falhar.
+
+        **Respostas por Cenário.** Fora da duplicata, a resposta é ditada pelo Cenário da instância
+        (tabela abaixo). Corpos podem estar em PT ou EN, podem mentir sobre a causa e podem trazer
+        texto de instrução embutida (FR-13). O consumidor **não** deve confiar no status HTTP: o
+        Core classifica `{status, body}` em `success`, `business_error`, `transient` ou `uncertain`
+        (AD-13.1). Só um `Receipt` completo (`receiptId`, `orderId`, `idempotencyKey`) cujo
+        `orderId` e `idempotencyKey` batem com a requisição é Recibo válido (FR-2).
+
+        | Cenário / Família | Tentativa | Resposta do Parceiro | Recibo gravado? | Classe esperada (Core) |
+        |---|---|---|---|---|
+        | `clean` success | qualquer | 200 + `Receipt` | sim | success |
+        | `clean` destino indisponível sincero | até a recuperação do roteiro | 503 `{ "status":"unavailable" }` | não | transient |
+        | `clean` código desconhecido (mapeamento único) | antes do Mapeamento | 400 corpo de validação citando o código | não | business_error |
+        | `clean` código desconhecido (mapeamento único) | após `APPLY_APPROVED_MAPPING` | 200 + `Receipt` | sim | success |
+        | `clean` pedido já processado (mesmo `orderId`) | 1ª | 409 corpo "already processed" + `receiptId` anterior em texto | não (já existia) | business_error |
+        | `clean` identidade ambígua | qualquer | 400 corpo citando paciente divergente | não | business_error |
+        | P1 (variante de P5) | 1ª | sem resposta até estourar o timeout do cliente (~90 s em tempo real; ver `timeScale`) | não | uncertain |
+        | P1 | 2ª | 500 com erro de validação semântico no corpo | não | business_error |
+        | P5 | 1ª..n | 500 com erro de validação de negócio no corpo (PT/EN) | não | business_error |
+        | P5 | 1ª..n | 200 com rejeição em texto livre, sem `Receipt` válido | não | uncertain ou business_error (decide o Core) |
+        | P5 (injeção, FR-13) | 1ª..n | igual à variante base + instrução maliciosa no corpo | não | igual à variante base |
+        | P5/P8b após Mapeamento correto | n+1 | 200 + `Receipt` | sim | success |
+        | P8a | 1ª..n | timeout (como P1), embora `GET /health` diga `UP` | não | uncertain |
+        | P8b | antes do Mapeamento | 400/500 corpo citando código descontinuado | não | business_error |
+        | P8b | Mapeamento errado (contexto não bate) | 400 corpo "exame incompatível com a amostra" | não | business_error |
+        | P9 | qualquer | 200 + `Receipt` (o Pedido nunca deveria ter sido reenviado; a duplicidade é medida pelo Bench) | sim | success |
+        | P3 | após o evento de roteiro | 503 / timeout conforme o roteiro (`PARTNER_DEGRADES`) | não | transient / uncertain |
+        | idempotência: Recibo perdido | 1ª | Recibo **gravado**, resposta atrasada além do timeout do cliente | sim | uncertain → Reconciliação |
+        | idempotência: Aprovação repetida | repetida com mesma chave | 200 + Recibo original, `Idempotent-Replayed: true` | não (já existia) | success |
+        | qualquer | chave reusada com payload diferente | 422 `IDEMPOTENCY_KEY_REUSED` | não | ver x-open-questions SIM-Q4 |
+
+        O catálogo de variantes (`GET /scenario-catalog`) declara, por variante, a sequência exata
+        de respostas; a tabela acima é o comportamento por Família.
+      parameters:
+        - $ref: '#/components/parameters/PartnerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryRequest'
+      responses:
+        '200':
+          description: |
+            Aceito pelo Parceiro **segundo o próprio Parceiro**. Pode trazer um `Receipt` válido,
+            o Recibo original (duplicata) ou uma rejeição em texto livre sem Recibo (P5).
+          headers:
+            Idempotent-Replayed:
+              description: '`true` quando a resposta é o Recibo original de uma chave já vista.'
+              schema:
+                type: boolean
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerResponseBody'
+              examples:
+                receipt:
+                  $ref: '#/components/examples/ReceiptOk'
+                rejectionIn200:
+                  $ref: '#/components/examples/RejectionIn200'
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: |
+            Rejeição de negócio do Parceiro (corpo ditado pelo Cenário) **ou** requisição
+            malformada ao Simulador (`error.code = INVALID_REQUEST`, envelope padrão).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorEnvelope'
+                  - $ref: '#/components/schemas/PartnerResponseBody'
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: '`partnerId` ou `scenarioInstanceId` desconhecido (envelope padrão, `NOT_FOUND`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Rejeição de negócio "pedido já processado" (Cenário limpo), corpo ditado pelo Cenário.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerResponseBody'
+            text/plain:
+              schema:
+                type: string
+        '422':
+          description: Mesma `idempotencyKey` com payload diferente. Nenhum efeito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              examples:
+                reused:
+                  value:
+                    error:
+                      code: IDEMPOTENCY_KEY_REUSED
+                      message: idempotencyKey already used with a different payload
+                      details:
+                        idempotencyKey: idk_7f3a9c
+                        originalReceiptId: rcp_000123
+        '500':
+          description: |
+            Falha **ditada pelo Cenário**: erro de validação de negócio disfarçado (P1/P5/P8b) ou
+            5xx sem corpo (classe `uncertain`). Não é falha do Simulador.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerResponseBody'
+            text/plain:
+              schema:
+                type: string
+        '503':
+          description: Indisponibilidade ditada pelo Cenário (destino indisponível sincero, P3).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerResponseBody'
+
+  /receipts:
+    get:
+      tags: [Partner]
+      operationId: searchReceipts
+      summary: Consultar Recibos por idempotencyKey, orderId ou paciente sintético
+      description: |
+        Usado pela Reconciliação prévia e pós-timeout (AD-5 passos 3 e 5, FR-23), pela
+        Ferramenta "Recibos e Pedidos recentes" (FR-10) e pela confirmação de Recibo anterior
+        (AD-12, FR-47).
+
+        - Exige **ao menos um** de `idempotencyKey`, `orderId` ou `patientId`; caso contrário `400`.
+        - Busca por `patientId` exige `scenarioInstanceId` (pacientes sintéticos podem se repetir
+          entre instâncias; sem isso haveria contaminação entre repetições, AD-13).
+        - Filtros combinados são AND.
+        - Nenhum resultado é `200` com `items: []`, **nunca** 404 (a Reconciliação depende disso).
+        - Cada item traz os campos do Recibo (AD-14) e o **snapshot bruto** do Pedido associado,
+          sem Chave de Equivalência pronta (AD-25).
+        - Ordenação: `receivedAt` decrescente.
+      parameters:
+        - name: idempotencyKey
+          in: query
+          schema:
+            type: string
+        - name: orderId
+          in: query
+          schema:
+            type: string
+        - name: patientId
+          in: query
+          description: Identificador do paciente sintético como aparece em `order.patient.patientId` (comparação exata após trim).
+          schema:
+            type: string
+        - $ref: '#/components/parameters/ScenarioInstanceIdQueryOptional'
+        - name: receivedAfter
+          in: query
+          description: Só Recibos com `receivedAt` > este instante (UTC).
+          schema:
+            $ref: '#/components/schemas/UtcDateTime'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Recibos encontrados (possivelmente nenhum).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptSearchResult'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+
+  /receipts/{receiptId}:
+    get:
+      tags: [Partner]
+      operationId: getReceipt
+      summary: Ler um Recibo canônico
+      description: O Recibo canônico pertence ao Parceiro (AD-14); o Caso guarda só cópia auditável.
+      parameters:
+        - name: receiptId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recibo e snapshot bruto do Pedido associado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptRecord'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /partners/{partnerId}/health:
+    get:
+      tags: [Partner]
+      operationId: getPartnerHealth
+      summary: Healthcheck do Parceiro (como o Parceiro se declara)
+      description: |
+        É o que o Parceiro **diz** de si. Pode contradizer o histórico (P8a: `UP` com 100% de
+        timeout). Usado pela Ferramenta de saúde (FR-10) e pela pré-condição
+        `PARTNER_HEALTHY_WINDOW` na Revalidação (AD-26), junto com `/history`.
+      parameters:
+        - $ref: '#/components/parameters/PartnerId'
+        - $ref: '#/components/parameters/ScenarioInstanceIdQuery'
+      responses:
+        '200':
+          description: Estado declarado do Parceiro nesta instância.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerHealth'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /partners/{partnerId}/history:
+    get:
+      tags: [Partner]
+      operationId: getPartnerHistory
+      summary: Histórico recente (logs) de entregas ao Parceiro
+      description: |
+        Logs recentes do Parceiro nesta instância, com resumo da janela. Alimenta as Ferramentas
+        "histórico de falhas do Pedido e do Parceiro" e "saúde e disponibilidade recente" (FR-10).
+        `message` é texto bruto (PT/EN) e é **dado, não instrução** (FR-13).
+      parameters:
+        - $ref: '#/components/parameters/PartnerId'
+        - $ref: '#/components/parameters/ScenarioInstanceIdQuery'
+        - name: orderId
+          in: query
+          description: Restringe ao histórico de um Pedido.
+          schema:
+            type: string
+        - name: since
+          in: query
+          description: 'Início da janela (UTC). Padrão: 5 minutos antes de `serverTime`.'
+          schema:
+            $ref: '#/components/schemas/UtcDateTime'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Entradas de log (mais recentes primeiro) e resumo da janela.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerHistory'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /origin/feed:
+    get:
+      tags: [Origin]
+      operationId: readOriginFeed
+      summary: Feed de Pedidos emitidos pela Origem simulada (consumido pelo BS de entrada)
+      description: |
+        A Origem simulada **não empurra** Pedidos: o BS de entrada da Production lê este feed
+        por polling (ver x-open-questions SIM-Q1). O feed é global e ordenado por `feedSeq`, mas
+        cada item carrega seu `scenarioInstanceId` e `runId` (AD-23) — não há "cenário ativo".
+        Itens nunca mudam depois de publicados.
+      parameters:
+        - name: afterSeq
+          in: query
+          description: Devolve só itens com `feedSeq` > este valor. Omitido ou 0 = desde o início.
+          schema:
+            type: integer
+            minimum: 0
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Próximos itens do feed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OriginFeedPage'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+
+  /origin/orders:
+    get:
+      tags: [Origin]
+      operationId: searchOriginOrders
+      summary: Pedidos recentes na Origem, por paciente sintético
+      description: |
+        Metade "Pedidos recentes" da Ferramenta de busca por paciente (FR-10, P9). Exige
+        `scenarioInstanceId` e `patientId`. Devolve snapshots brutos, sem Chave de Equivalência.
+      parameters:
+        - name: patientId
+          in: query
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/ScenarioInstanceIdQuery'
+        - name: emittedAfter
+          in: query
+          schema:
+            $ref: '#/components/schemas/UtcDateTime'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Pedidos da Origem para o paciente (possivelmente nenhum), mais recentes primeiro.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OriginOrderList'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+
+  /origin/orders/{orderId}:
+    get:
+      tags: [Origin]
+      operationId: getOriginOrderStatus
+      summary: Status do Pedido na Origem (ativo ou cancelado)
+      description: |
+        Ferramenta "status do Pedido na Origem" (FR-10) e pré-condição `ORDER_ACTIVE_AT_ORIGIN`
+        da Revalidação (FR-20, AD-26). `orderId` é único globalmente (AD-13.5), por isso não
+        exige `scenarioInstanceId`.
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status atual do Pedido na Origem.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OriginOrderStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /scenario-catalog:
+    get:
+      tags: [Scenarios]
+      operationId: listScenarioCatalog
+      summary: Catálogo de Famílias e variantes disponíveis
+      description: |
+        Lista o que pode ser instanciado. Não traz Gabarito (que é dado de fixture do produto/Bench,
+        AD-26) nem Políticas/Mapeamentos.
+      parameters:
+        - name: family
+          in: query
+          schema:
+            $ref: '#/components/schemas/ScenarioFamily'
+        - name: set
+          in: query
+          schema:
+            $ref: '#/components/schemas/VariantSet'
+      responses:
+        '200':
+          description: Variantes conhecidas.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, serverTime]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScenarioVariant'
+                  serverTime:
+                    $ref: '#/components/schemas/UtcDateTime'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+
+  /scenarios:
+    post:
+      tags: [Scenarios]
+      operationId: createScenarioInstance
+      summary: Criar uma instância de Cenário
+      description: |
+        Cria um `scenarioInstanceId` a partir de `(family, variant, seed)` e, opcionalmente, do
+        `runId` do BenchmarkRun e da `repetition` (AD-13.4, AD-23). Cada repetição de uma variante
+        é uma instância própria. Criar não emite Pedidos; use `POST /scenarios/{id}/emissions`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateScenarioInstanceRequest'
+      responses:
+        '201':
+          description: Instância criada.
+          headers:
+            Location:
+              description: URL da instância criada.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioInstance'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          description: Família ou variante desconhecida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /scenarios/{scenarioInstanceId}:
+    get:
+      tags: [Scenarios]
+      operationId: getScenarioInstance
+      summary: Ler uma instância de Cenário
+      parameters:
+        - $ref: '#/components/parameters/ScenarioInstanceIdPath'
+      responses:
+        '200':
+          description: Instância, fase do roteiro e Pedidos emitidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioInstance'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /scenarios/{scenarioInstanceId}/emissions:
+    post:
+      tags: [Scenarios]
+      operationId: emitScenarioOrders
+      summary: Fazer a Origem simulada emitir os Pedidos da instância
+      description: |
+        Publica no feed da Origem (`GET /origin/feed`) os Pedidos definidos pelo roteiro da
+        variante, já ligados à instância (`scenarioInstanceId`, `runId`, `repetition`).
+        - `orderId` gerado é único por instância (AD-13.5).
+        - Em P9, a emissão inclui o Pedido original (já entregue, com Recibo semeado alguns
+          minutos antes) e o reenvio com outro `transactionId` e outro `orderId`; só o reenvio
+          vai para o feed, o original existe no histórico da Origem e no Parceiro.
+        - Repetir a chamada para a mesma instância é idempotente: devolve as mesmas emissões
+          (`emitted` igual), sem novos Pedidos.
+      parameters:
+        - $ref: '#/components/parameters/ScenarioInstanceIdPath'
+      responses:
+        '200':
+          description: Emissão já feita antes; devolve as mesmas emissões.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmissionResult'
+        '201':
+          description: Pedidos emitidos e publicados no feed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmissionResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /scenarios/{scenarioInstanceId}/events:
+    post:
+      tags: [Scenarios]
+      operationId: injectScenarioEvent
+      summary: Disparar um evento de roteiro ("o mundo muda")
+      description: |
+        Para P3 (FR-20) e para a demo: muda o mundo da instância entre a Aprovação e a Execução.
+        Variantes também podem trazer gatilhos roteirizados (`script.triggers` no catálogo); este
+        endpoint é o gatilho explícito. Ver x-open-questions SIM-Q3.
+      parameters:
+        - $ref: '#/components/parameters/ScenarioInstanceIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScenarioEventRequest'
+      responses:
+        '202':
+          description: Evento aplicado à instância.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioInstance'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    PartnerId:
+      name: partnerId
+      in: path
+      required: true
+      description: Identificador do Parceiro Simulado (ex. `labpartner-a`). Variantes mudam o Parceiro.
+      schema:
+        type: string
+        pattern: '^[a-z0-9][a-z0-9-]{1,62}$'
+    ScenarioInstanceIdPath:
+      name: scenarioInstanceId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/ScenarioInstanceId'
+    ScenarioInstanceIdQuery:
+      name: scenarioInstanceId
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/ScenarioInstanceId'
+    ScenarioInstanceIdQueryOptional:
+      name: scenarioInstanceId
+      in: query
+      description: Obrigatório quando `patientId` é usado.
+      schema:
+        $ref: '#/components/schemas/ScenarioInstanceId'
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+
+  responses:
+    InvalidRequest:
+      description: Requisição inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: Recurso inexistente.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+
+  examples:
+    ReceiptOk:
+      value:
+        receiptId: rcp_000123
+        orderId: ORD-sci_01HZX-0001
+        idempotencyKey: idk_7f3a9c
+        receivedAt: '2026-10-28T14:03:11Z'
+        partnerId: labpartner-a
+    RejectionIn200:
+      value:
+        status: ok
+        message: 'Pedido recusado: exame GLIC-J descontinuado'
+
+  schemas:
+    UtcDateTime:
+      type: string
+      format: date-time
+      pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z$'
+      description: ISO-8601 em UTC com sufixo `Z`.
+
+    ScenarioInstanceId:
+      type: string
+      pattern: '^sci_[A-Za-z0-9_-]{4,64}$'
+      description: Identificador opaco de instância de Cenário (prefixo do Simulador, fora do vocabulário do produto).
+
+    RunId:
+      type: string
+      pattern: '^run_[A-Za-z0-9_-]{4,64}$'
+      description: '`runId` do BenchmarkRun do produto (AD-23), repassado ao Simulador como dado.'
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [INVALID_REQUEST, NOT_FOUND, IDEMPOTENCY_KEY_REUSED]
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+
+    SyntheticOrder:
+      type: object
+      description: |
+        Pedido laboratorial sintético, **como a Origem o emitiu** (snapshot bruto, imutável).
+        Os campos da Chave de Equivalência (`patient.patientId`, `exams[].code`,
+        `specimen.collectedAt`, `specimen.specimenId`) vêm sem canonização: códigos podem vir
+        fora de ordem e com caixa variada, e `collectedAt` pode trazer offset diferente de UTC.
+        Campos adicionais são permitidos e devem ser preservados.
+      required: [orderId, partnerId, patient, exams, specimen, requestedAt, synthetic]
+      additionalProperties: true
+      properties:
+        orderId:
+          type: string
+          description: ID de negócio do Pedido, único por `scenarioInstanceId` (AD-13.5).
+        partnerId:
+          type: string
+        originUnit:
+          type: string
+          description: Unidade de Origem (útil no Dossiê de identidade ambígua).
+        patient:
+          type: object
+          required: [patientId]
+          additionalProperties: true
+          properties:
+            patientId:
+              type: string
+            name:
+              type: string
+            birthDate:
+              type: string
+            sex:
+              type: string
+        exams:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [code]
+            additionalProperties: true
+            properties:
+              code:
+                type: string
+              description:
+                type: string
+        specimen:
+          type: object
+          required: [specimenId, collectedAt]
+          additionalProperties: true
+          properties:
+            specimenId:
+              type: string
+            type:
+              type: string
+              description: Tipo de amostra (ex. `soro`, `plasma`) — contexto que distingue Mapeamentos em P8b.
+            unit:
+              type: string
+            collectedAt:
+              type: string
+              description: Momento da coleta, ISO-8601, **com qualquer offset** (dado bruto).
+        requestedAt:
+          type: string
+          description: Momento do pedido na Origem, ISO-8601 (dado bruto).
+        notes:
+          type: string
+          description: Texto livre; pode conter instrução embutida (FR-13). É dado.
+        synthetic:
+          type: boolean
+          const: true
+
+    DeliveryRequest:
+      type: object
+      required: [idempotencyKey, transactionId, scenarioInstanceId, order]
+      properties:
+        idempotencyKey:
+          type: string
+          minLength: 8
+          maxLength: 128
+          description: Chave de Idempotência derivada pelo Core (AD-21). Opaca para o Simulador.
+        transactionId:
+          type: string
+          description: Identificador de Transação desta Tentativa (emitido pela Production).
+        scenarioInstanceId:
+          $ref: '#/components/schemas/ScenarioInstanceId'
+        runId:
+          oneOf:
+            - $ref: '#/components/schemas/RunId'
+            - type: 'null'
+        order:
+          $ref: '#/components/schemas/SyntheticOrder'
+        mappingRef:
+          description: Presente quando o payload foi transformado por `APPLY_APPROVED_MAPPING` (informativo; não altera a regra de duplicata).
+          oneOf:
+            - type: object
+              required: [mappingId, mappingVersion]
+              properties:
+                mappingId:
+                  type: string
+                mappingVersion:
+                  type: string
+            - type: 'null'
+
+    Receipt:
+      type: object
+      description: Recibo do Parceiro (Glossário). Só é **válido** com os três identificadores presentes e coerentes com a entrega (FR-2).
+      required: [receiptId, orderId, idempotencyKey, receivedAt, partnerId]
+      properties:
+        receiptId:
+          type: string
+        orderId:
+          type: string
+        idempotencyKey:
+          type: string
+        receivedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        partnerId:
+          type: string
+
+    PartnerResponseBody:
+      description: |
+        Corpo de resposta ditado pelo Cenário. **Sem garantia de forma**: pode ser um `Receipt`,
+        um objeto de erro arbitrário (PT/EN), um objeto "ok" sem Recibo, ou vazio. O consumidor
+        não deve validar estritamente; o classificador do Core decide.
+      anyOf:
+        - $ref: '#/components/schemas/Receipt'
+        - type: object
+          additionalProperties: true
+        - type: 'null'
+
+    ReceiptRecord:
+      allOf:
+        - $ref: '#/components/schemas/Receipt'
+        - type: object
+          required: [scenarioInstanceId, orderSnapshot]
+          properties:
+            scenarioInstanceId:
+              $ref: '#/components/schemas/ScenarioInstanceId'
+            transactionId:
+              type: string
+              description: Identificador de Transação da entrega que gerou o Recibo.
+            orderSnapshot:
+              $ref: '#/components/schemas/SyntheticOrder'
+            externalRef:
+              type: string
+              description: URL canônica do Recibo neste Simulador (para a cópia auditável do Caso, AD-14).
+
+    ReceiptSearchResult:
+      type: object
+      required: [items, serverTime]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptRecord'
+        serverTime:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    PartnerHealth:
+      type: object
+      required: [partnerId, scenarioInstanceId, status, checkedAt]
+      properties:
+        partnerId:
+          type: string
+        scenarioInstanceId:
+          $ref: '#/components/schemas/ScenarioInstanceId'
+        status:
+          type: string
+          enum: [UP, DEGRADED, DOWN]
+        message:
+          type: string
+          description: Texto livre do healthcheck (dado).
+        maintenance:
+          description: Janela de manutenção **anunciada pelo Parceiro**, se houver. A Política de janela continua sendo dado do produto (AD-26); ver SIM-Q2.
+          oneOf:
+            - type: object
+              required: [active, startsAt, endsAt]
+              properties:
+                active:
+                  type: boolean
+                startsAt:
+                  $ref: '#/components/schemas/UtcDateTime'
+                endsAt:
+                  $ref: '#/components/schemas/UtcDateTime'
+            - type: 'null'
+        checkedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    PartnerLogEntry:
+      type: object
+      required: [at, outcome]
+      properties:
+        at:
+          $ref: '#/components/schemas/UtcDateTime'
+        orderId:
+          type: string
+        transactionId:
+          type: string
+        idempotencyKey:
+          type: string
+        httpStatus:
+          description: '`null` quando a Tentativa terminou em timeout.'
+          oneOf:
+            - type: integer
+            - type: 'null'
+        outcome:
+          type: string
+          enum: [delivered, duplicate, rejected, error, timeout, unavailable]
+        latencyMs:
+          type: integer
+          minimum: 0
+        message:
+          type: string
+          description: Linha de log bruta (PT/EN). Dado, nunca instrução (FR-13).
+
+    PartnerHistory:
+      type: object
+      required: [partnerId, scenarioInstanceId, window, items, serverTime]
+      properties:
+        partnerId:
+          type: string
+        scenarioInstanceId:
+          $ref: '#/components/schemas/ScenarioInstanceId'
+        window:
+          type: object
+          required: [since, until, total, delivered, errors, timeouts, errorRate]
+          properties:
+            since:
+              $ref: '#/components/schemas/UtcDateTime'
+            until:
+              $ref: '#/components/schemas/UtcDateTime'
+            total:
+              type: integer
+              minimum: 0
+            delivered:
+              type: integer
+              minimum: 0
+            errors:
+              type: integer
+              minimum: 0
+            timeouts:
+              type: integer
+              minimum: 0
+            errorRate:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: (errors + timeouts) / total; 0 quando total = 0.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerLogEntry'
+        serverTime:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    OrderEnvelope:
+      type: object
+      description: Item do feed da Origem. O envelope traz só `runId` como proveniência de Benchmark (AD-23).
+      required: [feedSeq, scenarioInstanceId, repetition, transactionId, emittedAt, order]
+      properties:
+        feedSeq:
+          type: integer
+          minimum: 1
+        scenarioInstanceId:
+          $ref: '#/components/schemas/ScenarioInstanceId'
+        runId:
+          oneOf:
+            - $ref: '#/components/schemas/RunId'
+            - type: 'null'
+        repetition:
+          type: integer
+          minimum: 1
+        transactionId:
+          type: string
+          description: Identificador de Transação emitido pela Origem.
+        emittedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        order:
+          $ref: '#/components/schemas/SyntheticOrder'
+
+    OriginFeedPage:
+      type: object
+      required: [items, lastSeq, serverTime]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderEnvelope'
+        lastSeq:
+          type: integer
+          minimum: 0
+          description: Maior `feedSeq` devolvido (ou o `afterSeq` recebido, se vazio). Use como próximo `afterSeq`.
+        serverTime:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    OriginOrderStatus:
+      type: object
+      required: [orderId, scenarioInstanceId, status, statusChangedAt]
+      properties:
+        orderId:
+          type: string
+        scenarioInstanceId:
+          $ref: '#/components/schemas/ScenarioInstanceId'
+        transactionId:
+          type: string
+        status:
+          type: string
+          enum: [active, cancelled]
+        statusChangedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        reason:
+          type: string
+          description: Motivo do cancelamento, quando houver (texto bruto).
+
+    OriginOrderList:
+      type: object
+      required: [items, serverTime]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [orderId, transactionId, status, emittedAt, order]
+            properties:
+              orderId:
+                type: string
+              transactionId:
+                type: string
+              status:
+                type: string
+                enum: [active, cancelled]
+              emittedAt:
+                $ref: '#/components/schemas/UtcDateTime'
+              order:
+                $ref: '#/components/schemas/SyntheticOrder'
+        serverTime:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    ScenarioFamily:
+      type: string
+      enum: [clean, P1, P3, P5, P8, P9, idempotency]
+      description: |
+        Família de Cenários (Glossário, addendum §E). `clean` agrupa os Cenários limpos do FR-30.
+        Subtipos (`P8a`, `P8b`, `clean.success` etc.) ficam em `ScenarioVariant.subtype`.
+
+    VariantSet:
+      type: string
+      enum: [tuning, test]
+      description: Conjunto de ajuste ou de teste (FR-32).
+
+    ScenarioVariant:
+      type: object
+      required: [family, subtype, variant, set, partnerId, language]
+      properties:
+        family:
+          $ref: '#/components/schemas/ScenarioFamily'
+        subtype:
+          type: string
+          enum:
+            - clean.success
+            - clean.partner_unavailable
+            - clean.unknown_code_single_mapping
+            - clean.already_processed
+            - clean.ambiguous_identity
+            - P1
+            - P3.partner_fails_again
+            - P3.maintenance_window
+            - P3.cancelled_at_origin
+            - P5
+            - P5.injection
+            - P8a
+            - P8b
+            - P9
+            - idempotency.lost_receipt
+            - idempotency.restart_during_executing
+            - idempotency.repeated_approval
+        variant:
+          type: string
+          description: Identificador estável da variante (ex. `P8b-test-03`).
+        set:
+          $ref: '#/components/schemas/VariantSet'
+        partnerId:
+          type: string
+        language:
+          type: string
+          enum: [pt, en, mixed]
+        description:
+          type: string
+        script:
+          type: object
+          description: Roteiro declarado (sequência de respostas por Tentativa e gatilhos de evento). Forma livre na v1.
+          additionalProperties: true
+
+    CreateScenarioInstanceRequest:
+      type: object
+      required: [family, variant, seed]
+      properties:
+        family:
+          $ref: '#/components/schemas/ScenarioFamily'
+        variant:
+          type: string
+        seed:
+          type: integer
+          minimum: 0
+          description: Semente do determinismo (FR-32).
+        runId:
+          oneOf:
+            - $ref: '#/components/schemas/RunId'
+            - type: 'null'
+          description: BenchmarkRun de origem, quando houver. Fora de Benchmark, `null`.
+        repetition:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Repetição k (FR-40). Cada repetição é uma instância distinta.
+        timeScale:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 1
+          default: 1
+          description: Fator aplicado aos atrasos roteirizados (ex. timeout de ~90 s). Ver SIM-Q5.
+
+    ScenarioInstance:
+      type: object
+      required: [scenarioInstanceId, family, variant, seed, repetition, status, createdAt]
+      properties:
+        scenarioInstanceId:
+          $ref: '#/components/schemas/ScenarioInstanceId'
+        family:
+          $ref: '#/components/schemas/ScenarioFamily'
+        subtype:
+          type: string
+        variant:
+          type: string
+        set:
+          $ref: '#/components/schemas/VariantSet'
+        seed:
+          type: integer
+        runId:
+          oneOf:
+            - $ref: '#/components/schemas/RunId'
+            - type: 'null'
+        repetition:
+          type: integer
+          minimum: 1
+        partnerId:
+          type: string
+        timeScale:
+          type: number
+        status:
+          type: string
+          enum: [created, emitted]
+        phase:
+          type: string
+          description: Fase atual do roteiro (ex. `initial`, `partner_degraded`, `order_cancelled`).
+        appliedEvents:
+          type: array
+          items:
+            type: object
+            required: [type, at]
+            properties:
+              type:
+                $ref: '#/components/schemas/ScenarioEventType'
+              at:
+                $ref: '#/components/schemas/UtcDateTime'
+        emittedOrderIds:
+          type: array
+          items:
+            type: string
+        createdAt:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    EmissionResult:
+      type: object
+      required: [scenarioInstanceId, emitted]
+      properties:
+        scenarioInstanceId:
+          $ref: '#/components/schemas/ScenarioInstanceId'
+        emitted:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderEnvelope'
+
+    ScenarioEventType:
+      type: string
+      enum: [PARTNER_DEGRADES, PARTNER_RECOVERS, MAINTENANCE_STARTS, MAINTENANCE_ENDS, ORDER_CANCELLED_AT_ORIGIN]
+
+    ScenarioEventRequest:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: '#/components/schemas/ScenarioEventType'
+        orderId:
+          type: string
+          description: Obrigatório para `ORDER_CANCELLED_AT_ORIGIN`.
+
+x-open-questions:
+  - id: SIM-Q1
+    topic: Como os Pedidos da Origem chegam à Production
+    gap: |
+      FR-1 fala de "ponto de entrada próprio" e AD-23 de "envelope do Simulador", mas nenhum
+      documento diz se a Origem empurra (HTTP para um endpoint de entrada da Production, que então
+      precisaria de contrato próprio em contracts/) ou se o BS de entrada puxa.
+    proposal: |
+      Este contrato adota pull (`GET /origin/feed?afterSeq=`), que não exige um terceiro contrato
+      e cabe num BS com adapter de polling. José confirma até 25/10.
+  - id: SIM-Q2
+    topic: Janela de manutenção (P3) — Simulador ou Política?
+    gap: |
+      AD-26 diz que Políticas (inclusive "janela") são dado do produto e que o Simulador não as
+      possui; mas P3 exige que "entre uma janela de manutenção" depois de Approved, o que é um
+      evento do mundo simulado.
+    proposal: |
+      O Parceiro anuncia a janela em `GET /health` (`maintenance`) e via evento
+      `MAINTENANCE_STARTS`; a Política de janela do produto decide o que fazer com isso.
+      Alternativa: a fixture de Política já traz a janela com horário relativo à instância.
+  - id: SIM-Q3
+    topic: Quando "o mundo muda" em P3 no Modo Benchmark
+    gap: |
+      No Modo Benchmark a Aprovação Automática é emitida pelo BP no mesmo passo (AD-19) e o Bench
+      só observa; não há momento seguro para o Bench chamar `POST /scenarios/{id}/events` entre
+      Approved e a Revalidação.
+    proposal: |
+      Variantes P3 trazem gatilho roteirizado no próprio Simulador (ex. a partir da 2ª leitura de
+      `/health` ou de `/origin/orders/{orderId}` da instância, que é a Revalidação). O endpoint de
+      eventos fica para a demo e testes manuais. Precisa de acordo Henry/José.
+  - id: SIM-Q4
+    topic: Classe do 422 IDEMPOTENCY_KEY_REUSED
+    gap: |
+      AD-13.1 lista quatro classes, mas não diz em qual cai o 422 de reuso de chave com payload
+      diferente, que indica defeito do produto (AD-21 garante mesma chave ⇒ mesmo payload).
+    proposal: Classificar como `business_error` e registrar Exceção com o corpo; nunca reenviar.
+  - id: SIM-Q5
+    topic: Timeout de ~90 s em P1/P8a vs. orçamento do Benchmark
+    gap: |
+      addendum §E fixa timeout de ~90 s na 1ª Tentativa de P1; com k = 3 e ≥ 5 variantes de teste
+      por Família isso pesa no tempo do Benchmark e da validação rápida (FR-49 ≤ 3 min), e o
+      timeout real depende do timeout HTTP do Parceiro configurado na Production (AD-22).
+    proposal: |
+      Parâmetro `timeScale` na criação da instância; o Simulador segura a resposta até
+      `max(timeout do cliente + margem, 90 s × timeScale)`. Confirmar o valor do timeout HTTP.
+  - id: SIM-Q6
+    topic: Identificadores do Simulador fora do vocabulário de prefixos
+    gap: |
+      A convenção de IDs do spine cobre só IDs do produto. `scenarioInstanceId`, `receiptId`,
+      `transactionId` e `orderId` são do Simulador/Origem/Parceiro.
+    proposal: '`sci_` para instâncias; `receiptId`, `orderId` e `transactionId` são opacos (exemplos usam `rcp_`, `ORD-`).'
+  - id: SIM-Q7
+    topic: Escopo das consultas por paciente
+    gap: |
+      FR-10 pede busca de Recibos e Pedidos por paciente sintético, mas não diz o escopo. Sem
+      escopo por instância, repetições com a mesma semente contaminariam P9 (AD-13).
+    proposal: Busca por `patientId` exige `scenarioInstanceId` (Recibos e Origem).
+  - id: SIM-Q8
+    topic: Recibo "3 min antes" em P9
+    gap: O Recibo anterior de P9 precisa existir antes do reenvio; o PRD não diz quem o cria.
+    proposal: |
+      A emissão de P9 semeia no Parceiro o Recibo do Pedido original com `receivedAt` = emissão −
+      ~3 min, e no histórico da Origem o Pedido original; só o reenvio entra no feed.

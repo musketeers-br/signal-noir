@@ -1,10 +1,10 @@
-# Addendum: Sentai Nexus PRD
+# Addendum: Signal Noir PRD
 
 Este addendum reúne material técnico e de apoio para a arquitetura, a UX e a implementação, que não cabe no corpo do PRD. Os termos seguem o Glossário do PRD (§3).
 
 ## A. Mapeamento conceitual para componentes IRIS (proposta de 16/10)
 
-Os nomes são conceituais e ficam no namespace `Nexus`. As interfaces só devem ser consolidadas depois da prova do build 154.
+Os nomes são conceituais e ficam no pacote ObjectScript `SignalNoir`. As interfaces só devem ser consolidadas depois da prova do build 154.
 
 | Camada | Responsabilidade | FRs |
 |---|---|---|
@@ -24,10 +24,10 @@ Os nomes são conceituais e ficam no namespace `Nexus`. As interfaces só devem 
 
 ## B. Padrões reaproveitados do SentaiTask (Q-2 resolvida: padrões reescritos a partir de 26/10, sem copiar código)
 
-| SentaiTask | Uso no Nexus | Adaptação |
+| SentaiTask | Uso no Signal Noir | Adaptação |
 |---|---|---|
 | SvelteKit / Svelte Flow | Estrutura visual e canvas | Casos, decisões, evidências, aprovação |
-| REST + SSE | Atualização da interface | Contratos próprios do domínio Nexus |
+| REST + SSE | Atualização da interface | Contratos próprios do domínio Signal Noir |
 | FlowValidator | Validação centralizada | Regras de Propostas e Ações |
 | StepType | Catálogo compilado | Catálogo fechado de Ações |
 | RunNarrator | Linha do tempo de fatos | Registro obrigatório de eventos críticos |

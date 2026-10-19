@@ -1,16 +1,15 @@
 ---
-title: Sentai Nexus
+title: 'Signal Noir: AI Exception Resolution for Interoperability'
 status: final
 created: 2026-10-18
 updated: 2026-10-18
 ---
 
-# PRD: Sentai Nexus
-*Nome de trabalho. Confirmar.*
+# PRD: Signal Noir — AI Exception Resolution for Interoperability
 
 ## 0. Propósito do documento
 
-Este PRD é para o time Musketeers (José Roberto, Henrique e Henry). Também serve de entrada para os próximos passos: requisitos da iniciativa (Sofia / `bmad-agent-po`), arquitetura (`bmad-architecture`) e UX (`bmad-ux`). Ele se apoia em três fontes:
+Este PRD é para o time Musketeers (José Roberto, Henrique e Henry). Também serve de entrada para os próximos passos: requisitos da iniciativa (Sofia / `bmad-agent-po`), arquitetura (`bmad-architecture`) e UX (`bmad-ux`). O produto se chamava *Sentai Nexus* até 18/10/2026. Ele se apoia em três fontes:
 
 - a proposta *Sentai-Nexus-proposta-Musketeers.pdf* (16/10/2026);
 - o documento de intenção do brainstorming (`_bmad-output/brainstorm-lacunas-prd-sentai-nexus/brainstorm-lacunas-prd-sentai-nexus.md`);
@@ -27,9 +26,9 @@ Todos os dados do produto são sintéticos. Números marcados como *meta* são c
 
 ## 1. Visão
 
-Quando uma mensagem de integração para, por exemplo um pedido laboratorial rejeitado pelo parceiro, alguém abre logs, cruza telas, adivinha a causa e reenvia na mão torcendo para não duplicar. O **Sentai Nexus** é uma central de resolução assistida de exceções de interoperabilidade.
+Quando uma mensagem de integração para, por exemplo um pedido laboratorial rejeitado pelo parceiro, alguém abre logs, cruza telas, adivinha a causa e reenvia na mão torcendo para não duplicar. O **Signal Noir** é uma central de resolução assistida de exceções de interoperabilidade.
 
-Quando uma mensagem falha numa Production IRIS, o Nexus abre um **Caso**. Um **Agente** do IRIS AI Hub investiga a falha com ferramentas restritas e propõe uma **Ação** de um catálogo fechado, junto com um **Diagnóstico** e as **Evidências** que o sustentam. A aplicação valida a proposta, pede **Aprovação** humana quando necessário e executa com idempotência. O caminho da mensagem interrompida até a resolução fica rastreável.
+Quando uma mensagem falha numa Production IRIS, o Signal Noir abre um **Caso**. Um **Agente** do IRIS AI Hub investiga a falha com ferramentas restritas e propõe uma **Ação** de um catálogo fechado, junto com um **Diagnóstico** e as **Evidências** que o sustentam. A aplicação valida a proposta, pede **Aprovação** humana quando necessário e executa com idempotência. O caminho da mensagem interrompida até a resolução fica rastreável.
 
 **A tese do produto é honesta: no mundo limpo, o agente empata com regras.** Erros sinceros, evidência completa, uma causa por falha e gabarito único são casos que regras determinísticas resolvem. O valor do agente aparece no **mundo sujo**, em que:
 
@@ -38,14 +37,14 @@ Quando uma mensagem falha numa Production IRIS, o Nexus abre um **Caso**. Um **A
 - uma decisão depende de contexto que nenhuma regra simples enumera;
 - o pedido "falho" já foi entregue por outro caminho.
 
-O Nexus foi desenhado para medir essa diferença com rigor. Um **Simulador** fabrica o mundo sujo de forma reproduzível, e um **Benchmark** compara a **melhor linha de base determinística que o time consegue escrever** com o agente, no mesmo conjunto e com gabarito publicado. Garantias que valem para qualquer autor de proposta (revalidação, idempotência) são reportadas como **garantias da plataforma**, não como vitória do agente.
+O Signal Noir foi desenhado para medir essa diferença com rigor. Um **Simulador** fabrica o mundo sujo de forma reproduzível, e um **Benchmark** compara a **melhor linha de base determinística que o time consegue escrever** com o agente, no mesmo conjunto e com gabarito publicado. Garantias que valem para qualquer autor de proposta (revalidação, idempotência) são reportadas como **garantias da plataforma**, não como vitória do agente.
 
 **Por que agora:** o concurso *InterSystems Programming Contest: AI Agents in Interoperability Workflows* pede exatamente um agente do AI Hub tomando uma decisão dentro de um workflow de Interoperability:
 - construção de 26/10 a 08/11/2026, 23:59 EST;
 - votação de 09 a 15/11;
 - build 154 do AI Hub EAP.
 
-O time já tem controles operacionais maduros no SentaiTask (validação centralizada, catálogo compilado, linha do tempo de fatos, correlação por IDs) que podem ser adaptados ao domínio. Para respeitar a regra de originalidade, o Nexus é um app novo: reaproveita padrões, reescritos a partir de 26/10, não código copiado (Q-2). O diferencial é a **resolução verificável de exceções**: o agente precisa mudar corretamente o resultado do workflow onde regras locais falham, não "falar bonito" sobre a falha.
+O time já tem controles operacionais maduros no SentaiTask (validação centralizada, catálogo compilado, linha do tempo de fatos, correlação por IDs) que podem ser adaptados ao domínio. Para respeitar a regra de originalidade, o Signal Noir é um app novo: reaproveita padrões, reescritos a partir de 26/10, não código copiado (Q-2). O diferencial é a **resolução verificável de exceções**: o agente precisa mudar corretamente o resultado do workflow onde regras locais falham, não "falar bonito" sobre a falha.
 
 ## 2. Usuários-alvo
 
@@ -69,14 +68,14 @@ O time já tem controles operacionais maduros no SentaiTask (validação central
 
 ### 2.2 Não-usuários (v1)
 - **Profissionais clínicos.** As decisões são estritamente operacionais de interoperabilidade, sem diagnóstico nem conduta clínica.
-- **Desenvolvedores de Productions.** O Nexus não é editor nem gerador de Productions ou de código.
+- **Desenvolvedores de Productions.** O Signal Noir não é editor nem gerador de Productions ou de código.
 - **Operadores de ambientes reais com dados de pacientes.** Na v1, todos os dados são sintéticos.
 
 ### 2.3 Jornadas principais
 
 - **UJ-1. Carla descobre que o "erro de servidor" era um código descontinuado com dois substitutos.**
   - **Persona + contexto:** Carla é operadora de integrações do laboratório e cuida da fila de pedidos ao parceiro HTTP. Já viu muito HTTP 500 que "resolve sozinho no retry".
-  - **Estado de entrada:** está no painel local do Nexus, identificada pelo nome na sessão, sem senha [ASSUMPTION: sem autenticação na v1; ver §8]. Um Caso novo aparece na lista em tempo real.
+  - **Estado de entrada:** está no painel local do Signal Noir, identificada pelo nome na sessão, sem senha [ASSUMPTION: sem autenticação na v1; ver §8]. Um Caso novo aparece na lista em tempo real.
   - **Caminho:**
     1. Ela abre o Caso. A primeira Tentativa deu timeout. A segunda, feita pela Política de tentativas, voltou com HTTP 500. O Caso está em `Investigating`.
     2. Na Linha do Tempo, ela acompanha as Ferramentas chamadas pelo Agente:
@@ -124,7 +123,7 @@ O time já tem controles operacionais maduros no SentaiTask (validação central
 
 - **UJ-5.** *(removida em 18/10: Incidentes ficam para a v2; ver §9.3)*
 
-- **UJ-6. Rafael, jurado, instala e roda o Nexus do zero.**
+- **UJ-6. Rafael, jurado, instala e roda o Signal Noir do zero.**
   - **Persona + contexto:** Rafael é especialista InterSystems no júri. Tem a imagem do build 154 baixada do portal EAP e uma chave de um dos provedores suportados.
   - **Caminho:**
     1. Segue o README em inglês: `docker load`, retag para a tag esperada pelo compose, copia `.env.example` para `.env` com seu provedor e sua chave, `docker compose up`.
@@ -600,7 +599,7 @@ Um artigo na Developer Community cobre a experiência com o AI Hub, modelos e cu
 - O Catálogo de Ações é fechado, compilado e validado no servidor.
 - Mensagens, respostas e logs são dados, nunca instruções (FR-13).
 - A autorização é registrada antes de qualquer efeito externo. Se a persistência falhar, a Execução fica bloqueada.
-- Não há decisão clínica. O Nexus decide apenas sobre a entrega da mensagem.
+- Não há decisão clínica. O Signal Noir decide apenas sobre a entrega da mensagem.
 
 **Privacidade e dados**
 - Apenas dados sintéticos, marcados em todas as projeções.
@@ -636,12 +635,12 @@ Um artigo na Developer Community cobre a experiência com o AI Hub, modelos e cu
 
 ## 8. Não-objetivos
 
-- O Nexus **não** é editor genérico de Productions, canvas genérico ou gerador de código.
-- O Nexus **não** corrige livremente o conteúdo de mensagens. Só aplica Mapeamentos Aprovados.
-- O Nexus **não** cria Ações em tempo de execução. Escopo amplia alcance, não vocabulário.
-- O Nexus **não** faz inferência clínica nem diagnóstico.
-- O Nexus **não** é produto multiusuário de produção na v1. Não há autenticação nem perfis de acesso: a demo é local e o Operador se identifica pelo nome na sessão, para registrar a autoria. [ASSUMPTION]
-- O Nexus **não** substitui o Visual Trace. Ele o complementa e aponta para ele.
+- O Signal Noir **não** é editor genérico de Productions, canvas genérico ou gerador de código.
+- O Signal Noir **não** corrige livremente o conteúdo de mensagens. Só aplica Mapeamentos Aprovados.
+- O Signal Noir **não** cria Ações em tempo de execução. Escopo amplia alcance, não vocabulário.
+- O Signal Noir **não** faz inferência clínica nem diagnóstico.
+- O Signal Noir **não** é produto multiusuário de produção na v1. Não há autenticação nem perfis de acesso: a demo é local e o Operador se identifica pelo nome na sessão, para registrar a autoria. [ASSUMPTION]
+- O Signal Noir **não** substitui o Visual Trace. Ele o complementa e aponta para ele.
 - O Benchmark **não** atribui ao Agente o mérito das Garantias da Plataforma.
 
 ## 9. Escopo do MVP
@@ -786,7 +785,7 @@ Todas as metas de Decisão do Agente são medidas no **conjunto de teste**, na *
 ## 13. Questões em aberto
 
 1. **Q-1. Janela de construção.** O edital exige construir o app durante o concurso, a partir de 26/10. O trabalho de 16 a 25/10 pode virar código da submissão? Confirmar no Discord do concurso. *O plano já trata 25/10 como spike descartável; confirmar mesmo assim.* — *Responsável: Henry; perguntar no Discord antes de 26/10.*
-2. **Q-2. Originalidade e SentaiTask.** *Resolvida em 18/10:* o Nexus é um app novo, que reaproveita padrões do SentaiTask reescritos a partir de 26/10, sem copiar código.
+2. **Q-2. Originalidade e SentaiTask.** *Resolvida em 18/10:* o Signal Noir é um app novo, que reaproveita padrões do SentaiTask reescritos a partir de 26/10, sem copiar código.
 3. **Q-3. Provedor e modelo de referência.** Qual Provedor e modelo usar na Execução de Referência? Define NFR-2 a NFR-4. — *Responsável: José; decidir no spike de 25/10 pelo Provedor que funcionar no build 154 com custo ≤ US$ 0,04 por Caso.*
 4. **Q-4. Bônus técnicos.** Revisar o escopo quando o post de bônus sair (após 26/10). — *Responsável: Henry; revisar quando o post de bônus sair.*
 5. **Q-5. IRIS ou IRIS for Health.** Qual imagem do build 154 usar? IRIS for Health facilita HL7/FHIR na v2. — *Responsável: José; decidir no spike de 25/10.*

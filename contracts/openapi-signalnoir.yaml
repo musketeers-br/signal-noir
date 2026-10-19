@@ -1,0 +1,2181 @@
+openapi: 3.1.0
+info:
+  title: Signal Noir API
+  version: 1.0.0-draft.1
+  summary: API REST do produto Signal Noir — Casos, Linha do Tempo, Aprovação, Dossiê e Benchmark.
+  description: |
+    Contrato normativo de `/signalnoir/api/v1` (AD-16). A SPA (servida em `/signalnoir/`, AD-17)
+    desenvolve contra mocks deste arquivo.
+
+    **Convenções (Consistency Conventions do spine).**
+    - Termos do Glossário em inglês: `Order`, `Case`, `Proposal`, `Evidence`, `Approval`,
+      `Execution`, `Attempt`, `Receipt`, `Exception`, `BenchmarkRun`. Estados, Ações e níveis de
+      Confiança exatamente como no PRD.
+    - IDs opacos com prefixo: `case_`, `prop_`, `appr_`, `exec_`, `evid_`, `cmd_`, `run_`.
+      `orderId` vem do Pedido; `receiptId` vem do Parceiro.
+    - Datas ISO-8601 UTC com `Z`. Conversão para BRT só na interface.
+    - Erros: envelope `{ "error": { "code", "message", "details" } }`, códigos do enum do Core.
+      409 para versão (`STALE_VERSION`) ou estado (`INVALID_TRANSITION`).
+    - Rótulos `synthetic` e `replay` em todo Caso (FR-38).
+
+    **Polling incremental (AD-17).** Intervalo de 1–2 s.
+    - Lista: cursor sobre `(lastEventAt, caseId)`.
+    - Linha do Tempo: paginada por `sinceSeq`.
+    - Toda resposta de Caso traz `caseVersion`, `lastEventSeq` e `serverTime`.
+
+    **Concorrência (AD-3).** Comandos de transição exigem `expectedCaseVersion`; em conflito, 409
+    `STALE_VERSION`. Exceção: aprovar de novo a mesma `proposalId` já aprovada devolve sucesso
+    idempotente com a Aprovação existente. Comandos de anexação (Evidência, Exceção durante a
+    Execução, anotações) avançam `lastEventSeq` sem mudar `caseVersion`.
+
+    **Autenticação.** Nenhuma na v1 (Deferred). O Operador se identifica pelo nome no corpo dos
+    comandos; o ator registrado é `operator:<nome>`.
+  license:
+    name: MIT
+    identifier: MIT
+  contact:
+    name: Musketeers (José — IRIS/API; Henrique — interface; Henry — Benchmark)
+servers:
+  - url: /signalnoir/api/v1
+    description: Relativo ao host do container IRIS
+security: []
+tags:
+  - name: Cases
+    description: Lista, detalhe em camadas e Linha do Tempo.
+  - name: Approvals
+    description: Aprovar ou negar uma Proposta exata.
+  - name: Review
+    description: Resolução do Dossiê de Revisão pelo Operador.
+  - name: Benchmark
+    description: BenchmarkRun, status e relatório.
+  - name: Reference
+    description: Dados de referência para formulários da interface (Catálogo de Ações, Mapeamentos).
+
+paths:
+  /cases:
+    get:
+      tags: [Cases]
+      operationId: listCases
+      summary: Listar Casos (cursor sobre lastEventAt, caseId)
+      description: |
+        **Dois modos de leitura, mesmo cursor** (`(lastEventAt, caseId)` codificado de forma opaca):
+        - `direction=older` (padrão): página da lista, do mais recente para o mais antigo. Sem
+          `cursor`, começa do topo. `nextCursor` continua para trás.
+        - `direction=newer`: polling incremental. Devolve, em ordem **crescente**, os Casos cujo
+          `(lastEventAt, caseId)` é maior que o `cursor`. O cliente faz upsert por `caseId`
+          (um Caso que mudou reaparece com novo `lastEventAt`).
+
+        `headCursor` é sempre o maior `(lastEventAt, caseId)` que satisfaz os filtros no momento
+        da leitura; guarde-o para o próximo polling `newer`. Qualquer anexação ou transição
+        atualiza `lastEventAt` (AD-2), por isso o polling não perde mudanças.
+      parameters:
+        - name: cursor
+          in: query
+          description: Cursor opaco devolvido em `nextCursor` ou `headCursor`.
+          schema:
+            type: string
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [older, newer]
+            default: older
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: state
+          in: query
+          description: Filtra por um ou mais estados (`?state=PendingApproval&state=ReviewRequired`).
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/CaseState'
+        - name: status
+          in: query
+          description: '`open` = estados não terminais (inclui `Held` e `ReviewRequired`); `terminal` = estados terminais.'
+          schema:
+            type: string
+            enum: [open, terminal, all]
+            default: all
+        - name: pendingApproval
+          in: query
+          schema:
+            type: boolean
+        - name: runId
+          in: query
+          description: Só Casos originados por este BenchmarkRun.
+          schema:
+            $ref: '#/components/schemas/RunId'
+        - name: includeBenchmark
+          in: query
+          description: Se `false`, oculta Casos de BenchmarkRun.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Página de Casos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseListPage'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /cases/{caseId}:
+    get:
+      tags: [Cases]
+      operationId: getCase
+      summary: Detalhe do Caso em camadas
+      description: |
+        Projeção de detalhe operacional (FR-8, FR-35): Pedido, Exceções, Evidências, Diagnóstico,
+        Propostas (com veredito do Validador), Aprovações, Execuções (com Revalidação, Tentativas e
+        Reconciliação), Recibo, Dossiê, rótulos e métricas. A Linha do Tempo fica em
+        `/cases/{caseId}/timeline`.
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Caso completo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cases/{caseId}/timeline:
+    get:
+      tags: [Cases]
+      operationId: getCaseTimeline
+      summary: Linha do Tempo do Caso por sinceSeq
+      description: |
+        Devolve eventos com `seq > sinceSeq`, em ordem crescente de `seq` (FR-7). `seq` é
+        monotônico por Caso (`$INCREMENT`) e cobre transições **e** anexações. Se `hasMore`,
+        chame de novo com `sinceSeq = nextSinceSeq`.
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: sinceSeq
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 200
+      responses:
+        '200':
+          description: Eventos da Linha do Tempo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimelinePage'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cases/{caseId}/proposals/{proposalId}/decision:
+    post:
+      tags: [Approvals]
+      operationId: decideProposal
+      summary: Aprovar ou negar uma Proposta exata
+      description: |
+        Registra a decisão do Operador sobre a `proposalId` (FR-17). A Proposta é imutável, então
+        a `proposalId` **é** a versão exata aprovada.
+
+        Regras (AD-3, AD-24, FR-5, FR-17, FR-19):
+        - Exige Caso em `PendingApproval`, `proposalId` = Proposta vigente e
+          `expectedCaseVersion` = `caseVersion` atual. Transição CAS
+          `PendingApproval → Approved` ou `PendingApproval → Rejected`.
+        - **Aprovação repetida:** se a mesma `proposalId` já tem Aprovação `approved`, responde
+          `200` com a Aprovação existente e `idempotentReplay: true`, **mesmo que
+          `expectedCaseVersion` esteja vencida** e mesmo que o Caso já tenha avançado. Nenhum novo
+          efeito (no máximo uma Execução).
+        - Proposta vigente mudou desde a abertura da tela → 409 `STALE_VERSION` (a Aprovação da
+          versão anterior é recusada).
+        - Negação exige `reason`, que vira Evidência da nova Investigação (FR-5). A 2ª negação
+          leva o Caso a `ReviewRequired`.
+        - A Aprovação tem validade (`expiresAt`, FR-18); a expiração é feita só pelo sweeper.
+        - O ator `benchmark` nunca entra por esta API (AD-19).
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/ProposalId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalDecisionRequest'
+            examples:
+              approve:
+                value:
+                  decision: approved
+                  operator: Carla
+                  expectedCaseVersion: 7
+              deny:
+                value:
+                  decision: denied
+                  operator: Carla
+                  expectedCaseVersion: 7
+                  reason: O Pedido informa plasma, não soro; o mapeamento escolhido não se aplica.
+      responses:
+        '200':
+          description: Aprovação repetida da mesma `proposalId`; devolve a Aprovação existente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalDecisionResult'
+        '201':
+          description: Decisão registrada; o Caso transitou.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalDecisionResult'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '403':
+          $ref: '#/components/responses/InvalidActor'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /cases/{caseId}/resolution:
+    post:
+      tags: [Review]
+      operationId: resolveReview
+      summary: Resolver o Dossiê de Revisão (Ação do Catálogo ou cancelar) num comando
+      description: |
+        Resolução pelo Operador a partir de `ReviewRequired` (FR-29, AD-12). **Um único comando:**
+        - `kind: action` — cria a Proposta com autor `operator:<nome>`, passa pelo Validador do
+          Core (FR-14, FR-15) e, se aceita, registra a Aprovação do **mesmo** Operador. Segue o
+          fluxo normal de Execução (Revalidação, idempotência). Se o Validador recusar, nada é
+          gravado além do veredito, e a resposta é `422 VALIDATION_FAILED` com o veredito em
+          `details`.
+        - `kind: cancel` — `ReviewRequired → Cancelled` com o motivo.
+
+        Sem edição livre de payload (FR-29): só Ação do Catálogo + parâmetros válidos.
+        Exige `expectedCaseVersion` (409 `STALE_VERSION`) e Caso em `ReviewRequired`
+        (409 `INVALID_TRANSITION`).
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewResolutionRequest'
+            examples:
+              applyMapping:
+                value:
+                  kind: action
+                  operator: Carla
+                  expectedCaseVersion: 12
+                  action: APPLY_APPROVED_MAPPING
+                  params:
+                    mappingId: map_glicj_soro
+                    mappingVersion: '2026.10.1'
+                  note: Confirmado com a unidade de Origem por telefone.
+              cancel:
+                value:
+                  kind: cancel
+                  operator: Carla
+                  expectedCaseVersion: 12
+                  reason: Pedido duplicado confirmado com a unidade.
+      responses:
+        '201':
+          description: Resolução registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResolutionResult'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '403':
+          $ref: '#/components/responses/InvalidActor'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          description: O Validador recusou a Proposta do Operador. Só o veredito foi gravado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              examples:
+                blocked:
+                  value:
+                    error:
+                      code: VALIDATION_FAILED
+                      message: Mapping conditions do not match the order specimen type
+                      details:
+                        verdict:
+                          verdict: blocked
+                          reasons: [MAPPING_CONDITION_MISMATCH]
+                          requiresApproval: true
+                        caseVersion: 12
+                        lastEventSeq: 58
+                        serverTime: '2026-10-29T13:02:11Z'
+
+  /benchmark-runs:
+    post:
+      tags: [Benchmark]
+      operationId: createBenchmarkRun
+      summary: Criar e iniciar um BenchmarkRun
+      description: |
+        Cria um `BenchmarkRun` via Application (AD-23) com modo, Provedor, modelo e Cenários, e o
+        inicia. O Bench cria as instâncias no Simulador com o `runId` e observa; **nunca aprova**
+        (AD-19). Casos com `replay = true` ficam fora das métricas.
+
+        Um BenchmarkRun tem **um** modo. A comparação Modo Regras × Modo Regras + Agente do FR-39
+        é feita com dois runs e lida em `GET /benchmark-reports` (ver x-open-questions API-Q1).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBenchmarkRunRequest'
+      responses:
+        '202':
+          description: Run criado e aceito para execução.
+          headers:
+            Location:
+              description: URL do run criado.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkRun'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags: [Benchmark]
+      operationId: listBenchmarkRuns
+      summary: Listar BenchmarkRuns
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/BenchmarkRunStatus'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Runs, mais recentes primeiro.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, serverTime]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BenchmarkRun'
+                  serverTime:
+                    $ref: '#/components/schemas/UtcDateTime'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /benchmark-runs/{runId}:
+    get:
+      tags: [Benchmark]
+      operationId: getBenchmarkRun
+      summary: Status de um BenchmarkRun
+      parameters:
+        - $ref: '#/components/parameters/RunIdPath'
+      responses:
+        '200':
+          description: Run e progresso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkRun'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /benchmark-runs/{runId}/report:
+    get:
+      tags: [Benchmark]
+      operationId: getBenchmarkRunReport
+      summary: Relatório de um BenchmarkRun
+      description: |
+        Relatório em duas partes (FR-39): Decisão do Agente (placar por Família e conjunto, com
+        faixas mín./máx. sobre k repetições, FR-40) e Garantias da Plataforma (aprovado/reprovado).
+        Para `purpose = quick_validation`, traz o resultado por Caso de referência (FR-49).
+        Enquanto o run não termina, responde `409 INVALID_TRANSITION`.
+      parameters:
+        - $ref: '#/components/parameters/RunIdPath'
+      responses:
+        '200':
+          description: Relatório final.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkReport'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /benchmark-reports:
+    get:
+      tags: [Benchmark]
+      operationId: getComparativeBenchmarkReport
+      summary: Relatório comparativo entre runs (Modo Regras × Modo Regras + Agente)
+      description: |
+        Junta os relatórios de dois ou mais runs concluídos sobre o mesmo conjunto de Cenários,
+        lado a lado por modo (FR-39). Runs de `replay` são recusados (`VALIDATION_FAILED`), porque
+        Replay nunca conta como execução real (FR-41).
+      parameters:
+        - name: runId
+          in: query
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: array
+            minItems: 2
+            maxItems: 4
+            items:
+              $ref: '#/components/schemas/RunId'
+      responses:
+        '200':
+          description: Relatório comparativo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComparativeBenchmarkReport'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /reference/action-catalog:
+    get:
+      tags: [Reference]
+      operationId: getActionCatalog
+      summary: Catálogo de Ações e parâmetros válidos
+      description: |
+        Adição deste contrato (não pedida explicitamente no spine): a interface precisa do Catálogo
+        para montar o formulário de resolução do Dossiê sem inventar valores. Somente leitura.
+      responses:
+        '200':
+          description: Catálogo fechado (compilado no Core).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, serverTime]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActionCatalogEntry'
+                  serverTime:
+                    $ref: '#/components/schemas/UtcDateTime'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /reference/mappings:
+    get:
+      tags: [Reference]
+      operationId: listApprovedMappings
+      summary: Mapeamentos Aprovados vigentes
+      description: Catálogo de Mapeamentos versionado (AD-26), para o parâmetro de `APPLY_APPROVED_MAPPING`.
+      parameters:
+        - name: sourceCode
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mapeamentos da `mappingVersion` vigente.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mappingVersion, items, serverTime]
+                properties:
+                  mappingVersion:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovedMapping'
+                  serverTime:
+                    $ref: '#/components/schemas/UtcDateTime'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+
+components:
+  parameters:
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/CaseId'
+    ProposalId:
+      name: proposalId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/ProposalId'
+    RunIdPath:
+      name: runId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/RunId'
+
+  responses:
+    ValidationFailed:
+      description: Requisição inválida (parâmetro, corpo ou cursor). `code = VALIDATION_FAILED`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: Recurso inexistente. `code = NOT_FOUND`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    InvalidActor:
+      description: Ator não autorizado para esta transição (AD-24). `code = INVALID_ACTOR`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Conflict:
+      description: |
+        Conflito de versão (`STALE_VERSION`) ou de estado (`INVALID_TRANSITION`). `details` traz
+        `caseVersion`, `lastEventSeq`, `serverTime` e `state` atuais para o cliente recarregar.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          examples:
+            stale:
+              value:
+                error:
+                  code: STALE_VERSION
+                  message: Case changed since it was read
+                  details:
+                    expectedCaseVersion: 7
+                    caseVersion: 8
+                    lastEventSeq: 41
+                    state: PendingApproval
+                    currentProposalId: prop_01J9Z3
+                    serverTime: '2026-10-29T13:00:02Z'
+
+  schemas:
+    # ---------- primitivos ----------
+    UtcDateTime:
+      type: string
+      format: date-time
+      pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z$'
+      description: ISO-8601 em UTC com sufixo `Z`.
+    CaseId:
+      type: string
+      pattern: '^case_[A-Za-z0-9_-]{4,64}$'
+    ProposalId:
+      type: string
+      pattern: '^prop_[A-Za-z0-9_-]{4,64}$'
+    ApprovalId:
+      type: string
+      pattern: '^appr_[A-Za-z0-9_-]{4,64}$'
+    ExecutionId:
+      type: string
+      pattern: '^exec_[A-Za-z0-9_-]{4,64}$'
+    EvidenceId:
+      type: string
+      pattern: '^evid_[A-Za-z0-9_-]{4,64}$'
+    CommandId:
+      type: string
+      pattern: '^cmd_[A-Za-z0-9_-]{4,64}$'
+    RunId:
+      type: string
+      pattern: '^run_[A-Za-z0-9_-]{4,64}$'
+    Actor:
+      type: string
+      pattern: '^(system|agent|rules|replay|benchmark|sweeper|operator:[^:]{1,64})$'
+      description: Ator da Linha do Tempo e de comandos (Consistency Conventions).
+    OperatorName:
+      type: string
+      minLength: 1
+      maxLength: 64
+      pattern: '^[^:]+$'
+      description: Nome com que o Operador se identifica (sem autenticação). Vira o ator `operator:<nome>`.
+
+    # ---------- vocabulários fechados ----------
+    CaseState:
+      type: string
+      enum:
+        - Open
+        - Investigating
+        - DecisionProposed
+        - PendingApproval
+        - Approved
+        - Rejected
+        - Executing
+        - Held
+        - ReviewRequired
+        - Resolved
+        - ResolvedByPriorReceipt
+        - Cancelled
+        - Failed
+      description: |
+        Ativos: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing.
+        Em espera: Held, ReviewRequired (não terminais). Terminais: Resolved, ResolvedByPriorReceipt,
+        Cancelled, Failed.
+    Action:
+      type: string
+      enum: [RETRY, APPLY_APPROVED_MAPPING, REQUEST_REVIEW, HOLD]
+    Confidence:
+      type: string
+      enum: [ALTA, MEDIA, BAIXA]
+    Scope:
+      type: string
+      const: single_case
+      description: Na v1 é sempre `single_case` (`batch` reservado para a v2).
+    PreconditionCheck:
+      type: string
+      enum:
+        - PARTNER_HEALTHY_WINDOW
+        - ORDER_ACTIVE_AT_ORIGIN
+        - APPROVAL_VALID
+        - POLICY_VERSION_UNCHANGED
+        - MAPPING_VERSION_UNCHANGED
+      description: Vocabulário fechado do Core (AD-26).
+    ProposerMode:
+      type: string
+      enum: [agent, rules, replay]
+    ValidatorVerdictValue:
+      type: string
+      enum: [accepted, blocked, review, prior_receipt_confirmed]
+    ResponseClass:
+      type: string
+      enum: [success, business_error, transient, uncertain]
+      description: Classe atribuída pelo Core a `{status, body}` do Parceiro (AD-13.1).
+    ErrorCode:
+      type: string
+      enum: [STALE_VERSION, INVALID_TRANSITION, INVALID_ACTOR, VALIDATION_FAILED, NOT_FOUND]
+    ScenarioFamily:
+      type: string
+      enum: [clean, P1, P3, P5, P8, P9, idempotency]
+    VariantSet:
+      type: string
+      enum: [tuning, test]
+    OutcomeCategory:
+      type: string
+      enum: [correct, safe_review, unnecessary_review, incorrect]
+      description: Classificação do desfecho contra o Gabarito (FR-33).
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+
+    # ---------- cabeçalho de Caso ----------
+    CaseVersioning:
+      type: object
+      description: Campos presentes em toda resposta de Caso (AD-17).
+      required: [caseVersion, lastEventSeq, serverTime]
+      properties:
+        caseVersion:
+          type: integer
+          minimum: 0
+          description: Incrementa só em comandos de transição (AD-2).
+        lastEventSeq:
+          type: integer
+          minimum: 0
+          description: Maior `seq` da Linha do Tempo do Caso (transições e anexações).
+        serverTime:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    Labels:
+      type: object
+      required: [synthetic, replay]
+      properties:
+        synthetic:
+          type: boolean
+          const: true
+        replay:
+          type: boolean
+
+    BenchmarkProvenance:
+      description: Proveniência copiada do BenchmarkRun na abertura do Caso (AD-23). `null` fora de Benchmark.
+      oneOf:
+        - type: object
+          required: [runId, mode]
+          properties:
+            runId:
+              $ref: '#/components/schemas/RunId'
+            mode:
+              $ref: '#/components/schemas/ProposerMode'
+            scenarioInstanceId:
+              type: string
+            family:
+              $ref: '#/components/schemas/ScenarioFamily'
+            variant:
+              type: string
+            repetition:
+              type: integer
+              minimum: 1
+        - type: 'null'
+
+    CaseHeader:
+      allOf:
+        - $ref: '#/components/schemas/CaseVersioning'
+        - type: object
+          required: [caseId, orderId, partnerId, state, labels, createdAt, lastEventAt]
+          properties:
+            caseId:
+              $ref: '#/components/schemas/CaseId'
+            orderId:
+              type: string
+            partnerId:
+              type: string
+            state:
+              $ref: '#/components/schemas/CaseState'
+            labels:
+              $ref: '#/components/schemas/Labels'
+            proposerMode:
+              $ref: '#/components/schemas/ProposerMode'
+            benchmark:
+              $ref: '#/components/schemas/BenchmarkProvenance'
+            createdAt:
+              $ref: '#/components/schemas/UtcDateTime'
+            lastEventAt:
+              $ref: '#/components/schemas/UtcDateTime'
+
+    CaseSummary:
+      description: Item da lista (FR-34). Idade = `serverTime − createdAt`, calculada na interface.
+      allOf:
+        - $ref: '#/components/schemas/CaseHeader'
+        - type: object
+          required: [pendingApproval, exceptionCount]
+          properties:
+            pendingApproval:
+              type: boolean
+              description: '`true` quando o Caso está em `PendingApproval`.'
+            approvalDeadline:
+              description: '`expiresAt` da Aprovação vigente, se houver.'
+              oneOf:
+                - $ref: '#/components/schemas/UtcDateTime'
+                - type: 'null'
+            currentProposal:
+              oneOf:
+                - type: object
+                  required: [proposalId, action, confidence]
+                  properties:
+                    proposalId:
+                      $ref: '#/components/schemas/ProposalId'
+                    action:
+                      $ref: '#/components/schemas/Action'
+                    confidence:
+                      $ref: '#/components/schemas/Confidence'
+                - type: 'null'
+            exceptionCount:
+              type: integer
+              minimum: 1
+            lastExceptionSummary:
+              type: string
+
+    CaseListPage:
+      type: object
+      required: [items, headCursor, serverTime]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseSummary'
+        nextCursor:
+          description: Continua na mesma `direction`. `null` quando não há mais itens.
+          oneOf:
+            - type: string
+            - type: 'null'
+        headCursor:
+          type: string
+          description: Cursor do topo atual (maior `(lastEventAt, caseId)` com os filtros). Use em `direction=newer`.
+        serverTime:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    # ---------- camadas do Caso ----------
+    EquivalenceKey:
+      type: object
+      description: Chave de Equivalência canonizada **pelo Core** na entrada (AD-25). O Simulador nunca a fornece.
+      required: [patientId, examCodes, collectedAt, specimenId]
+      properties:
+        patientId:
+          type: string
+        examCodes:
+          type: array
+          description: Ordenados, caixa normalizada.
+          items:
+            type: string
+        collectedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        specimenId:
+          type: string
+
+    OrderView:
+      type: object
+      required: [orderId, correlationId, snapshot, equivalenceKey, transactionIds]
+      properties:
+        orderId:
+          type: string
+        correlationId:
+          type: string
+          description: Identificador de correlação atribuído na entrada (FR-1).
+        transactionIds:
+          type: array
+          items:
+            type: string
+        snapshot:
+          type: object
+          additionalProperties: true
+          description: Payload original imutável, como recebido da Origem (dado bruto).
+        equivalenceKey:
+          $ref: '#/components/schemas/EquivalenceKey'
+        transformed:
+          description: Payload transformado após `APPLY_APPROVED_MAPPING`, guardado separado.
+          oneOf:
+            - type: object
+              required: [payload, mappingId, mappingVersion, proposalId]
+              properties:
+                payload:
+                  type: object
+                  additionalProperties: true
+                mappingId:
+                  type: string
+                mappingVersion:
+                  type: string
+                proposalId:
+                  $ref: '#/components/schemas/ProposalId'
+            - type: 'null'
+
+    CaseException:
+      type: object
+      description: Exceção registrada no Caso (addendum §C).
+      required: [exceptionId, observedAt, kind]
+      properties:
+        exceptionId:
+          type: string
+        kind:
+          type: string
+          enum: [timeout, http_error, invalid_receipt, business_rejection, processing_error]
+        httpStatus:
+          oneOf:
+            - type: integer
+            - type: 'null'
+        body:
+          description: Corpo bruto da resposta (dado, nunca instrução).
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+            - type: 'null'
+        responseClass:
+          $ref: '#/components/schemas/ResponseClass'
+        observedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        attemptId:
+          oneOf:
+            - type: string
+            - type: 'null'
+        duringExecution:
+          type: boolean
+          description: Exceção anexada com o Caso em `Approved`/`Executing` (AD-24), reavaliada quando a Execução termina.
+
+    Evidence:
+      type: object
+      description: Fato observado, imutável (FR-6, FR-10). Obsolescência é marcada por novo evento.
+      required: [evidenceId, source, observedAt, result, suspicious]
+      properties:
+        evidenceId:
+          $ref: '#/components/schemas/EvidenceId'
+        source:
+          type: string
+          enum:
+            - tool.partner_failure_history
+            - tool.policies
+            - tool.partner_health
+            - tool.mapping_catalog
+            - tool.receipts_and_orders_by_patient
+            - tool.origin_order_status
+            - tool.order_timeline
+            - system.exception
+            - system.revalidation
+            - system.reconciliation
+            - operator.denial_reason
+            - operator.note
+          description: Ferramenta (FR-10) ou observação do sistema/Operador.
+        calledBy:
+          $ref: '#/components/schemas/Actor'
+        params:
+          type: object
+          additionalProperties: true
+        result:
+          description: Resultado bruto, por valor.
+        observedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        durationMs:
+          type: integer
+          minimum: 0
+        suspicious:
+          type: boolean
+          description: Conteúdo suspeito (instrução embutida) detectado (FR-13).
+        suspiciousExcerpts:
+          type: array
+          items:
+            type: string
+        obsoletedBy:
+          oneOf:
+            - $ref: '#/components/schemas/EvidenceId'
+            - type: 'null'
+
+    Claim:
+      type: object
+      required: [text, evidenceIds]
+      properties:
+        text:
+          type: string
+        evidenceIds:
+          type: array
+          minItems: 1
+          description: Toda afirmação referencia ao menos uma Evidência do mesmo Caso (FR-6).
+          items:
+            $ref: '#/components/schemas/EvidenceId'
+
+    Hypothesis:
+      type: object
+      required: [text, status]
+      properties:
+        text:
+          type: string
+        status:
+          type: string
+          enum: [chosen, discarded]
+        reason:
+          type: string
+        evidenceIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceId'
+
+    EvidenceConflict:
+      type: object
+      description: Evidências que se contradizem, exibidas lado a lado (FR-35).
+      required: [evidenceIds, description]
+      properties:
+        evidenceIds:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/EvidenceId'
+        description:
+          type: string
+
+    Diagnosis:
+      type: object
+      required: [summary, claims, hypotheses]
+      properties:
+        summary:
+          type: string
+        claims:
+          type: array
+          items:
+            $ref: '#/components/schemas/Claim'
+        hypotheses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Hypothesis'
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceConflict'
+
+    ActionParams:
+      type: object
+      additionalProperties: false
+      description: |
+        Parâmetros da Ação (Catálogo fechado), validados pelo Core (FR-14):
+        - `RETRY`: nenhum.
+        - `APPLY_APPROVED_MAPPING`: `mappingId` e `mappingVersion` obrigatórios.
+        - `HOLD`: `reason` opcional.
+        - `REQUEST_REVIEW`: `reason` opcional.
+      properties:
+        mappingId:
+          type: string
+        mappingVersion:
+          type: string
+        reason:
+          type: string
+
+    ActionWithParams:
+      description: Restrição condicional Ação → parâmetros obrigatórios.
+      if:
+        required: [action]
+        properties:
+          action:
+            const: APPLY_APPROVED_MAPPING
+      then:
+        required: [params]
+        properties:
+          params:
+            type: object
+            required: [mappingId, mappingVersion]
+            properties:
+              mappingId:
+                type: string
+              mappingVersion:
+                type: string
+
+    Precondition:
+      type: object
+      required: [check, expected]
+      properties:
+        check:
+          $ref: '#/components/schemas/PreconditionCheck'
+        expected:
+          description: Valor esperado do check (ex. `true`, versão, janela).
+
+    ValidatorVerdict:
+      type: object
+      required: [verdict, reasons, requiresApproval, at]
+      properties:
+        verdict:
+          $ref: '#/components/schemas/ValidatorVerdictValue'
+        reasons:
+          type: array
+          items:
+            type: string
+        requiresApproval:
+          type: boolean
+        at:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    ProposalMetrics:
+      type: object
+      properties:
+        durationMs:
+          type: integer
+          minimum: 0
+        toolCalls:
+          type: integer
+          minimum: 0
+        tokensIn:
+          type: integer
+          minimum: 0
+        tokensOut:
+          type: integer
+          minimum: 0
+        estCostUsd:
+          type: number
+          minimum: 0
+
+    Proposal:
+      type: object
+      description: Proposta imutável (AD-9). `proposalId` identifica a versão exata.
+      allOf:
+        - $ref: '#/components/schemas/ActionWithParams'
+      required: [proposalId, author, createdAt, current, diagnosis, action, params, scope, confidence, preconditions, versions]
+      properties:
+        proposalId:
+          $ref: '#/components/schemas/ProposalId'
+        author:
+          type: string
+          pattern: '^(agent|rules|replay|operator:[^:]{1,64})$'
+        createdAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        current:
+          type: boolean
+          description: Só uma Proposta vigente por Caso (FR-6).
+        supersededBy:
+          oneOf:
+            - $ref: '#/components/schemas/ProposalId'
+            - type: 'null'
+        diagnosis:
+          $ref: '#/components/schemas/Diagnosis'
+        action:
+          $ref: '#/components/schemas/Action'
+        params:
+          $ref: '#/components/schemas/ActionParams'
+        scope:
+          $ref: '#/components/schemas/Scope'
+        confidence:
+          $ref: '#/components/schemas/Confidence'
+        preconditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Precondition'
+        priorReceiptCandidate:
+          description: Recibo anterior apontado (P9); confirmação é do Validador (FR-47).
+          oneOf:
+            - type: object
+              required: [receiptId, orderId]
+              properties:
+                receiptId:
+                  type: string
+                orderId:
+                  type: string
+            - type: 'null'
+        versions:
+          type: object
+          required: [policy, mapping]
+          properties:
+            policy:
+              type: string
+            mapping:
+              type: string
+            prompt:
+              type: ['string', 'null']
+            model:
+              type: ['string', 'null']
+            provider:
+              type: ['string', 'null']
+        metrics:
+          $ref: '#/components/schemas/ProposalMetrics'
+        validatorVerdict:
+          oneOf:
+            - $ref: '#/components/schemas/ValidatorVerdict'
+            - type: 'null'
+
+    Approval:
+      type: object
+      required: [approvalId, proposalId, decision, by, at]
+      properties:
+        approvalId:
+          $ref: '#/components/schemas/ApprovalId'
+        proposalId:
+          $ref: '#/components/schemas/ProposalId'
+        decision:
+          type: string
+          enum: [approved, denied]
+        by:
+          type: string
+          pattern: '^(benchmark|operator:[^:]{1,64})$'
+          description: '`benchmark` só em Modo Benchmark, emitido pelo BP (AD-19).'
+        at:
+          $ref: '#/components/schemas/UtcDateTime'
+        expiresAt:
+          description: Validade (FR-18). `null` em negação.
+          oneOf:
+            - $ref: '#/components/schemas/UtcDateTime'
+            - type: 'null'
+        status:
+          type: string
+          enum: [valid, expired, consumed, superseded]
+          description: '`consumed` quando autorizou uma Execução; `expired` pelo sweeper.'
+        reason:
+          type: ['string', 'null']
+
+    PreconditionResult:
+      type: object
+      required: [check, passed]
+      properties:
+        check:
+          $ref: '#/components/schemas/PreconditionCheck'
+        expected: {}
+        observed: {}
+        passed:
+          type: boolean
+        evidenceId:
+          oneOf:
+            - $ref: '#/components/schemas/EvidenceId'
+            - type: 'null'
+
+    Attempt:
+      type: object
+      required: [attemptId, n, sentAt]
+      properties:
+        attemptId:
+          type: string
+        n:
+          type: integer
+          minimum: 1
+        transactionId:
+          type: string
+        sentAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        completedAt:
+          oneOf:
+            - $ref: '#/components/schemas/UtcDateTime'
+            - type: 'null'
+        httpStatus:
+          oneOf:
+            - type: integer
+            - type: 'null'
+        responseClass:
+          $ref: '#/components/schemas/ResponseClass'
+        bodyExcerpt:
+          type: string
+        receiptId:
+          type: ['string', 'null']
+
+    Reconciliation:
+      type: object
+      required: [at, trigger, found]
+      properties:
+        at:
+          $ref: '#/components/schemas/UtcDateTime'
+        trigger:
+          type: string
+          enum: [prior_check, timeout, uncertain_response, lost_cas, lease_expired]
+          description: '`prior_check` = Reconciliação prévia (AD-5 passo 3).'
+        queriedBy:
+          type: string
+          enum: [orderId, idempotencyKey]
+        found:
+          type: boolean
+        receiptId:
+          type: ['string', 'null']
+        evidenceId:
+          oneOf:
+            - $ref: '#/components/schemas/EvidenceId'
+            - type: 'null'
+
+    Execution:
+      type: object
+      required: [executionId, proposalId, action, idempotencyKey, authorizedAt, outcome, attempts]
+      properties:
+        executionId:
+          $ref: '#/components/schemas/ExecutionId'
+        approvalId:
+          description: '`null` para `HOLD`, que não exige Aprovação (FR-16).'
+          oneOf:
+            - $ref: '#/components/schemas/ApprovalId'
+            - type: 'null'
+        proposalId:
+          $ref: '#/components/schemas/ProposalId'
+        action:
+          $ref: '#/components/schemas/Action'
+        idempotencyKey:
+          type: string
+          description: Derivada pelo Core no CAS de autorização (AD-21).
+        authorizedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        stepLeaseUntil:
+          oneOf:
+            - $ref: '#/components/schemas/UtcDateTime'
+            - type: 'null'
+        revalidation:
+          oneOf:
+            - type: object
+              required: [passed, checks, at]
+              properties:
+                passed:
+                  type: boolean
+                checks:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PreconditionResult'
+                at:
+                  $ref: '#/components/schemas/UtcDateTime'
+                resultingState:
+                  $ref: '#/components/schemas/CaseState'
+            - type: 'null'
+        reconciliations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reconciliation'
+        attempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attempt'
+        outcome:
+          type: string
+          enum: [in_progress, reconciling, resolved, held, cancelled, failed]
+        completedAt:
+          oneOf:
+            - $ref: '#/components/schemas/UtcDateTime'
+            - type: 'null'
+
+    ReceiptCopy:
+      type: object
+      description: Cópia auditável do Recibo canônico do Parceiro (AD-14). Em divergência, prevalece o Parceiro.
+      required: [receiptId, orderId, idempotencyKey, receivedAt, partnerId, source]
+      properties:
+        receiptId:
+          type: string
+        orderId:
+          type: string
+          description: Em `ResolvedByPriorReceipt`, é o `orderId` do Pedido anterior (diferente do `orderId` do Caso).
+        idempotencyKey:
+          type: string
+        receivedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        partnerId:
+          type: string
+        source:
+          type: string
+          enum: [delivery, reconciliation, prior_receipt]
+        orderSnapshotMinimal:
+          type: object
+          additionalProperties: true
+        equivalenceConfirmed:
+          description: Em `prior_receipt`, `true` quando o Validador confirmou a Chave de Equivalência (FR-47).
+          type: ['boolean', 'null']
+        externalRef:
+          type: string
+          description: Referência ao Recibo canônico no Simulador.
+        annotations:
+          type: array
+          items:
+            type: object
+            required: [at, text]
+            properties:
+              at:
+                $ref: '#/components/schemas/UtcDateTime'
+              text:
+                type: string
+
+    Dossier:
+      type: object
+      description: Dossiê de Revisão (FR-28), presente quando o Caso está em `ReviewRequired`.
+      required: [reason, reasonText, createdAt, suggestedNextStep]
+      properties:
+        reason:
+          type: string
+          enum:
+            - budget_exceeded
+            - invalid_agent_response
+            - agent_refusal
+            - provider_unavailable
+            - investigation_interrupted
+            - validator_blocked
+            - missing_evidence
+            - low_confidence
+            - prior_receipt_unconfirmed
+            - ambiguous_identity
+            - second_denial
+            - review_requested
+        reasonText:
+          type: string
+        createdAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        partialDiagnosis:
+          oneOf:
+            - $ref: '#/components/schemas/Diagnosis'
+            - type: 'null'
+        hypotheses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Hypothesis'
+        relevantEvidenceIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceId'
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceConflict'
+        collidingRecords:
+          type: array
+          description: Cadastros em colisão (identidade ambígua) e campos divergentes.
+          items:
+            type: object
+            required: [recordRef, fields, divergentFields]
+            properties:
+              recordRef:
+                type: string
+              source:
+                type: string
+              fields:
+                type: object
+                additionalProperties: true
+              divergentFields:
+                type: array
+                items:
+                  type: string
+        unconfirmedCandidates:
+          type: array
+          description: Recibos anteriores candidatos cuja Chave de Equivalência não bateu (FR-47).
+          items:
+            type: object
+            required: [receiptId, orderId, mismatchedFields]
+            properties:
+              receiptId:
+                type: string
+              orderId:
+                type: string
+              mismatchedFields:
+                type: array
+                items:
+                  type: string
+                  enum: [patientId, examCodes, collectedAt, specimenId]
+        suggestedNextStep:
+          type: string
+
+    CaseMetrics:
+      type: object
+      description: Observabilidade do Caso (FR-35, NFR-9). Agregado das Investigações e Execuções.
+      properties:
+        provider:
+          type: ['string', 'null']
+        model:
+          type: ['string', 'null']
+        promptVersion:
+          type: ['string', 'null']
+        policyVersion:
+          type: string
+        mappingVersion:
+          type: string
+        investigationDurationMs:
+          type: integer
+          minimum: 0
+        toolCalls:
+          type: integer
+          minimum: 0
+        tokensIn:
+          type: integer
+          minimum: 0
+        tokensOut:
+          type: integer
+          minimum: 0
+        estCostUsd:
+          type: number
+          minimum: 0
+        attempts:
+          type: integer
+          minimum: 0
+        exceptionToValidatedProposalMs:
+          type: ['integer', 'null']
+        approvalToEffectMs:
+          type: ['integer', 'null']
+
+    CaseDetail:
+      allOf:
+        - $ref: '#/components/schemas/CaseHeader'
+        - type: object
+          required: [order, exceptions, evidence, proposals, approvals, executions, metrics, updatedAt]
+          properties:
+            updatedAt:
+              $ref: '#/components/schemas/UtcDateTime'
+            order:
+              $ref: '#/components/schemas/OrderView'
+            visualTraceUrl:
+              type: ['string', 'null']
+              description: Link para a sessão no Visual Trace da Production (FR-37).
+            exceptions:
+              type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/CaseException'
+            evidence:
+              type: array
+              items:
+                $ref: '#/components/schemas/Evidence'
+            diagnosis:
+              description: Diagnóstico da Proposta vigente (projeção; cada Proposta traz o seu).
+              oneOf:
+                - $ref: '#/components/schemas/Diagnosis'
+                - type: 'null'
+            currentProposalId:
+              oneOf:
+                - $ref: '#/components/schemas/ProposalId'
+                - type: 'null'
+            proposals:
+              type: array
+              items:
+                $ref: '#/components/schemas/Proposal'
+            approvals:
+              type: array
+              items:
+                $ref: '#/components/schemas/Approval'
+            denialCount:
+              type: integer
+              minimum: 0
+              maximum: 2
+              description: Contador de negações do agregado (FR-5).
+            executions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Execution'
+            receipt:
+              oneOf:
+                - $ref: '#/components/schemas/ReceiptCopy'
+                - type: 'null'
+            dossier:
+              oneOf:
+                - $ref: '#/components/schemas/Dossier'
+                - type: 'null'
+            metrics:
+              $ref: '#/components/schemas/CaseMetrics'
+
+    # ---------- Linha do Tempo ----------
+    TimelineEventType:
+      type: string
+      enum:
+        - CaseOpened
+        - ExceptionRecorded
+        - StateChanged
+        - ToolCalled
+        - EvidenceObsoleted
+        - ProposalCreated
+        - ValidatorVerdict
+        - ApprovalRecorded
+        - ApprovalExpired
+        - ExecutionAuthorized
+        - RevalidationPerformed
+        - AttemptRecorded
+        - ReconciliationPerformed
+        - ReceiptRecorded
+        - ReassessmentPerformed
+        - DossierCreated
+        - OperatorResolution
+        - CommandDiscarded
+        - Annotation
+      description: Ver x-open-questions API-Q4 (lista não fixada no spine).
+
+    TimelineEvent:
+      type: object
+      required: [seq, at, type, actor]
+      properties:
+        seq:
+          type: integer
+          minimum: 1
+        at:
+          $ref: '#/components/schemas/UtcDateTime'
+        type:
+          $ref: '#/components/schemas/TimelineEventType'
+        actor:
+          $ref: '#/components/schemas/Actor'
+        refId:
+          description: ID da entidade relacionada (`prop_`, `appr_`, `exec_`, `evid_`, `cmd_`, receiptId, exceptionId).
+          type: ['string', 'null']
+        payload:
+          type: object
+          additionalProperties: true
+          description: Para `StateChanged`, `{ from, to, reason, caseVersionAfter }`.
+
+    TimelinePage:
+      allOf:
+        - $ref: '#/components/schemas/CaseVersioning'
+        - type: object
+          required: [caseId, state, events, hasMore, nextSinceSeq]
+          properties:
+            caseId:
+              $ref: '#/components/schemas/CaseId'
+            state:
+              $ref: '#/components/schemas/CaseState'
+            events:
+              type: array
+              items:
+                $ref: '#/components/schemas/TimelineEvent'
+            hasMore:
+              type: boolean
+            nextSinceSeq:
+              type: integer
+              minimum: 0
+              description: '`seq` do último evento devolvido (ou o `sinceSeq` recebido, se vazio).'
+
+    # ---------- comandos ----------
+    ProposalDecisionRequest:
+      type: object
+      required: [decision, operator, expectedCaseVersion]
+      properties:
+        decision:
+          type: string
+          enum: [approved, denied]
+        operator:
+          $ref: '#/components/schemas/OperatorName'
+        expectedCaseVersion:
+          type: integer
+          minimum: 0
+        reason:
+          type: string
+          minLength: 1
+          description: |
+            Obrigatório quando `decision = denied` (vira Evidência, FR-5); ausente nesse caso →
+            400 `VALIDATION_FAILED`. Opcional na aprovação.
+
+    CommandAck:
+      allOf:
+        - $ref: '#/components/schemas/CaseVersioning'
+        - type: object
+          required: [caseId, state]
+          properties:
+            caseId:
+              $ref: '#/components/schemas/CaseId'
+            state:
+              $ref: '#/components/schemas/CaseState'
+            commandId:
+              description: Entrada de outbox emitida, quando houver (AD-20).
+              oneOf:
+                - $ref: '#/components/schemas/CommandId'
+                - type: 'null'
+
+    ProposalDecisionResult:
+      type: object
+      required: [approval, idempotentReplay, case]
+      properties:
+        approval:
+          $ref: '#/components/schemas/Approval'
+        idempotentReplay:
+          type: boolean
+        case:
+          $ref: '#/components/schemas/CommandAck'
+
+    ReviewResolutionRequest:
+      oneOf:
+        - $ref: '#/components/schemas/ReviewResolutionAction'
+        - $ref: '#/components/schemas/ReviewResolutionCancel'
+      discriminator:
+        propertyName: kind
+        mapping:
+          action: '#/components/schemas/ReviewResolutionAction'
+          cancel: '#/components/schemas/ReviewResolutionCancel'
+
+    ReviewResolutionAction:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ActionWithParams'
+      required: [kind, operator, expectedCaseVersion, action, params]
+      properties:
+        kind:
+          type: string
+          const: action
+        operator:
+          $ref: '#/components/schemas/OperatorName'
+        expectedCaseVersion:
+          type: integer
+          minimum: 0
+        action:
+          type: string
+          enum: [RETRY, APPLY_APPROVED_MAPPING, HOLD]
+          description: Ação do Catálogo (sem `REQUEST_REVIEW`; ver API-Q3).
+        params:
+          $ref: '#/components/schemas/ActionParams'
+        note:
+          type: string
+          description: Justificativa do Operador (vira Evidência `operator.note`).
+
+    ReviewResolutionCancel:
+      type: object
+      required: [kind, operator, expectedCaseVersion, reason]
+      properties:
+        kind:
+          type: string
+          const: cancel
+        operator:
+          $ref: '#/components/schemas/OperatorName'
+        expectedCaseVersion:
+          type: integer
+          minimum: 0
+        reason:
+          type: string
+          minLength: 1
+
+    ReviewResolutionResult:
+      type: object
+      required: [kind, case]
+      properties:
+        kind:
+          type: string
+          enum: [action, cancel]
+        proposal:
+          description: Proposta criada com autor `operator:<nome>` (só em `kind = action`).
+          oneOf:
+            - $ref: '#/components/schemas/Proposal'
+            - type: 'null'
+        approval:
+          description: Aprovação do mesmo Operador; `null` quando a Ação não exige Aprovação (`HOLD`) ou em `cancel`.
+          oneOf:
+            - $ref: '#/components/schemas/Approval'
+            - type: 'null'
+        case:
+          $ref: '#/components/schemas/CommandAck'
+
+    # ---------- Benchmark ----------
+    BenchmarkRunStatus:
+      type: string
+      enum: [created, running, completed, failed]
+
+    ScenarioSelection:
+      type: object
+      required: [family]
+      properties:
+        family:
+          $ref: '#/components/schemas/ScenarioFamily'
+        variants:
+          type: array
+          description: Variantes explícitas; omitido = todas da Família no `set`.
+          items:
+            type: string
+        set:
+          $ref: '#/components/schemas/VariantSet'
+
+    CreateBenchmarkRunRequest:
+      type: object
+      required: [mode, purpose, scenarios]
+      properties:
+        mode:
+          $ref: '#/components/schemas/ProposerMode'
+        purpose:
+          type: string
+          enum: [benchmark, reference, quick_validation]
+          description: |
+            `reference` = Execução de Referência publicada (FR-40); `quick_validation` = 3 Casos de
+            referência comparados ao resultado gravado (FR-49); `benchmark` = execução do jurado/time.
+        provider:
+          type: ['string', 'null']
+          description: Ignorado em `mode = rules`. Padrão = Provedor configurado no `.env` (AD-18).
+        model:
+          type: ['string', 'null']
+        repetitions:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 3
+          description: k repetições por variante (FR-40).
+        seed:
+          type: integer
+          minimum: 0
+          description: Semente base; cada (variante, repetição) deriva a sua de forma determinística.
+        fixtureSet:
+          type: object
+          description: Fixa o conjunto de fixtures (AD-26). Omitido = vigente.
+          properties:
+            policyVersion:
+              type: string
+            mappingVersion:
+              type: string
+        scenarios:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ScenarioSelection'
+        label:
+          type: string
+
+    Range:
+      type: object
+      required: [min, max]
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+      description: Faixa mín./máx. sobre as k repetições (FR-40).
+
+    BenchmarkRun:
+      type: object
+      required: [runId, mode, purpose, status, createdAt, repetitions, scenarios, progress]
+      properties:
+        runId:
+          $ref: '#/components/schemas/RunId'
+        mode:
+          $ref: '#/components/schemas/ProposerMode'
+        purpose:
+          type: string
+          enum: [benchmark, reference, quick_validation]
+        status:
+          $ref: '#/components/schemas/BenchmarkRunStatus'
+        provider:
+          type: ['string', 'null']
+        model:
+          type: ['string', 'null']
+        repetitions:
+          type: integer
+        seed:
+          type: integer
+        policyVersion:
+          type: string
+        mappingVersion:
+          type: string
+        scenarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScenarioSelection'
+        progress:
+          type: object
+          required: [casesPlanned, casesOpened, casesTerminal]
+          properties:
+            casesPlanned:
+              type: integer
+              minimum: 0
+            casesOpened:
+              type: integer
+              minimum: 0
+            casesTerminal:
+              type: integer
+              minimum: 0
+              description: Casos em estado terminal **ou** `ReviewRequired` (fim da automação).
+        labels:
+          $ref: '#/components/schemas/Labels'
+        createdAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        startedAt:
+          oneOf:
+            - $ref: '#/components/schemas/UtcDateTime'
+            - type: 'null'
+        completedAt:
+          oneOf:
+            - $ref: '#/components/schemas/UtcDateTime'
+            - type: 'null'
+        failureReason:
+          type: ['string', 'null']
+        serverTime:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    AgentDecisionRow:
+      type: object
+      required: [family, set, mode, variantCount, outcomes]
+      properties:
+        family:
+          type: string
+          enum: [clean, P1, P5, P8, P9]
+        set:
+          $ref: '#/components/schemas/VariantSet'
+        mode:
+          $ref: '#/components/schemas/ProposerMode'
+        variantCount:
+          type: integer
+          minimum: 0
+        outcomes:
+          type: object
+          description: Proporção (0–1) por categoria, como faixa sobre as k repetições.
+          required: [correct, safe_review, unnecessary_review, incorrect]
+          properties:
+            correct:
+              $ref: '#/components/schemas/Range'
+            safe_review:
+              $ref: '#/components/schemas/Range'
+            unnecessary_review:
+              $ref: '#/components/schemas/Range'
+            incorrect:
+              $ref: '#/components/schemas/Range'
+        latencyMsP50:
+          $ref: '#/components/schemas/Range'
+        latencyMsP95:
+          $ref: '#/components/schemas/Range'
+        toolCallsPerCase:
+          $ref: '#/components/schemas/Range'
+        estCostUsdPerCase:
+          $ref: '#/components/schemas/Range'
+
+    PlatformGuaranteeRow:
+      type: object
+      required: [guarantee, passed]
+      properties:
+        guarantee:
+          type: string
+          enum: [P3, idempotency, timeout, restart, repeated_approval]
+        passed:
+          type: boolean
+        duplicateReceipts:
+          type: integer
+          minimum: 0
+        invalidActionsExecuted:
+          type: integer
+          minimum: 0
+        staleExecutions:
+          type: integer
+          minimum: 0
+          description: Execuções com pré-condição vencida (SM-4).
+        details:
+          type: string
+
+    BenchmarkCaseResult:
+      type: object
+      required: [caseId, family, variant, set, repetition, finalState, replay, countsInMetrics]
+      properties:
+        caseId:
+          $ref: '#/components/schemas/CaseId'
+        family:
+          $ref: '#/components/schemas/ScenarioFamily'
+        variant:
+          type: string
+        set:
+          $ref: '#/components/schemas/VariantSet'
+        repetition:
+          type: integer
+          minimum: 1
+        finalState:
+          $ref: '#/components/schemas/CaseState'
+        action:
+          oneOf:
+            - $ref: '#/components/schemas/Action'
+            - type: 'null'
+        confidence:
+          oneOf:
+            - $ref: '#/components/schemas/Confidence'
+            - type: 'null'
+        expected:
+          type: object
+          description: Gabarito da variante (FR-33).
+          properties:
+            acceptableActions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Action'
+            acceptableStates:
+              type: array
+              items:
+                $ref: '#/components/schemas/CaseState'
+        outcome:
+          oneOf:
+            - $ref: '#/components/schemas/OutcomeCategory'
+            - type: 'null'
+        latencyMs:
+          type: ['integer', 'null']
+        toolCalls:
+          type: ['integer', 'null']
+        estCostUsd:
+          type: ['number', 'null']
+        replay:
+          type: boolean
+        countsInMetrics:
+          type: boolean
+          description: '`false` para Replay (AD-19, FR-41) e para o conjunto de ajuste nas metas.'
+
+    QuickValidationResult:
+      type: object
+      required: [referenceCase, caseId, status]
+      properties:
+        referenceCase:
+          type: string
+          description: Identificador do Caso de referência gravado (limpo, P5/P8, P9).
+        caseId:
+          $ref: '#/components/schemas/CaseId'
+        status:
+          type: string
+          enum: [matches_reference, diverged]
+        reason:
+          type: ['string', 'null']
+
+    BenchmarkReport:
+      type: object
+      required: [runId, mode, purpose, generatedAt, labels, agentDecision, platformGuarantees, cases]
+      properties:
+        runId:
+          $ref: '#/components/schemas/RunId'
+        mode:
+          $ref: '#/components/schemas/ProposerMode'
+        purpose:
+          type: string
+          enum: [benchmark, reference, quick_validation]
+        provider:
+          type: ['string', 'null']
+        model:
+          type: ['string', 'null']
+        reference:
+          type: object
+          description: Provedor e modelo da Execução de Referência e aviso de divergência (FR-40).
+          properties:
+            provider:
+              type: string
+            model:
+              type: string
+            differsFromReference:
+              type: boolean
+            warning:
+              type: ['string', 'null']
+        repetitions:
+          type: integer
+        policyVersion:
+          type: string
+        mappingVersion:
+          type: string
+        generatedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        labels:
+          $ref: '#/components/schemas/Labels'
+        agentDecision:
+          type: array
+          description: Parte "Decisão do Agente". Só o conjunto `test` entra nas metas (§12).
+          items:
+            $ref: '#/components/schemas/AgentDecisionRow'
+        platformGuarantees:
+          type: array
+          description: Parte "Garantias da Plataforma" — aprovado/reprovado, sem placar comparativo.
+          items:
+            $ref: '#/components/schemas/PlatformGuaranteeRow'
+        quickValidation:
+          type: array
+          description: Só em `purpose = quick_validation`.
+          items:
+            $ref: '#/components/schemas/QuickValidationResult'
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/BenchmarkCaseResult'
+
+    ComparativeBenchmarkReport:
+      type: object
+      required: [runIds, generatedAt, agentDecision, platformGuarantees]
+      properties:
+        runIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/RunId'
+        generatedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        agentDecision:
+          type: array
+          description: Linhas de todos os runs, uma por (família, conjunto, modo).
+          items:
+            $ref: '#/components/schemas/AgentDecisionRow'
+        platformGuarantees:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/PlatformGuaranteeRow'
+              - type: object
+                required: [runId]
+                properties:
+                  runId:
+                    $ref: '#/components/schemas/RunId'
+        serverTime:
+          $ref: '#/components/schemas/UtcDateTime'
+
+    # ---------- referência ----------
+    ActionCatalogEntry:
+      type: object
+      required: [action, externalEffect, requiresApproval, paramsSchema, requiredEvidence]
+      properties:
+        action:
+          $ref: '#/components/schemas/Action'
+        externalEffect:
+          type: boolean
+        requiresApproval:
+          type: boolean
+          description: Política de Aprovação v1 (FR-16).
+        paramsSchema:
+          type: object
+          additionalProperties: true
+          description: JSON Schema dos parâmetros.
+        requiredEvidence:
+          type: array
+          description: Evidências mínimas (FR-15).
+          items:
+            type: string
+
+    ApprovedMapping:
+      type: object
+      required: [mappingId, mappingVersion, sourceCode, targetCode, conditions]
+      properties:
+        mappingId:
+          type: string
+        mappingVersion:
+          type: string
+        sourceCode:
+          type: string
+        targetCode:
+          type: string
+        conditions:
+          type: object
+          additionalProperties: true
+          description: 'Condições de aplicabilidade (ex. `{ "specimen.type": "soro" }`).'
+
+x-open-questions:
+  - id: API-Q1
+    topic: '"Um único comando" do FR-39 vs. BenchmarkRun de modo único (AD-23)'
+    gap: |
+      FR-39 pede um comando que rode os dois modos e produza um relatório; AD-23 dá a cada
+      BenchmarkRun um único modo.
+    proposal: |
+      Este contrato mantém um modo por run e adiciona `GET /benchmark-reports?runId=&runId=`.
+      O "comando único" do README chama `POST /benchmark-runs` duas vezes (rules e agent) e lê o
+      comparativo. Alternativa: um recurso agrupador (`benchmark-suites`) — decidir com Henry.
+  - id: API-Q2
+    topic: Códigos de erro faltantes no enum do Core
+    gap: |
+      O enum (`STALE_VERSION`, `INVALID_TRANSITION`, `INVALID_ACTOR`, `VALIDATION_FAILED`,
+      `NOT_FOUND`) não distingue requisição malformada de recusa do Validador, nem tem código para
+      erro interno (500) ou para conflito de run de Benchmark.
+    proposal: |
+      Requisição malformada = 400 `VALIDATION_FAILED`; recusa do Validador = 422
+      `VALIDATION_FAILED` com o veredito em `details`; run ainda não concluído = 409
+      `INVALID_TRANSITION`. Avaliar `INTERNAL_ERROR` para 500 (não declarado aqui).
+  - id: API-Q3
+    topic: REQUEST_REVIEW como resolução do Dossiê
+    gap: |
+      FR-29 diz "uma Ação do Catálogo", que inclui `REQUEST_REVIEW`; escolhê-la a partir de
+      `ReviewRequired` reabriria a revisão sem efeito.
+    proposal: Resolução aceita só `RETRY`, `APPLY_APPROVED_MAPPING` e `HOLD`, além de `cancel`.
+  - id: API-Q4
+    topic: Tipos de evento da Linha do Tempo
+    gap: |
+      O spine fixa a forma `{seq, at, type, actor, refId, payload}` e FR-7 lista eventos críticos,
+      mas não fixa o enum de `type`.
+    proposal: Enum `TimelineEventType` deste arquivo; José confirma ou ajusta antes do código.
+  - id: API-Q5
+    topic: Caminho de estados da resolução pelo Operador
+    gap: |
+      AD-12 faz a resolução criar Proposta, validar e registrar a Aprovação do mesmo Operador num
+      comando; addendum §D só tem `ReviewRequired → DecisionProposed` e não tem
+      `DecisionProposed → Approved`. Não está dito se o comando atravessa `PendingApproval`
+      (vários `StateChanged` e incrementos de `caseVersion`) ou se há uma transição direta.
+    proposal: |
+      O comando atravessa `ReviewRequired → DecisionProposed → PendingApproval → Approved` numa
+      transação, com um `StateChanged` por passo; a resposta traz o estado final.
+  - id: API-Q6
+    topic: Negação repetida e decisão oposta
+    gap: AD-3 só define a idempotência da Aprovação repetida.
+    proposal: |
+      Negar de novo a mesma `proposalId` já negada → `200` idempotente; decisão oposta a uma já
+      registrada para a mesma `proposalId` → 409 `INVALID_TRANSITION`.
+  - id: API-Q7
+    topic: Campo `version` da Proposta e da Aprovação (addendum §C)
+    gap: |
+      addendum §C traz `proposalId` e `version`; AD-9 torna cada Proposta imutável com
+      `proposalId` próprio, o que torna `version` redundante.
+    proposal: A `proposalId` é a versão exata; o contrato não expõe `version`.
+  - id: API-Q8
+    topic: IDs sem prefixo no spine
+    gap: '`exceptionId` e `attemptId` não têm prefixo definido nas Consistency Conventions.'
+    proposal: Opacos neste contrato; sugerir `exc_` e `att_` ao spine.
+  - id: API-Q9
+    topic: Export do Caso (FR-8)
+    gap: |
+      FR-8 e FR-38 citam export do Caso para Benchmark com rótulos; nenhum documento define se é
+      endpoint HTTP.
+    proposal: |
+      Fora deste contrato por ora; `GET /cases/{caseId}` mais a Linha do Tempo e
+      `BenchmarkReport.cases` cobrem a interface. Adicionar `GET /cases/{caseId}/export` se o
+      Bench precisar recalcular métricas sem a Production.
+  - id: API-Q10
+    topic: Mais de um BenchmarkRun simultâneo
+    gap: AD-23 fala em "BenchmarkRun ativo", sem dizer se pode haver mais de um.
+    proposal: |
+      Contrato permite 409 `INVALID_TRANSITION` em `POST /benchmark-runs` quando já há run
+      `running`; confirmar se a restrição é desejada.

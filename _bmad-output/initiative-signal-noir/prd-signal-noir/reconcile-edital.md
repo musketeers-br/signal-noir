@@ -1,6 +1,6 @@
 # Reconciliação: edital do concurso × PRD Sentai Nexus
 
-Data: 2026-10-18. Entrada: `research-edital.md` (fontes F1 a F8). Comparado com `prd-sentai-nexus.md` e `addendum.md`. O PRD não foi editado.
+Data: 2026-10-18. Entrada: `research-edital.md` (fontes F1 a F8). Comparado com `prd-signal-noir.md` e `addendum.md`. O PRD não foi editado.
 
 Severidade: **Alta** = pode invalidar a submissão ou travar o plano. **Média** = perde pontos ou gera retrabalho. **Baixa** = oportunidade ou ajuste de texto.
 

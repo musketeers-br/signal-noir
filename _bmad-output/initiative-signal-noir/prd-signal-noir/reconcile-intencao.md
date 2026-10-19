@@ -1,7 +1,7 @@
 # Reconciliação: intenção do brainstorming × PRD + addendum
 
 - **Fonte de intenção:** `_bmad-output/brainstorm-lacunas-prd-sentai-nexus/brainstorm-lacunas-prd-sentai-nexus.md` (com `.memlog.md` para detalhe)
-- **Alvo:** `prd-sentai-nexus.md` e `addendum.md` (nesta pasta)
+- **Alvo:** `prd-signal-noir.md` e `addendum.md` (nesta pasta)
 - **Data:** 18/10/2026
 - **Escopo:** o que a intenção contém e o PRD/addendum omitiu, enfraqueceu, contradisse ou mudou sem dizer. O PRD não foi editado.
 

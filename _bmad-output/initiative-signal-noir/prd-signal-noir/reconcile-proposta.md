@@ -1,7 +1,7 @@
 # Reconciliação: proposta Musketeers (16/10) × PRD + addendum
 
 **Fonte:** `/Users/henryhamon/Downloads/Sentai-Nexus-proposta-Musketeers.pdf` (7 páginas, "Proposta final para alinhamento da equipe", 16/10/2026)
-**Alvo:** `prd-sentai-nexus.md` e `addendum.md` (nesta pasta)
+**Alvo:** `prd-signal-noir.md` e `addendum.md` (nesta pasta)
 **Data:** 18/10/2026. O PRD não foi editado.
 
 Convenção: "p.N" é a página da proposta. "§" é a seção do PRD. "Add." é o addendum.
