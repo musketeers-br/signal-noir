@@ -2,7 +2,7 @@
 title: 'Signal Noir: AI Exception Resolution for Interoperability'
 status: final
 created: 2026-10-18
-updated: 2026-10-18
+updated: 2026-10-21
 ---
 
 # PRD: Signal Noir — AI Exception Resolution for Interoperability
@@ -207,8 +207,9 @@ A Production entrega o Pedido ao Parceiro. Só considera sucesso quando recebe u
 - No Cenário limpo de sucesso, o Pedido percorre entrada, orquestração e entrega, e o Recibo fica registrado.
 
 #### FR-3: Abrir Caso na primeira Exceção
-Quando uma Tentativa termina em Exceção, o sistema abre um Caso para o Pedido. Se já existir Caso aberto para o mesmo `orderId`, registra a nova Exceção nesse Caso, e ele volta a `Investigating`. [ASSUMPTION: Caso novo só com novo `orderId` ou depois que o Caso anterior estiver em estado terminal]
+Quando uma Tentativa termina em Exceção, o sistema abre um Caso para o Pedido. Se já existir Caso aberto para o mesmo `orderId`, registra a nova Exceção nesse Caso, e ele volta a `Investigating`. Estados terminais não reabrem implicitamente: uma Exceção do mesmo `orderId` depois de um estado terminal é um **novo episódio** e abre um Caso novo, **relacionado** ao anterior (caderno de 19/10, ADR-03).
 **Consequências (testáveis):**
+- Uma Exceção depois de `Resolved` abre um Caso novo que referencia o anterior, e o Caso anterior continua terminal.
 - Duas Exceções sucessivas do mesmo Pedido resultam em um Caso com duas Exceções na Linha do Tempo.
 - Dois Pedidos distintos com Exceção resultam em dois Casos.
 - O Caso registra o snapshot do Pedido original, a Exceção inicial (status, corpo, momento) e os identificadores de correlação.
@@ -297,10 +298,10 @@ Texto presente em Pedidos, respostas do Parceiro ou logs não altera as Ferramen
 - O trecho injetado aparece no Caso como Evidência marcada como "conteúdo suspeito".
 
 #### FR-50: Provedor configurável
-O Provedor e o modelo do Agente são configuráveis por variável de ambiente, entre os Provedores suportados (OpenAI, Anthropic, Gemini, Amazon Bedrock).
+O Provedor e o modelo do Agente são configuráveis por variável de ambiente, entre os Provedores suportados pelo AI Hub (OpenAI, Anthropic, Gemini, Amazon Bedrock). A submissão **demonstra um Provedor e um modelo de referência**. Os demais continuam configuráveis, mas o suporte não é garantido nem anunciado (caderno de 19/10, §02).
 **Consequências (testáveis):**
 - Trocar o Provedor exige apenas mudar o `.env`, sem alterar código.
-- O README declara qual Provedor e modelo foram usados na Execução de Referência e quais foram testados de fato.
+- O README declara qual Provedor e modelo foram usados na Execução de Referência e quais foram testados de fato. Provedor não testado não é anunciado como suportado.
 
 #### FR-53: Evidência Pré-coletada (plano B)
 Se o build 154 não permitir que o Agente chame Ferramentas de dentro da Production (Q-12), o sistema chama as Ferramentas de forma determinística, conforme a Exceção, e entrega todas as Evidências ao Agente numa única chamada. O resto do fluxo (Proposta estruturada, Validador, Aprovação) não muda.
@@ -352,9 +353,10 @@ O Operador aprova ou nega a Proposta vigente. A Aprovação fica vinculada à ve
 - Uma Proposta negada leva o Caso a `Rejected` e segue a regra de FR-5.
 
 #### FR-18: Validade da Aprovação
-A Aprovação expira após um prazo, ou antes disso se surgir uma Evidência que contradiga alguma pré-condição da Proposta. [ASSUMPTION: validade de 15 min]
+A Aprovação vale por um prazo e é conferida pela Revalidação imediatamente antes do envio (FR-20). Uma Aprovação vencida, ou materialmente incompatível com o contexto revalidado, não executa. Uma Evidência nova qualquer **não** expira a Aprovação: só conta se tornar falsa uma pré-condição declarada (caderno de 19/10, ADR-06). [ASSUMPTION: validade de 15 min]
 **Consequências (testáveis):**
 - Uma Aprovação expirada não autoriza Execução. O Caso volta a `PendingApproval` e precisa de nova Aprovação.
+- Uma Evidência anexada depois da Aprovação que não afeta nenhuma pré-condição não invalida a Aprovação.
 
 #### FR-19: Aprovação durável e idempotente
 Aprovações pendentes sobrevivem a reinício, e Aprovações repetidas não repetem o efeito.
@@ -507,9 +509,11 @@ A interface e os exports identificam dados sintéticos e, nos exports e no víde
 Um único comando roda o conjunto de Cenários nos dois modos, em Modo Benchmark, e produz um relatório.
 **Consequências (testáveis):**
 - O relatório tem duas partes.
-  - **Decisão do Agente:** por Família de P5, P8, P9 e P1 e por modo, traz correto, revisão segura, revisão desnecessária, incorreto, latência p50/p95, Chamadas de Ferramenta e custo estimado por Caso.
-  - **Garantias da Plataforma:** para P3, idempotência, timeout, reinício e Aprovação repetida, traz aprovado ou reprovado, sem placar comparativo.
-- Os conjuntos de ajuste e de teste aparecem separados, e só o de teste entra nas metas (§12).
+  - **Decisão do Agente:** por Família do núcleo (P5 e P8b) e por modo, traz correto, revisão segura, revisão desnecessária, incorreto, latência p50/p95, Chamadas de Ferramenta e custo estimado por Caso. P9 entra como Família própria só se for incluído (§9.2). Cenários limpos entram como controle.
+  - **Garantias da Plataforma:** para P3, idempotência, timeout, reinício, Aprovação repetida e worker atrasado, traz aprovado ou reprovado, sem placar comparativo.
+- Os conjuntos de ajuste e de teste aparecem separados, e só o de teste entra nos resultados (§12).
+- A pontuação considera Ação **e** parâmetros. O relatório separa revisão necessária de revisão desnecessária, e proposta errada bloqueada pelo Validador (erro do propositor, sucesso da proteção) de efeito errado.
+- O export traz contagens, denominadores e resultados brutos, o bastante para recalcular o relatório.
 
 #### FR-48: Modo Regras forte e publicado
 O Modo Regras é a melhor linha de base determinística que o time consegue escrever. Usa as mesmas Ferramentas e Evidências do Agente e é publicado no repositório.
@@ -518,13 +522,15 @@ O Modo Regras é a melhor linha de base determinística que o time consegue escr
 - As regras são escritas ou revisadas por um integrante diferente de quem escreveu o Gabarito daquela Família. [ASSUMPTION]
 
 #### FR-40: Execução de Referência e reprodução por terceiros
-O time publica uma Execução de Referência com Provedor e modelo fixos, com k repetições por variante. O jurado reproduz com a própria chave.
+O time publica uma Execução de Referência com Provedor e modelo fixos: P5 e P8b, 5 variantes de teste por Família e k = 3 repetições, ou seja, **30 investigações do Agente no teste**, mais os controles limpos e o Dossiê (caderno de 19/10, §06). Prompt, modelo, baseline, Políticas, fixtures e avaliador ficam congelados antes do teste. O jurado reproduz com a própria chave.
 **Consequências (testáveis):**
-- A Execução de Referência reporta cada métrica como faixa (mín. e máx.) sobre k execuções. [ASSUMPTION: k = 3]
+- A Execução de Referência reporta cada métrica como faixa (mín. e máx.) sobre as k execuções. As repetições medem instabilidade e não contam como casos independentes.
+- Se resultados do teste forem usados para ajustar prompt, regras ou Políticas, esse conjunto passa a ser de desenvolvimento, e o resultado final exige um novo conjunto reservado válido.
+- Uma resposta gravada (Replay) não conta como execução real.
 - O README descreve o comando de reprodução. O relatório indica Provedor e modelo e avisa quando eles diferem da Execução de Referência.
 
 #### FR-49: Validação rápida
-Um comando de validação executa 3 Casos de referência (um limpo, um P5/P8 e um P9) e compara o desfecho com o resultado gravado.
+Um comando de validação executa 3 Casos de referência (um limpo, um P5/P8b e um que termina em Dossiê) e compara o desfecho com o resultado gravado. Se P9 entrar (§9.2), ele substitui o Caso limpo.
 **Consequências (testáveis):**
 - O comando termina em ≤ 3 min e indica, por Caso, "igual à referência" ou "divergiu", com o motivo.
 
@@ -653,19 +659,27 @@ Um artigo na Developer Community cobre a experiência com o AI Hub, modelos e cu
 - Foi adotado o plano B de Evidência Pré-coletada (FR-53).
 - A prova de 25/10 vira spike descartável.
 
+**Recorte de 19/10** (caderno de decisão, adotado na iniciativa em 20/10 e mergeado com o PR #1):
+- O núcleo passa a ser **P5/P8b + P13 (Dossiê)**: uma Exceção principal por Pedido sintético.
+- P3 e a suíte de recuperação continuam obrigatórios, como Garantias da Plataforma.
+- P9 passa a ser condicionado (§9.2).
+- P1 fica só como variante de P5, sem espera real de 90 s na demo.
+- A meta de vitória do SM-1 sai: o ganho do Agente é medido e publicado, mesmo se der empate ou perda (§12).
+
 ### 9.1 Núcleo (obrigatório para a submissão)
 - Workflow de Pedidos JSON com o Simulador (§4.1).
 - Caso canônico com ciclo de vida, Linha do Tempo e retomada (§4.2).
-- Investigação pelo Agente com Ferramentas restritas, orçamento e Provedor configurável (§4.3).
+- Investigação pelo Agente com Ferramentas restritas, orçamento e um Provedor de referência (§4.3).
 - Validador, Aprovação, Revalidação, Reavaliação, idempotência e Reconciliação (§4.4–§4.6).
-- Dossiê de Revisão (§4.8).
-- Cenários limpos e as Famílias P1, P3, P5, P8 e P9 (§4.9).
+- Dossiê de Revisão, inclusive quando o LLM falha antes de propor (§4.8).
+- Cenários limpos como controle; Famílias **P5 e P8b** (Decisão do Agente), P1 como variante de P5; **P3** e recuperação (Garantias da Plataforma) (§4.9).
 - Interface do Operador (§4.10).
 - Benchmark com Modo Regras forte, Execução de Referência e validação rápida (§4.11).
 - Pacote de submissão (§4.12), exceto o artigo.
 
-### 9.2 Condicional (entra se o marco de 02/11 for cumprido)
-- Artigo técnico (FR-46).
+### 9.2 Condicional
+- **P9, entrega prévia (FR-24, FR-47).** Entra só depois de Execução e Dossiê aceitos (B09 e B10), sem comprometer Benchmark, instalação cruzada e inscrição (B12–B14). Sem identidade inequívoca, o Recibo candidato vai para revisão.
+- **Artigo técnico (FR-46).** Entra se o marco de 02/11 for cumprido.
 
 ### 9.3 Fora da submissão
 - **System 1 em modo sombra.** Experimento opcional depois que o núcleo estiver estável.
@@ -686,11 +700,12 @@ Todas as datas estão em horário de Brasília (BRT), salvo indicação. O prazo
 
 | Marco | Critério de saída | Corte se falhar |
 |---|---|---|
+| **24/10, protótipo** | Protótipo descartável da interface revisado por Henry e José, com aprendizados registrados (`prototype-signal-noir/findings.md`). | O B03 congela com o que o protótipo já mostrou. |
 | **25/10, preparação** | Contrato dos Cenários do núcleo fechado entre Simulador e IRIS: especificação, Gabarito e regras do Modo Regras. **Spike descartável** do build 154, fora do repositório da submissão: o componente da Production chama o AI Hub e o Agente consulta ≥ 1 Ferramenta e devolve uma Proposta do Catálogo. *Desejável:* Ferramenta devolvendo um erro mentiroso (P5). | Se o Agente não chamar Ferramentas de dentro da Production, adotar Evidência Pré-coletada (FR-53). |
 | **27/10, menor prova** | Reimplementada no repositório da submissão: um Pedido sintético abre um Caso persistido, o Agente devolve uma Proposta com Evidência, e a Proposta sobrevive a reinício. | Suspender Cenários múltiplos, interface rica e Benchmark comparativo até a prova passar. |
-| **29/10** | Um Caso real ponta a ponta na interface, em pelo menos 1 Cenário sujo. Integração real da interface e do Simulador com o backend. | Retirar System 1 e refinamentos visuais. |
+| **29/10** | Um Caso real P5/P8b ponta a ponta na interface, da falha ao resultado. Integração real da interface e do Simulador com o backend. | Retirar P9 e manter uma história principal. |
 | **02/11** | Aprovação durável da versão exata, Revalidação, idempotência e Reconciliação demonstradas, incluindo P3. | Execução automática restrita a uma Ação comprovada; o resto em modo demonstrativo, com bloqueio antes do efeito. |
-| **05/11, freeze funcional** | Benchmark com Execução de Referência nas Famílias do núcleo; demo ensaiável; métricas de latência, custo e placar. | Reduzir a 3 Famílias fortes (P3, P5/P8 e P9). |
+| **05/11, freeze funcional** | Execução de Referência rodada e publicada (P5 e P8b, FR-40); demo ensaiável; métricas de latência e custo. | Daqui em diante, só correções e preparação da entrega. |
 | **07/11** | Versão submetível: instalação cruzada, vídeo, README, publicação no Open Exchange e inscrição (FR-52). | — |
 | **08/11, 18:00 BRT** | Submissão conferida. | — |
 | **09–15/11, votação** | Só correções que preservem a estabilidade, respostas a perguntas da comunidade, publicação do artigo, se ainda não tiver saído, acompanhamento da votação. | Nenhuma funcionalidade nova. |
@@ -701,11 +716,11 @@ O edital exige que **o app seja construído durante o concurso**, a partir de 26
 
 | Frente | Responsável | Entregas |
 |---|---|---|
-| IRIS e AI Hub | José Roberto | §4.1–§4.7, Ferramentas, Validador, Execução, Dossiê (geração) |
-| Interface | Henrique | §4.10, Dossiê (apresentação), eventos e tratamento visual das falhas |
-| Produto e submissão | Henry | §4.9, §4.11, §4.12, critérios de aceite, roteiro e coordenação da submissão |
+| IRIS e AI Hub | José Roberto | §4.1–§4.7: Production, persistência, Ferramentas, Validador, Aprovação, Execução, recuperação e Dossiê (geração); baseline do Modo Regras |
+| Interface e validação | Henrique | §4.10, Dossiê (apresentação), protótipo, revisão do avaliador do Benchmark e instalação cruzada |
+| Produto e submissão | Henry | §4.9 (Simulador e fixtures), conjunto de teste reservado, §4.11, §4.12, critérios de aceite, roteiro e submissão |
 
-[ASSUMPTION: frentes mantidas da proposta de 16/10]
+Frentes ajustadas pelo caderno de 19/10 (§05). Se Henry não puder implementar o Simulador HTTP, o escopo é reduzido ou redistribuído explicitamente antes de 26/10, nunca transferido em silêncio para José.
 
 - **Revisão cruzada:** cada entrega tem um responsável e revisão de outro Musketeer.
 - **Revisão conjunta:** Execução, retomada e idempotência são revisadas pelos três.
@@ -762,10 +777,10 @@ A tela mostra modelo, duração, Tentativas e custo estimado, com o Visual Trace
 
 ## 12. Métricas de sucesso
 
-Todas as metas de Decisão do Agente são medidas no **conjunto de teste**, na **Execução de Referência**, contando apenas desfechos iguais ao Gabarito.
+Todas as métricas de Decisão do Agente são medidas no **conjunto de teste**, na **Execução de Referência**, contando apenas desfechos iguais ao Gabarito.
 
 **Primárias**
-- **SM-1. Diferença na Decisão do Agente:** resolução correta por Família de P5, P8, P9 e P1. Meta: Regras + Agente ≥ 80% contra o Modo Regras com margem ≥ 30 pontos. [ASSUMPTION: meta derivada de "4/5 contra 2/5"] Valida FR-9 a FR-12, FR-31 e FR-48.
+- **SM-1. Diferença na Decisão do Agente:** resolução correta por Família do núcleo (P5 e P8b; P9 se entrar) e por modo, com denominadores. **Sem meta de vitória** (caderno de 19/10, ADR-01): o ganho do Agente sobre o Modo Regras é uma hipótese medida. Ganho, empate e perda são publicados como saírem, sem enfraquecer a linha de base. O sucesso do SM-1 é o resultado ser publicado e reprodutível, não um valor mínimo. Valida FR-9 a FR-12, FR-31 e FR-48.
 - **SM-2. Empate no mundo limpo:** nos Cenários limpos, diferença entre os modos ≤ 5 pontos. Confirma que o Benchmark não está inclinado. Valida FR-30.
 - **SM-3. Desfecho incorreto do Agente:** ≤ 5% das variantes de teste. [ASSUMPTION] Valida FR-12, FR-14, FR-15 e FR-47.
 - **SM-4. Garantias da Plataforma:** 0 Recibos duplicados, 0 Ações inválidas executadas, 0 Execuções com pré-condição vencida (P3). Valida FR-19 a FR-23.
@@ -816,5 +831,6 @@ Todas as metas de Decisão do Agente são medidas no **conjunto de teste**, na *
 - FR-40: k = 3 repetições por variante.
 - FR-48: regras escritas ou revisadas por um integrante diferente do autor do Gabarito.
 - NFR-1 a NFR-4 e NFR-10: metas de orçamento, latência, custo e instalação ainda não medidas.
-- SM-1, SM-3 e SM-C1: metas de 80% com margem de 30 pontos, ≤ 5% de incorretos e teto de 20% de revisões desnecessárias.
-- §9.5: frentes, responsáveis e capacidade mantidos da proposta de 16/10.
+- SM-3 e SM-C1: ≤ 5% de incorretos e teto de 20% de revisões desnecessárias. (A meta de 80% do SM-1 saiu em 21/10, pelo caderno de 19/10.)
+- §9.5: capacidade de três pessoas com disponibilidade recorrente; frentes ajustadas pelo caderno de 19/10.
+- FR-22: a derivação da Chave de Idempotência (efeito vs. Proposta) está em aberto como API-Q11 do contrato (PR #2), com decisão de José.
