@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "A denial requires a reason; it becomes evidence for the next investigation",
+    "details": {}
+  }
+}

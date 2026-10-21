@@ -1,0 +1,20 @@
+{
+  "approval": {
+    "approvalId": "appr_c4e1a9_06",
+    "proposalId": "prop_c4e1a9_v1",
+    "decision": "denied",
+    "by": "operator:Carla",
+    "at": "2026-10-29T13:00:48Z",
+    "expiresAt": null,
+    "reason": "Partner B announced a maintenance window by phone."
+  },
+  "idempotentReplay": false,
+  "case": {
+    "caseId": "case_c4e1a9",
+    "state": "Rejected",
+    "caseVersion": 5,
+    "lastEventSeq": 12,
+    "serverTime": "2026-10-29T13:00:48Z",
+    "commandId": "cmd_c4e1a9_02"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "error": {
+    "code": "INVALID_TRANSITION",
+    "message": "Case is ReviewRequired, not PendingApproval",
+    "details": {
+      "caseId": "case_0b6f19",
+      "state": "ReviewRequired",
+      "caseVersion": 4,
+      "lastEventSeq": 10,
+      "serverTime": "2026-10-29T13:00:37Z"
+    }
+  }
+}

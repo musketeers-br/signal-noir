@@ -1,0 +1,111 @@
+{
+  "items": [
+    {
+      "caseId": "case_9f3a1c",
+      "orderId": "ORD-24117",
+      "partnerId": "lab-partner-a",
+      "state": "PendingApproval",
+      "labels": {
+        "synthetic": true,
+        "replay": false
+      },
+      "proposerMode": "agent",
+      "benchmark": null,
+      "createdAt": "2026-10-29T13:00:00Z",
+      "lastEventAt": "2026-10-29T13:00:13Z",
+      "caseVersion": 4,
+      "lastEventSeq": 12,
+      "serverTime": "2026-10-29T13:00:13Z",
+      "pendingApproval": true,
+      "approvalDeadline": null,
+      "currentProposal": {
+        "proposalId": "prop_9f3a1c_v1",
+        "action": "APPLY_APPROVED_MAPPING",
+        "confidence": "ALTA"
+      },
+      "exceptionCount": 2,
+      "lastExceptionSummary": "Attempt 2 · HTTP 500 with a validation body",
+      "executionOutcome": null
+    },
+    {
+      "caseId": "case_a37b5d",
+      "orderId": "ORD-24188",
+      "partnerId": "lab-partner-a",
+      "state": "ReviewRequired",
+      "labels": {
+        "synthetic": true,
+        "replay": false
+      },
+      "proposerMode": "agent",
+      "benchmark": null,
+      "createdAt": "2026-10-29T13:00:00Z",
+      "lastEventAt": "2026-10-29T13:00:09Z",
+      "caseVersion": 3,
+      "lastEventSeq": 9,
+      "serverTime": "2026-10-29T13:00:13Z",
+      "pendingApproval": false,
+      "approvalDeadline": null,
+      "currentProposal": null,
+      "exceptionCount": 1,
+      "lastExceptionSummary": "Attempt 1 · HTTP 500 with a validation body",
+      "executionOutcome": null
+    },
+    {
+      "caseId": "case_0b6f19",
+      "orderId": "ORD-24195",
+      "partnerId": "lab-partner-a",
+      "state": "ReviewRequired",
+      "labels": {
+        "synthetic": true,
+        "replay": false
+      },
+      "proposerMode": "agent",
+      "benchmark": null,
+      "createdAt": "2026-10-29T13:00:00Z",
+      "lastEventAt": "2026-10-29T13:00:09Z",
+      "caseVersion": 4,
+      "lastEventSeq": 10,
+      "serverTime": "2026-10-29T13:00:13Z",
+      "pendingApproval": false,
+      "approvalDeadline": null,
+      "currentProposal": {
+        "proposalId": "prop_0b6f19_v1",
+        "action": "REQUEST_REVIEW",
+        "confidence": "BAIXA"
+      },
+      "exceptionCount": 1,
+      "lastExceptionSummary": "Attempt 1 · HTTP 422 identity",
+      "executionOutcome": null
+    },
+    {
+      "caseId": "case_2a90b4",
+      "orderId": "ORD-24098",
+      "partnerId": "lab-partner-b",
+      "state": "Resolved",
+      "labels": {
+        "synthetic": true,
+        "replay": false
+      },
+      "proposerMode": "rules",
+      "benchmark": null,
+      "createdAt": "2026-10-29T12:20:00Z",
+      "lastEventAt": "2026-10-29T12:20:15Z",
+      "caseVersion": 7,
+      "lastEventSeq": 18,
+      "serverTime": "2026-10-29T13:00:13Z",
+      "pendingApproval": false,
+      "approvalDeadline": null,
+      "currentProposal": {
+        "proposalId": "prop_2a90b4_v1",
+        "action": "RETRY",
+        "confidence": "MEDIA"
+      },
+      "exceptionCount": 1,
+      "lastExceptionSummary": "Attempt 1 · HTTP 503",
+      "executionOutcome": "resolved"
+    }
+  ],
+  "nextCursor": null,
+  "headCursor": "2026-10-29T13:00:13Z|case_9f3a1c",
+  "serverTime": "2026-10-29T13:00:13Z"
+}

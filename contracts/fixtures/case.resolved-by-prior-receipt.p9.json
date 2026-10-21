@@ -1,0 +1,322 @@
+{
+  "caseId": "case_d91c07",
+  "orderId": "ORD-24203",
+  "partnerId": "lab-partner-a",
+  "state": "ResolvedByPriorReceipt",
+  "labels": {
+    "synthetic": true,
+    "replay": false
+  },
+  "proposerMode": "agent",
+  "benchmark": null,
+  "createdAt": "2026-10-29T13:01:38Z",
+  "lastEventAt": "2026-10-29T13:01:49Z",
+  "updatedAt": "2026-10-29T13:01:49Z",
+  "caseVersion": 4,
+  "lastEventSeq": 11,
+  "order": {
+    "orderId": "ORD-24203",
+    "correlationId": "corr_d91c07",
+    "transactionIds": [
+      "TX-50203"
+    ],
+    "snapshot": {
+      "orderId": "ORD-24203",
+      "transactionId": "TX-50203",
+      "patient": {
+        "id": "SYN-PAT-0118",
+        "name": "Synthetic Patient 118",
+        "birthDate": "1980-01-01"
+      },
+      "exams": [
+        {
+          "code": "LIPID",
+          "name": "Lipid panel"
+        }
+      ],
+      "specimen": {
+        "id": "SPC-7851",
+        "type": "SERUM"
+      },
+      "collectedAt": "2026-10-29T12:31:00Z",
+      "orderingUnit": "UNIT-NORTH"
+    },
+    "equivalenceKey": {
+      "patientId": "SYN-PAT-0118",
+      "examCodes": [
+        "LIPID"
+      ],
+      "collectedAt": "2026-10-29T12:31:00Z",
+      "specimenId": "SPC-7851"
+    },
+    "transformed": null
+  },
+  "visualTraceUrl": "/csp/signalnoir/EnsPortal.VisualTrace.zen?SESSIONID=41580",
+  "exceptions": [
+    {
+      "exceptionId": "exc_d91c07_01",
+      "kind": "timeout",
+      "httpStatus": null,
+      "body": null,
+      "responseClass": "transient",
+      "observedAt": "2026-10-29T13:01:38Z",
+      "attemptId": "att_d91c07_1",
+      "duringExecution": false
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "evid_d91c07_02",
+      "source": "system.exception",
+      "calledBy": "system",
+      "params": {
+        "exceptionId": "exc_d91c07_01"
+      },
+      "result": {
+        "kind": "timeout",
+        "httpStatus": null,
+        "responseClass": "transient",
+        "body": null
+      },
+      "observedAt": "2026-10-29T13:01:38Z",
+      "durationMs": 254,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_d91c07_03",
+      "source": "tool.partner_health",
+      "calledBy": "agent",
+      "params": {
+        "partnerId": "lab-partner-a"
+      },
+      "result": {
+        "status": "UP",
+        "errorRate5m": 0,
+        "p95LatencyMs": 380,
+        "maintenanceWindow": null
+      },
+      "observedAt": "2026-10-29T13:01:42Z",
+      "durationMs": 291,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_d91c07_04",
+      "source": "tool.origin_order_status",
+      "calledBy": "agent",
+      "params": {
+        "orderId": "ORD-24203"
+      },
+      "result": {
+        "status": "ACTIVE",
+        "resentFrom": null
+      },
+      "observedAt": "2026-10-29T13:01:44Z",
+      "durationMs": 328,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_d91c07_05",
+      "source": "tool.receipts_and_orders_by_patient",
+      "calledBy": "agent",
+      "params": {
+        "patientId": "SYN-PAT-0118",
+        "windowMin": 30
+      },
+      "result": {
+        "orders": [
+          {
+            "orderId": "ORD-24199",
+            "transactionId": "TX-50199",
+            "examCodes": [
+              "LIPID"
+            ],
+            "specimenId": "SPC-7851",
+            "collectedAt": "2026-10-29T12:31:00Z"
+          }
+        ],
+        "receipts": [
+          {
+            "receiptId": "RCP-88120",
+            "orderId": "ORD-24199",
+            "receivedAt": "2026-10-29T12:57:00Z"
+          }
+        ]
+      },
+      "observedAt": "2026-10-29T13:01:46Z",
+      "durationMs": 365,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    }
+  ],
+  "diagnosis": {
+    "summary": "The order was already delivered: the origin resent it as ORD-24199 under another transaction ID, and the partner issued receipt RCP-88120 3 minutes earlier.",
+    "claims": [
+      {
+        "text": "The partner is healthy, so the timeout alone does not justify a resend.",
+        "evidenceIds": [
+          "evid_d91c07_03"
+        ]
+      },
+      {
+        "text": "ORD-24199 has the same patient, exam, specimen and collection time.",
+        "evidenceIds": [
+          "evid_d91c07_05"
+        ]
+      },
+      {
+        "text": "ORD-24199 already has receipt RCP-88120.",
+        "evidenceIds": [
+          "evid_d91c07_05"
+        ]
+      }
+    ],
+    "hypotheses": [
+      {
+        "text": "Prior delivery under another identifier.",
+        "status": "chosen",
+        "evidenceIds": [
+          "evid_d91c07_05"
+        ]
+      },
+      {
+        "text": "Code valid and partner stable: RETRY.",
+        "status": "discarded",
+        "reason": "A retry would duplicate an order that was already delivered.",
+        "evidenceIds": [
+          "evid_d91c07_05",
+          "evid_d91c07_03"
+        ]
+      }
+    ],
+    "conflicts": []
+  },
+  "currentProposalId": "prop_d91c07_v1",
+  "proposals": [
+    {
+      "proposalId": "prop_d91c07_v1",
+      "author": "agent",
+      "createdAt": "2026-10-29T13:01:48Z",
+      "current": true,
+      "supersededBy": null,
+      "diagnosis": {
+        "summary": "The order was already delivered: the origin resent it as ORD-24199 under another transaction ID, and the partner issued receipt RCP-88120 3 minutes earlier.",
+        "claims": [
+          {
+            "text": "The partner is healthy, so the timeout alone does not justify a resend.",
+            "evidenceIds": [
+              "evid_d91c07_03"
+            ]
+          },
+          {
+            "text": "ORD-24199 has the same patient, exam, specimen and collection time.",
+            "evidenceIds": [
+              "evid_d91c07_05"
+            ]
+          },
+          {
+            "text": "ORD-24199 already has receipt RCP-88120.",
+            "evidenceIds": [
+              "evid_d91c07_05"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "Prior delivery under another identifier.",
+            "status": "chosen",
+            "evidenceIds": [
+              "evid_d91c07_05"
+            ]
+          },
+          {
+            "text": "Code valid and partner stable: RETRY.",
+            "status": "discarded",
+            "reason": "A retry would duplicate an order that was already delivered.",
+            "evidenceIds": [
+              "evid_d91c07_05",
+              "evid_d91c07_03"
+            ]
+          }
+        ],
+        "conflicts": []
+      },
+      "action": "REQUEST_REVIEW",
+      "params": {
+        "reason": "prior receipt candidate; validator confirms equivalence"
+      },
+      "scope": "single_case",
+      "confidence": "ALTA",
+      "preconditions": [],
+      "priorReceiptCandidate": {
+        "receiptId": "RCP-88120",
+        "orderId": "ORD-24199"
+      },
+      "versions": {
+        "policy": "2026.10.1",
+        "mapping": "2026.10.1",
+        "prompt": "investigate-v0.3",
+        "model": "reference-model (picked in B02)",
+        "provider": "reference-provider (picked in B02)"
+      },
+      "metrics": {
+        "durationMs": 9700,
+        "toolCalls": 3,
+        "tokensIn": 4410,
+        "tokensOut": 590,
+        "estCostUsd": 0.01
+      },
+      "validatorVerdict": {
+        "verdict": "prior_receipt_confirmed",
+        "reasons": [
+          "EQUIVALENCE_KEY_MATCH"
+        ],
+        "requiresApproval": false,
+        "at": "2026-10-29T13:01:49Z"
+      }
+    }
+  ],
+  "approvals": [],
+  "denialCount": 0,
+  "executions": [],
+  "receipt": {
+    "receiptId": "RCP-88120",
+    "orderId": "ORD-24199",
+    "idempotencyKey": "idem_prior_RCP-88120",
+    "receivedAt": "2026-10-29T12:57:00Z",
+    "partnerId": "lab-partner-a",
+    "source": "prior_receipt",
+    "orderSnapshotMinimal": {
+      "orderId": "ORD-24199",
+      "examCodes": [
+        "LIPID"
+      ]
+    },
+    "equivalenceConfirmed": true,
+    "externalRef": "partner:RCP-88120",
+    "annotations": []
+  },
+  "dossier": null,
+  "metrics": {
+    "provider": "reference-provider (picked in B02)",
+    "model": "reference-model (picked in B02)",
+    "promptVersion": "investigate-v0.3",
+    "policyVersion": "2026.10.1",
+    "mappingVersion": "2026.10.1",
+    "investigationDurationMs": 9700,
+    "toolCalls": 3,
+    "tokensIn": 4410,
+    "tokensOut": 590,
+    "estCostUsd": 0.01,
+    "attempts": 1,
+    "exceptionToValidatedProposalMs": 11000,
+    "approvalToEffectMs": null
+  },
+  "serverTime": "2026-10-29T13:01:49Z"
+}

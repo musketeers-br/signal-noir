@@ -1,0 +1,375 @@
+{
+  "caseId": "case_7d22e0",
+  "orderId": "ORD-24151",
+  "partnerId": "lab-partner-b",
+  "state": "Held",
+  "labels": {
+    "synthetic": true,
+    "replay": false
+  },
+  "proposerMode": "agent",
+  "benchmark": null,
+  "createdAt": "2026-10-29T13:00:52Z",
+  "lastEventAt": "2026-10-29T13:01:07Z",
+  "updatedAt": "2026-10-29T13:01:07Z",
+  "caseVersion": 7,
+  "lastEventSeq": 16,
+  "order": {
+    "orderId": "ORD-24151",
+    "correlationId": "corr_7d22e0",
+    "transactionIds": [
+      "TX-50151"
+    ],
+    "snapshot": {
+      "orderId": "ORD-24151",
+      "transactionId": "TX-50151",
+      "patient": {
+        "id": "SYN-PAT-0063",
+        "name": "Synthetic Patient 063",
+        "birthDate": "1980-01-01"
+      },
+      "exams": [
+        {
+          "code": "CREA",
+          "name": "Creatinine"
+        }
+      ],
+      "specimen": {
+        "id": "SPC-7802",
+        "type": "SERUM"
+      },
+      "collectedAt": "2026-10-29T12:05:00Z",
+      "orderingUnit": "UNIT-NORTH"
+    },
+    "equivalenceKey": {
+      "patientId": "SYN-PAT-0063",
+      "examCodes": [
+        "CREA"
+      ],
+      "collectedAt": "2026-10-29T12:05:00Z",
+      "specimenId": "SPC-7802"
+    },
+    "transformed": null
+  },
+  "visualTraceUrl": "/csp/signalnoir/EnsPortal.VisualTrace.zen?SESSIONID=45034",
+  "exceptions": [
+    {
+      "exceptionId": "exc_7d22e0_01",
+      "kind": "http_error",
+      "httpStatus": 503,
+      "body": {
+        "status": "SERVICE_UNAVAILABLE",
+        "retryAfterSec": 60
+      },
+      "responseClass": "transient",
+      "observedAt": "2026-10-29T13:00:52Z",
+      "attemptId": "att_7d22e0_1",
+      "duringExecution": false
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "evid_7d22e0_02",
+      "source": "system.exception",
+      "calledBy": "system",
+      "params": {
+        "exceptionId": "exc_7d22e0_01"
+      },
+      "result": {
+        "kind": "http_error",
+        "httpStatus": 503,
+        "responseClass": "transient",
+        "body": {
+          "status": "SERVICE_UNAVAILABLE",
+          "retryAfterSec": 60
+        }
+      },
+      "observedAt": "2026-10-29T13:00:52Z",
+      "durationMs": 254,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_7d22e0_03",
+      "source": "tool.partner_failure_history",
+      "calledBy": "agent",
+      "params": {
+        "partnerId": "lab-partner-b",
+        "windowMin": 60
+      },
+      "result": {
+        "partnerErrorRate1h": 0.04,
+        "lastIncident": "2026-10-29T12:40:00Z"
+      },
+      "observedAt": "2026-10-29T13:00:56Z",
+      "durationMs": 291,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_7d22e0_04",
+      "source": "tool.partner_health",
+      "calledBy": "agent",
+      "params": {
+        "partnerId": "lab-partner-b"
+      },
+      "result": {
+        "status": "UP",
+        "p95LatencyMs": 610,
+        "maintenanceWindow": null,
+        "errorRate5m": 0.02
+      },
+      "observedAt": "2026-10-29T13:00:58Z",
+      "durationMs": 328,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_7d22e0_05",
+      "source": "tool.policies",
+      "calledBy": "agent",
+      "params": {
+        "topic": "retry"
+      },
+      "result": {
+        "policyId": "POL-RETRY",
+        "version": "2026.10.1",
+        "maxAttempts": 5,
+        "backoff": "exponential"
+      },
+      "observedAt": "2026-10-29T13:01:00Z",
+      "durationMs": 365,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_7d22e0_08",
+      "source": "system.revalidation",
+      "calledBy": "system",
+      "params": {
+        "executionId": "exec_7d22e0_07"
+      },
+      "result": {
+        "passed": false,
+        "failed": [
+          "PARTNER_HEALTHY_WINDOW"
+        ]
+      },
+      "observedAt": "2026-10-29T13:01:07Z",
+      "durationMs": 476,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    }
+  ],
+  "diagnosis": {
+    "summary": "A sincere outage. The 503 carries no business error, the partner is back UP, and the retry budget allows another attempt.",
+    "claims": [
+      {
+        "text": "HTTP 503 with no business error in the body.",
+        "evidenceIds": [
+          "evid_7d22e0_02"
+        ]
+      },
+      {
+        "text": "Partner health is UP now.",
+        "evidenceIds": [
+          "evid_7d22e0_04"
+        ]
+      },
+      {
+        "text": "The retry policy allows up to 5 attempts.",
+        "evidenceIds": [
+          "evid_7d22e0_05"
+        ]
+      }
+    ],
+    "hypotheses": [
+      {
+        "text": "Transient unavailability: RETRY.",
+        "status": "chosen",
+        "evidenceIds": [
+          "evid_7d22e0_02",
+          "evid_7d22e0_04"
+        ]
+      }
+    ],
+    "conflicts": []
+  },
+  "currentProposalId": "prop_7d22e0_v1",
+  "proposals": [
+    {
+      "proposalId": "prop_7d22e0_v1",
+      "author": "agent",
+      "createdAt": "2026-10-29T13:01:02Z",
+      "current": true,
+      "supersededBy": null,
+      "diagnosis": {
+        "summary": "A sincere outage. The 503 carries no business error, the partner is back UP, and the retry budget allows another attempt.",
+        "claims": [
+          {
+            "text": "HTTP 503 with no business error in the body.",
+            "evidenceIds": [
+              "evid_7d22e0_02"
+            ]
+          },
+          {
+            "text": "Partner health is UP now.",
+            "evidenceIds": [
+              "evid_7d22e0_04"
+            ]
+          },
+          {
+            "text": "The retry policy allows up to 5 attempts.",
+            "evidenceIds": [
+              "evid_7d22e0_05"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "Transient unavailability: RETRY.",
+            "status": "chosen",
+            "evidenceIds": [
+              "evid_7d22e0_02",
+              "evid_7d22e0_04"
+            ]
+          }
+        ],
+        "conflicts": []
+      },
+      "action": "RETRY",
+      "params": {},
+      "scope": "single_case",
+      "confidence": "MEDIA",
+      "preconditions": [
+        {
+          "check": "PARTNER_HEALTHY_WINDOW",
+          "expected": {
+            "maxErrorRate5m": 0.05
+          }
+        },
+        {
+          "check": "ORDER_ACTIVE_AT_ORIGIN",
+          "expected": true
+        },
+        {
+          "check": "POLICY_VERSION_UNCHANGED",
+          "expected": "POL-RETRY@2026.10.1"
+        }
+      ],
+      "priorReceiptCandidate": null,
+      "versions": {
+        "policy": "2026.10.1",
+        "mapping": "2026.10.1",
+        "prompt": "investigate-v0.3",
+        "model": "reference-model (picked in B02)",
+        "provider": "reference-provider (picked in B02)"
+      },
+      "metrics": {
+        "durationMs": 4600,
+        "toolCalls": 3,
+        "tokensIn": 2950,
+        "tokensOut": 420,
+        "estCostUsd": 0.005
+      },
+      "validatorVerdict": {
+        "verdict": "accepted",
+        "reasons": [
+          "ACTION_IN_CATALOG",
+          "RETRY_BUDGET_AVAILABLE",
+          "REQUIRED_EVIDENCE_PRESENT"
+        ],
+        "requiresApproval": true,
+        "at": "2026-10-29T13:01:03Z"
+      }
+    }
+  ],
+  "approvals": [
+    {
+      "approvalId": "appr_7d22e0_06",
+      "proposalId": "prop_7d22e0_v1",
+      "decision": "approved",
+      "by": "operator:Carla",
+      "at": "2026-10-29T13:01:03Z",
+      "expiresAt": "2026-10-29T13:16:03Z",
+      "status": "consumed",
+      "reason": null
+    }
+  ],
+  "denialCount": 0,
+  "executions": [
+    {
+      "executionId": "exec_7d22e0_07",
+      "approvalId": "appr_7d22e0_06",
+      "proposalId": "prop_7d22e0_v1",
+      "action": "RETRY",
+      "idempotencyKey": "idem_ORD-24151_retry_v1",
+      "authorizedAt": "2026-10-29T13:01:05Z",
+      "stepLeaseUntil": "2026-10-29T13:01:35Z",
+      "leaseGeneration": 1,
+      "revalidation": {
+        "passed": false,
+        "checks": [
+          {
+            "check": "PARTNER_HEALTHY_WINDOW",
+            "expected": {
+              "maxErrorRate5m": 0.05
+            },
+            "observed": {
+              "errorRate5m": 0.38
+            },
+            "passed": false,
+            "evidenceId": "evid_7d22e0_08"
+          },
+          {
+            "check": "ORDER_ACTIVE_AT_ORIGIN",
+            "expected": true,
+            "observed": true,
+            "passed": true
+          },
+          {
+            "check": "POLICY_VERSION_UNCHANGED",
+            "expected": "POL-RETRY@2026.10.1",
+            "observed": "POL-RETRY@2026.10.1",
+            "passed": true
+          },
+          {
+            "check": "APPROVAL_VALID",
+            "expected": true,
+            "observed": true,
+            "passed": true
+          }
+        ],
+        "at": "2026-10-29T13:01:07Z",
+        "resultingState": "Held"
+      },
+      "reconciliations": [],
+      "attempts": [],
+      "outcome": "held",
+      "completedAt": "2026-10-29T13:01:07Z"
+    }
+  ],
+  "receipt": null,
+  "dossier": null,
+  "metrics": {
+    "provider": "reference-provider (picked in B02)",
+    "model": "reference-model (picked in B02)",
+    "promptVersion": "investigate-v0.3",
+    "policyVersion": "2026.10.1",
+    "mappingVersion": "2026.10.1",
+    "investigationDurationMs": 4600,
+    "toolCalls": 3,
+    "tokensIn": 2950,
+    "tokensOut": 420,
+    "estCostUsd": 0.005,
+    "attempts": 1,
+    "exceptionToValidatedProposalMs": 11000,
+    "approvalToEffectMs": null
+  },
+  "serverTime": "2026-10-29T13:01:07Z"
+}

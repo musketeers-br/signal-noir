@@ -1,0 +1,580 @@
+{
+  "caseId": "case_9f3a1c",
+  "orderId": "ORD-24117",
+  "partnerId": "lab-partner-a",
+  "state": "Resolved",
+  "labels": {
+    "synthetic": true,
+    "replay": false
+  },
+  "proposerMode": "agent",
+  "benchmark": null,
+  "createdAt": "2026-10-29T13:00:00Z",
+  "lastEventAt": "2026-10-29T13:00:19Z",
+  "updatedAt": "2026-10-29T13:00:19Z",
+  "caseVersion": 7,
+  "lastEventSeq": 20,
+  "order": {
+    "orderId": "ORD-24117",
+    "correlationId": "corr_9f3a1c",
+    "transactionIds": [
+      "TX-50117",
+      "TX-24117-3"
+    ],
+    "snapshot": {
+      "orderId": "ORD-24117",
+      "transactionId": "TX-50117",
+      "patient": {
+        "id": "SYN-PAT-0042",
+        "name": "Synthetic Patient 042",
+        "birthDate": "1980-01-01"
+      },
+      "exams": [
+        {
+          "code": "GLIC-J",
+          "name": "Fasting glucose"
+        }
+      ],
+      "specimen": {
+        "id": "SPC-7781",
+        "type": "SERUM"
+      },
+      "collectedAt": "2026-10-29T11:40:00Z",
+      "orderingUnit": "UNIT-NORTH"
+    },
+    "equivalenceKey": {
+      "patientId": "SYN-PAT-0042",
+      "examCodes": [
+        "GLIC-J"
+      ],
+      "collectedAt": "2026-10-29T11:40:00Z",
+      "specimenId": "SPC-7781"
+    },
+    "transformed": {
+      "payload": {
+        "orderId": "ORD-24117",
+        "transactionId": "TX-50117",
+        "patient": {
+          "id": "SYN-PAT-0042",
+          "name": "Synthetic Patient 042",
+          "birthDate": "1980-01-01"
+        },
+        "exams": [
+          {
+            "code": "GLIC-S",
+            "name": "Fasting glucose"
+          }
+        ],
+        "specimen": {
+          "id": "SPC-7781",
+          "type": "SERUM"
+        },
+        "collectedAt": "2026-10-29T11:40:00Z",
+        "orderingUnit": "UNIT-NORTH"
+      },
+      "mappingId": "map_glicj_soro",
+      "mappingVersion": "2026.10.1",
+      "proposalId": "prop_9f3a1c_v1"
+    }
+  },
+  "visualTraceUrl": "/csp/signalnoir/EnsPortal.VisualTrace.zen?SESSIONID=44762",
+  "exceptions": [
+    {
+      "exceptionId": "exc_9f3a1c_01",
+      "kind": "timeout",
+      "httpStatus": null,
+      "body": null,
+      "responseClass": "transient",
+      "observedAt": "2026-10-29T13:00:00Z",
+      "attemptId": "att_9f3a1c_1",
+      "duringExecution": false
+    },
+    {
+      "exceptionId": "exc_9f3a1c_03",
+      "kind": "http_error",
+      "httpStatus": 500,
+      "body": {
+        "error": "VALIDATION_ERROR",
+        "message": "Exam code GLIC-J is discontinued since 2026-10-01. Use the replacement code."
+      },
+      "responseClass": "business_error",
+      "observedAt": "2026-10-29T13:00:00Z",
+      "attemptId": "att_9f3a1c_2",
+      "duringExecution": false
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "evid_9f3a1c_02",
+      "source": "system.exception",
+      "calledBy": "system",
+      "params": {
+        "exceptionId": "exc_9f3a1c_01"
+      },
+      "result": {
+        "kind": "timeout",
+        "httpStatus": null,
+        "responseClass": "transient",
+        "body": null
+      },
+      "observedAt": "2026-10-29T13:00:00Z",
+      "durationMs": 254,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_9f3a1c_04",
+      "source": "system.exception",
+      "calledBy": "system",
+      "params": {
+        "exceptionId": "exc_9f3a1c_03"
+      },
+      "result": {
+        "kind": "http_error",
+        "httpStatus": 500,
+        "responseClass": "business_error",
+        "body": {
+          "error": "VALIDATION_ERROR",
+          "message": "Exam code GLIC-J is discontinued since 2026-10-01. Use the replacement code."
+        }
+      },
+      "observedAt": "2026-10-29T13:00:00Z",
+      "durationMs": 328,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_9f3a1c_05",
+      "source": "tool.partner_failure_history",
+      "calledBy": "agent",
+      "params": {
+        "orderId": "ORD-24117",
+        "partnerId": "lab-partner-a",
+        "windowMin": 60
+      },
+      "result": {
+        "orderFailures": [
+          {
+            "attempt": 1,
+            "kind": "timeout"
+          },
+          {
+            "attempt": 2,
+            "httpStatus": 500,
+            "bodyExcerpt": "Exam code GLIC-J is discontinued…"
+          }
+        ],
+        "partnerErrorRate1h": 0.012
+      },
+      "observedAt": "2026-10-29T13:00:04Z",
+      "durationMs": 365,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_9f3a1c_06",
+      "source": "tool.partner_health",
+      "calledBy": "agent",
+      "params": {
+        "partnerId": "lab-partner-a"
+      },
+      "result": {
+        "status": "UP",
+        "errorRate5m": 0.01,
+        "p95LatencyMs": 420,
+        "maintenanceWindow": null
+      },
+      "observedAt": "2026-10-29T13:00:06Z",
+      "durationMs": 402,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_9f3a1c_07",
+      "source": "tool.policies",
+      "calledBy": "agent",
+      "params": {
+        "topic": "code_substitution",
+        "code": "GLIC-J"
+      },
+      "result": {
+        "policyId": "POL-CODE-SUBST",
+        "version": "2026.10.1",
+        "rule": "GLIC-J discontinued on 2026-10-01. Replace it through an approved mapping chosen by specimen type."
+      },
+      "observedAt": "2026-10-29T13:00:08Z",
+      "durationMs": 439,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_9f3a1c_08",
+      "source": "tool.mapping_catalog",
+      "calledBy": "agent",
+      "params": {
+        "fromCode": "GLIC-J"
+      },
+      "result": {
+        "catalogVersion": "2026.10.1",
+        "mappings": [
+          {
+            "mappingId": "map_glicj_plasma",
+            "mappingVersion": "2026.10.1",
+            "sourceCode": "GLIC-J",
+            "targetCode": "GLIC-P",
+            "conditions": {
+              "specimenType": "PLASMA"
+            }
+          },
+          {
+            "mappingId": "map_glicj_soro",
+            "mappingVersion": "2026.10.1",
+            "sourceCode": "GLIC-J",
+            "targetCode": "GLIC-S",
+            "conditions": {
+              "specimenType": "SERUM"
+            }
+          }
+        ]
+      },
+      "observedAt": "2026-10-29T13:00:10Z",
+      "durationMs": 476,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_9f3a1c_11",
+      "source": "system.revalidation",
+      "calledBy": "system",
+      "params": {
+        "executionId": "exec_9f3a1c_10"
+      },
+      "result": {
+        "passed": true,
+        "failed": []
+      },
+      "observedAt": "2026-10-29T13:00:17Z",
+      "durationMs": 187,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    }
+  ],
+  "diagnosis": {
+    "summary": "Discontinued exam code. The HTTP 500 is a business validation error, not an outage. The earlier timeout was transient.",
+    "claims": [
+      {
+        "text": "The 500 body reports a validation error for GLIC-J, not unavailability.",
+        "evidenceIds": [
+          "evid_9f3a1c_04"
+        ]
+      },
+      {
+        "text": "The partner is healthy: UP, with 1% errors in the last 5 minutes.",
+        "evidenceIds": [
+          "evid_9f3a1c_06"
+        ]
+      },
+      {
+        "text": "Policy replaces GLIC-J through an approved mapping chosen by specimen type.",
+        "evidenceIds": [
+          "evid_9f3a1c_07"
+        ]
+      },
+      {
+        "text": "Two approved mappings exist. The order specimen is SERUM, which matches only map_glicj_soro.",
+        "evidenceIds": [
+          "evid_9f3a1c_08"
+        ]
+      }
+    ],
+    "hypotheses": [
+      {
+        "text": "Discontinued code: apply the mapping whose condition matches the order.",
+        "status": "chosen",
+        "evidenceIds": [
+          "evid_9f3a1c_04",
+          "evid_9f3a1c_07",
+          "evid_9f3a1c_08"
+        ]
+      },
+      {
+        "text": "Partner is unstable: RETRY.",
+        "status": "discarded",
+        "reason": "The partner is UP and the body states a validation error, so a retry would fail again.",
+        "evidenceIds": [
+          "evid_9f3a1c_04",
+          "evid_9f3a1c_06"
+        ]
+      },
+      {
+        "text": "Apply the first catalog mapping (map_glicj_plasma).",
+        "status": "discarded",
+        "reason": "Its condition requires PLASMA, but this order is SERUM.",
+        "evidenceIds": [
+          "evid_9f3a1c_08"
+        ]
+      }
+    ],
+    "conflicts": [
+      {
+        "evidenceIds": [
+          "evid_9f3a1c_04",
+          "evid_9f3a1c_06"
+        ],
+        "description": "The HTTP 500 suggests a server fault, but partner health is UP."
+      }
+    ]
+  },
+  "currentProposalId": "prop_9f3a1c_v1",
+  "proposals": [
+    {
+      "proposalId": "prop_9f3a1c_v1",
+      "author": "agent",
+      "createdAt": "2026-10-29T13:00:12Z",
+      "current": true,
+      "supersededBy": null,
+      "diagnosis": {
+        "summary": "Discontinued exam code. The HTTP 500 is a business validation error, not an outage. The earlier timeout was transient.",
+        "claims": [
+          {
+            "text": "The 500 body reports a validation error for GLIC-J, not unavailability.",
+            "evidenceIds": [
+              "evid_9f3a1c_04"
+            ]
+          },
+          {
+            "text": "The partner is healthy: UP, with 1% errors in the last 5 minutes.",
+            "evidenceIds": [
+              "evid_9f3a1c_06"
+            ]
+          },
+          {
+            "text": "Policy replaces GLIC-J through an approved mapping chosen by specimen type.",
+            "evidenceIds": [
+              "evid_9f3a1c_07"
+            ]
+          },
+          {
+            "text": "Two approved mappings exist. The order specimen is SERUM, which matches only map_glicj_soro.",
+            "evidenceIds": [
+              "evid_9f3a1c_08"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "Discontinued code: apply the mapping whose condition matches the order.",
+            "status": "chosen",
+            "evidenceIds": [
+              "evid_9f3a1c_04",
+              "evid_9f3a1c_07",
+              "evid_9f3a1c_08"
+            ]
+          },
+          {
+            "text": "Partner is unstable: RETRY.",
+            "status": "discarded",
+            "reason": "The partner is UP and the body states a validation error, so a retry would fail again.",
+            "evidenceIds": [
+              "evid_9f3a1c_04",
+              "evid_9f3a1c_06"
+            ]
+          },
+          {
+            "text": "Apply the first catalog mapping (map_glicj_plasma).",
+            "status": "discarded",
+            "reason": "Its condition requires PLASMA, but this order is SERUM.",
+            "evidenceIds": [
+              "evid_9f3a1c_08"
+            ]
+          }
+        ],
+        "conflicts": [
+          {
+            "evidenceIds": [
+              "evid_9f3a1c_04",
+              "evid_9f3a1c_06"
+            ],
+            "description": "The HTTP 500 suggests a server fault, but partner health is UP."
+          }
+        ]
+      },
+      "action": "APPLY_APPROVED_MAPPING",
+      "params": {
+        "mappingId": "map_glicj_soro",
+        "mappingVersion": "2026.10.1"
+      },
+      "scope": "single_case",
+      "confidence": "ALTA",
+      "preconditions": [
+        {
+          "check": "MAPPING_VERSION_UNCHANGED",
+          "expected": "2026.10.1"
+        },
+        {
+          "check": "ORDER_ACTIVE_AT_ORIGIN",
+          "expected": true
+        },
+        {
+          "check": "PARTNER_HEALTHY_WINDOW",
+          "expected": {
+            "maxErrorRate5m": 0.05
+          }
+        },
+        {
+          "check": "POLICY_VERSION_UNCHANGED",
+          "expected": "POL-CODE-SUBST@2026.10.1"
+        }
+      ],
+      "priorReceiptCandidate": null,
+      "versions": {
+        "policy": "2026.10.1",
+        "mapping": "2026.10.1",
+        "prompt": "investigate-v0.3",
+        "model": "reference-model (picked in B02)",
+        "provider": "reference-provider (picked in B02)"
+      },
+      "metrics": {
+        "durationMs": 8400,
+        "toolCalls": 4,
+        "tokensIn": 5120,
+        "tokensOut": 610,
+        "estCostUsd": 0.011
+      },
+      "validatorVerdict": {
+        "verdict": "accepted",
+        "reasons": [
+          "ACTION_IN_CATALOG",
+          "PARAMS_VALID",
+          "MAPPING_CONDITION_MATCHES",
+          "REQUIRED_EVIDENCE_PRESENT"
+        ],
+        "requiresApproval": true,
+        "at": "2026-10-29T13:00:13Z"
+      }
+    }
+  ],
+  "approvals": [
+    {
+      "approvalId": "appr_9f3a1c_09",
+      "proposalId": "prop_9f3a1c_v1",
+      "decision": "approved",
+      "by": "operator:Carla",
+      "at": "2026-10-29T13:00:13Z",
+      "expiresAt": "2026-10-29T13:15:13Z",
+      "status": "consumed",
+      "reason": null
+    }
+  ],
+  "denialCount": 0,
+  "executions": [
+    {
+      "executionId": "exec_9f3a1c_10",
+      "approvalId": "appr_9f3a1c_09",
+      "proposalId": "prop_9f3a1c_v1",
+      "action": "APPLY_APPROVED_MAPPING",
+      "idempotencyKey": "idem_ORD-24117_apply_approved_mapping_v1",
+      "authorizedAt": "2026-10-29T13:00:15Z",
+      "stepLeaseUntil": "2026-10-29T13:00:45Z",
+      "leaseGeneration": 1,
+      "revalidation": {
+        "passed": true,
+        "checks": [
+          {
+            "check": "MAPPING_VERSION_UNCHANGED",
+            "expected": "2026.10.1",
+            "observed": "2026.10.1",
+            "passed": true
+          },
+          {
+            "check": "ORDER_ACTIVE_AT_ORIGIN",
+            "expected": true,
+            "observed": true,
+            "passed": true
+          },
+          {
+            "check": "PARTNER_HEALTHY_WINDOW",
+            "expected": {
+              "maxErrorRate5m": 0.05
+            },
+            "observed": {
+              "maxErrorRate5m": 0.05
+            },
+            "passed": true
+          },
+          {
+            "check": "POLICY_VERSION_UNCHANGED",
+            "expected": "POL-CODE-SUBST@2026.10.1",
+            "observed": "POL-CODE-SUBST@2026.10.1",
+            "passed": true
+          },
+          {
+            "check": "APPROVAL_VALID",
+            "expected": true,
+            "observed": true,
+            "passed": true
+          }
+        ],
+        "at": "2026-10-29T13:00:17Z",
+        "resultingState": "Executing"
+      },
+      "reconciliations": [],
+      "attempts": [
+        {
+          "attemptId": "att_9f3a1c_3",
+          "n": 3,
+          "transactionId": "TX-24117-3",
+          "sentAt": "2026-10-29T13:00:18Z",
+          "completedAt": "2026-10-29T13:00:18Z",
+          "httpStatus": 200,
+          "bodyExcerpt": "{\"status\":\"ACCEPTED\",\"receiptId\":\"RCP-88231\"}",
+          "receiptId": "RCP-88231",
+          "responseClass": "success"
+        }
+      ],
+      "outcome": "resolved",
+      "completedAt": "2026-10-29T13:00:19Z"
+    }
+  ],
+  "receipt": {
+    "receiptId": "RCP-88231",
+    "orderId": "ORD-24117",
+    "idempotencyKey": "idem_ORD-24117_apply_approved_mapping_v1",
+    "receivedAt": "2026-10-29T13:00:19Z",
+    "partnerId": "lab-partner-a",
+    "source": "delivery",
+    "orderSnapshotMinimal": {
+      "orderId": "ORD-24117",
+      "examCodes": [
+        "GLIC-J"
+      ]
+    },
+    "equivalenceConfirmed": null,
+    "externalRef": "partner:RCP-88231",
+    "annotations": []
+  },
+  "dossier": null,
+  "metrics": {
+    "provider": "reference-provider (picked in B02)",
+    "model": "reference-model (picked in B02)",
+    "promptVersion": "investigate-v0.3",
+    "policyVersion": "2026.10.1",
+    "mappingVersion": "2026.10.1",
+    "investigationDurationMs": 8400,
+    "toolCalls": 4,
+    "tokensIn": 5120,
+    "tokensOut": 610,
+    "estCostUsd": 0.011,
+    "attempts": 3,
+    "exceptionToValidatedProposalMs": 13000,
+    "approvalToEffectMs": 5000
+  },
+  "serverTime": "2026-10-29T13:00:19Z"
+}

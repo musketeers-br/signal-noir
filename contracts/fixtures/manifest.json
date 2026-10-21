@@ -1,0 +1,182 @@
+{
+  "contract": "contracts/openapi-signalnoir.yaml",
+  "generatedBy": "_bmad-output/initiative-signal-noir/prototype-signal-noir/tools/export-api-fixtures.js",
+  "note": "Synthetic data only. Deterministic: re-running the exporter produces the same files.",
+  "fixtures": [
+    {
+      "file": "cases.list.needs-you.json",
+      "operation": "GET /cases",
+      "status": 200,
+      "schema": "CaseListPage",
+      "description": "List with one case waiting for approval, two in review and one resolved."
+    },
+    {
+      "file": "case.pending-approval.p5-p8b.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 200,
+      "schema": "CaseDetail",
+      "description": "P5/P8b: lying 500, two approved mappings, proposal APPLY_APPROVED_MAPPING waiting for approval."
+    },
+    {
+      "file": "timeline.full.p5-p8b.json",
+      "operation": "GET /cases/{caseId}/timeline",
+      "status": 200,
+      "schema": "TimelinePage",
+      "description": "Full timeline from sinceSeq=0 up to PendingApproval."
+    },
+    {
+      "file": "decision.201.approved.json",
+      "operation": "POST /cases/{caseId}/proposals/{proposalId}/decision",
+      "status": 201,
+      "schema": "ProposalDecisionResult",
+      "description": "Approval recorded; case moves to Approved."
+    },
+    {
+      "file": "decision.200.idempotent-replay.json",
+      "operation": "POST /cases/{caseId}/proposals/{proposalId}/decision",
+      "status": 200,
+      "schema": "ProposalDecisionResult",
+      "description": "Same proposal approved again: existing approval, idempotentReplay true, no new effect."
+    },
+    {
+      "file": "timeline.incremental.p5-p8b.json",
+      "operation": "GET /cases/{caseId}/timeline",
+      "status": 200,
+      "schema": "TimelinePage",
+      "description": "Incremental page (sinceSeq) from PendingApproval to Resolved."
+    },
+    {
+      "file": "case.resolved.p5-p8b.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 200,
+      "schema": "CaseDetail",
+      "description": "Resolved: revalidation passed, mapping applied, one attempt, partner receipt."
+    },
+    {
+      "file": "decision.409.stale-version.json",
+      "operation": "POST /cases/{caseId}/proposals/{proposalId}/decision",
+      "status": 409,
+      "schema": "ErrorEnvelope",
+      "description": "Proposal superseded while the dialog was open: nothing approved."
+    },
+    {
+      "file": "case.pending-approval.superseded.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 200,
+      "schema": "CaseDetail",
+      "description": "Case with an obsoleted evidence and an earlier, superseded proposal."
+    },
+    {
+      "file": "decision.400.denial-without-reason.json",
+      "operation": "POST /cases/{caseId}/proposals/{proposalId}/decision",
+      "status": 400,
+      "schema": "ErrorEnvelope",
+      "description": "Denial without reason."
+    },
+    {
+      "file": "decision.409.invalid-transition.json",
+      "operation": "POST /cases/{caseId}/proposals/{proposalId}/decision",
+      "status": 409,
+      "schema": "ErrorEnvelope",
+      "description": "Deciding on a case that is not in PendingApproval."
+    },
+    {
+      "file": "case.404.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 404,
+      "schema": "ErrorEnvelope",
+      "description": "Unknown case."
+    },
+    {
+      "file": "decision.201.denied.json",
+      "operation": "POST /cases/{caseId}/proposals/{proposalId}/decision",
+      "status": 201,
+      "schema": "ProposalDecisionResult",
+      "description": "Denial recorded; the reason becomes evidence for one more investigation."
+    },
+    {
+      "file": "case.review.after-denial.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 200,
+      "schema": "CaseDetail",
+      "description": "After a denial the agent requests review: dossier review_requested."
+    },
+    {
+      "file": "case.held.p3.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 200,
+      "schema": "CaseDetail",
+      "description": "P3: revalidation failed PARTNER_HEALTHY_WINDOW before sending; nothing sent."
+    },
+    {
+      "file": "case.executing.outcome-unknown.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 200,
+      "schema": "CaseDetail",
+      "description": "Timeout after send: execution reconciling, new proposal discarded."
+    },
+    {
+      "file": "cases.list.outcome-unknown.json",
+      "operation": "GET /cases",
+      "status": 200,
+      "schema": "CaseListPage",
+      "description": "List including a case whose executionOutcome is reconciling."
+    },
+    {
+      "file": "case.resolved.by-reconciliation.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 200,
+      "schema": "CaseDetail",
+      "description": "Receipt found by reconciliation; no resend."
+    },
+    {
+      "file": "case.review.provider-unavailable.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 200,
+      "schema": "CaseDetail",
+      "description": "Provider unavailable: dossier with unknowns and no diagnosis."
+    },
+    {
+      "file": "resolution.422.validator-blocked.json",
+      "operation": "POST /cases/{caseId}/resolution",
+      "status": 422,
+      "schema": "ErrorEnvelope",
+      "description": "Operator picks a mapping whose condition does not match: validator blocks."
+    },
+    {
+      "file": "resolution.201.action.json",
+      "operation": "POST /cases/{caseId}/resolution",
+      "status": 201,
+      "schema": "ReviewResolutionResult",
+      "description": "Operator mapping accepted by the validator and approved by the same operator."
+    },
+    {
+      "file": "case.review.ambiguous-identity.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 200,
+      "schema": "CaseDetail",
+      "description": "Ambiguous identity: colliding records with divergent fields."
+    },
+    {
+      "file": "resolution.201.cancel.json",
+      "operation": "POST /cases/{caseId}/resolution",
+      "status": 201,
+      "schema": "ReviewResolutionResult",
+      "description": "Case cancelled from the dossier."
+    },
+    {
+      "file": "case.resolved-by-prior-receipt.p9.json",
+      "operation": "GET /cases/{caseId}",
+      "status": 200,
+      "schema": "CaseDetail",
+      "description": "P9: prior receipt confirmed by the validator; no execution."
+    },
+    {
+      "file": "reference.mappings.json",
+      "operation": "GET /reference/mappings",
+      "status": 200,
+      "schema": "#/paths/~1reference~1mappings/get/responses/200/content/application~1json/schema",
+      "description": "Approved mappings used by the prototype scenarios."
+    }
+  ]
+}

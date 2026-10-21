@@ -58,7 +58,7 @@ window.SN_ENGINE = (function () {
         investigationDurationMs: 0, toolCalls: 0, tokensIn: 0, tokensOut: 0, estCostUsd: 0, attempts: 0,
         exceptionToValidatedProposalMs: null, approvalToEffectMs: null
       },
-      _short: short, _seq: 0, _n: 0, _attemptN: 0, _timeline: [], _script: [], _flags: {}, _unknowns: [], _lastExceptionSummary: ''
+      _short: short, _seq: 0, _n: 0, _attemptN: 0, _timeline: [], _script: [], _flags: {}, _lastExceptionSummary: ''
     };
     S.cases.set(c.caseId, c);
     event(c, 'CaseOpened', 'system', null, { orderId: c.orderId, partnerId: c.partnerId });
@@ -147,7 +147,7 @@ window.SN_ENGINE = (function () {
     const ex = {
       executionId: nid(c, 'exec_'), approvalId: appr ? appr.approvalId : null, proposalId: prop.proposalId, action: prop.action,
       idempotencyKey: 'idem_' + c.orderId + '_' + prop.action.toLowerCase() + '_' + prop.proposalId.split('_').pop(),
-      authorizedAt: iso(S.now), stepLeaseUntil: iso(S.now + 30000), revalidation: null, reconciliations: [], attempts: [],
+      authorizedAt: iso(S.now), stepLeaseUntil: iso(S.now + 30000), leaseGeneration: 1, revalidation: null, reconciliations: [], attempts: [],
       outcome: 'in_progress', completedAt: null
     };
     c.executions.push(ex);
@@ -231,7 +231,7 @@ window.SN_ENGINE = (function () {
   }
 
   function dossier(c, d) {
-    c.dossier = Object.assign({ createdAt: iso(S.now) }, d);
+    c.dossier = Object.assign({ createdAt: iso(S.now), unknowns: [] }, d);
     event(c, 'DossierCreated', 'system', null, { reason: d.reason });
   }
 
@@ -379,7 +379,8 @@ window.SN_ENGINE = (function () {
       approvalDeadline: appr ? appr.expiresAt : null,
       currentProposal: p ? { proposalId: p.proposalId, action: p.action, confidence: p.confidence } : null,
       exceptionCount: c.exceptions.length,
-      lastExceptionSummary: c._lastExceptionSummary
+      lastExceptionSummary: c._lastExceptionSummary,
+      executionOutcome: c.executions.length ? c.executions[c.executions.length - 1].outcome : null
     };
   }
 
@@ -490,7 +491,7 @@ window.SN_ENGINE = (function () {
         const sc = scenarioOf(c);
         if (sc.onApproved) schedule(c, sc.onApproved(k, c, appr));
       } else {
-        appr = { approvalId: nid(c, 'appr_'), proposalId, decision: 'denied', by, at: iso(S.now), expiresAt: null, status: null, reason: b.reason.trim() };
+        appr = { approvalId: nid(c, 'appr_'), proposalId, decision: 'denied', by, at: iso(S.now), expiresAt: null, reason: b.reason.trim() };
         c.approvals.push(appr);
         c.denialCount += 1;
         event(c, 'ApprovalRecorded', by, appr.approvalId, { decision: 'denied', proposalId, reason: appr.reason });
@@ -524,7 +525,7 @@ window.SN_ENGINE = (function () {
       if (b.kind === 'cancel') {
         event(c, 'OperatorResolution', by, null, { kind: 'cancel', reason: b.reason.trim() });
         transition(c, 'Cancelled', by, 'cancelled: ' + b.reason.trim());
-        return respond('POST', path, body, 201, { kind: 'cancel', case: caseRef(c) });
+        return respond('POST', path, body, 201, { kind: 'cancel', proposal: null, approval: null, case: caseRef(c) });
       }
 
       const v = validateOperatorAction(c, b.action, b.params || {});
@@ -540,15 +541,15 @@ window.SN_ENGINE = (function () {
       });
       verdict(c, prop, v);
       event(c, 'OperatorResolution', by, prop.proposalId, { kind: 'action', action: b.action, params: b.params || {} });
-      let approvalId = null;
+      let approval = null;
       if (b.action === 'HOLD') {
         transition(c, 'Held', by, 'held by operator' + (b.params && b.params.reason ? ': ' + b.params.reason : ''));
       } else {
-        approvalId = approve(c, by, prop.proposalId).approvalId;
+        approval = approve(c, by, prop.proposalId);
         const sc = scenarioOf(c);
         schedule(c, sc.onOperatorAction ? sc.onOperatorAction(k, c) : executeSuccess(c, { receiptId: 'RCP-' + (88300 + c._n) }));
       }
-      return respond('POST', path, body, 201, { kind: 'action', proposalId: prop.proposalId, approvalId, case: caseRef(c) });
+      return respond('POST', path, body, 201, { kind: 'action', proposal: view(prop), approval, case: caseRef(c) });
     }
   };
 

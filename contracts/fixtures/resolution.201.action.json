@@ -1,0 +1,81 @@
+{
+  "kind": "action",
+  "proposal": {
+    "proposalId": "prop_a37b5d_v1",
+    "author": "operator:Carla",
+    "createdAt": "2026-10-29T13:01:38Z",
+    "current": true,
+    "supersededBy": null,
+    "diagnosis": {
+      "summary": "Operator decision from the review dossier.",
+      "claims": [
+        {
+          "text": "Specimen is PLASMA.",
+          "evidenceIds": [
+            "evid_a37b5d_02"
+          ]
+        }
+      ],
+      "hypotheses": [],
+      "conflicts": []
+    },
+    "action": "APPLY_APPROVED_MAPPING",
+    "params": {
+      "mappingId": "map_glicj_plasma",
+      "mappingVersion": "2026.10.1"
+    },
+    "scope": "single_case",
+    "confidence": "ALTA",
+    "preconditions": [
+      {
+        "check": "MAPPING_VERSION_UNCHANGED",
+        "expected": "2026.10.1"
+      },
+      {
+        "check": "ORDER_ACTIVE_AT_ORIGIN",
+        "expected": true
+      }
+    ],
+    "priorReceiptCandidate": null,
+    "versions": {
+      "policy": "2026.10.1",
+      "mapping": "2026.10.1",
+      "prompt": null,
+      "model": null,
+      "provider": null
+    },
+    "metrics": {
+      "durationMs": 40,
+      "toolCalls": 0,
+      "tokensIn": 0,
+      "tokensOut": 0,
+      "estCostUsd": 0
+    },
+    "validatorVerdict": {
+      "verdict": "accepted",
+      "reasons": [
+        "ACTION_IN_CATALOG",
+        "PARAMS_VALID"
+      ],
+      "requiresApproval": true,
+      "at": "2026-10-29T13:01:38Z"
+    }
+  },
+  "approval": {
+    "approvalId": "appr_a37b5d_06",
+    "proposalId": "prop_a37b5d_v1",
+    "decision": "approved",
+    "by": "operator:Carla",
+    "at": "2026-10-29T13:01:38Z",
+    "expiresAt": "2026-10-29T13:16:38Z",
+    "status": "valid",
+    "reason": null
+  },
+  "case": {
+    "caseId": "case_a37b5d",
+    "state": "Approved",
+    "caseVersion": 4,
+    "lastEventSeq": 15,
+    "serverTime": "2026-10-29T13:01:38Z"
+  }
+}

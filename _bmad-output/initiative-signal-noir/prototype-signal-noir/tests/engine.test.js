@@ -74,6 +74,9 @@ ok(until('case_e8a0f4', c => c.executions.length && c.executions[0].outcome === 
 let acts = E.scenarioActions('case_e8a0f4');
 ok(acts.every(a => a.enabled), 'uncertain actions enabled');
 E.runAction('case_e8a0f4', 'new-proposal');
+ok(E.api.listCases().body.items.find(i => i.caseId === 'case_e8a0f4').executionOutcome === 'reconciling', 'draft.2: list shows executionOutcome reconciling');
+E.runAction('case_e8a0f4', 'restart');
+ok(E.S.cases.get('case_e8a0f4').executions[0].leaseGeneration === 2, 'draft.2: restart bumps leaseGeneration to 2');
 ok(E.S.cases.get('case_e8a0f4')._timeline.some(e => e.type === 'CommandDiscarded'), 'new proposal discarded');
 ok(until('case_e8a0f4', c => c.state === 'Resolved'), 'lost-response Resolved by reconciliation');
 c = E.S.cases.get('case_e8a0f4');
@@ -83,6 +86,7 @@ ok(c.receipt.source === 'reconciliation' && c.executions[0].attempts.length === 
 ok(until('case_a37b5d', c => c.state === 'ReviewRequired'), 'provider-down → ReviewRequired');
 c = E.S.cases.get('case_a37b5d');
 ok(c.dossier.reason === 'provider_unavailable' && c.proposals.length === 0, 'dossier provider_unavailable, no proposal');
+ok(E.api.getCase('case_a37b5d').body.dossier.unknowns.length === 2 && E.api.getCase('case_a37b5d').body.dossier.unknowns[0].topic === 'diagnosis', 'draft.2: dossier.unknowns exposed by the API');
 r = E.api.resolve('case_a37b5d', { kind: 'action', operator: 'Henrique', expectedCaseVersion: c.caseVersion, action: 'APPLY_APPROVED_MAPPING', params: { mappingId: 'map_glicj_soro', mappingVersion: '2026.10.1' } });
 ok(r.status === 422 && r.body.error.details.verdict.reasons.includes('MAPPING_CONDITION_MISMATCH'), 'wrong mapping → 422 MAPPING_CONDITION_MISMATCH');
 r = E.api.resolve('case_a37b5d', { kind: 'action', operator: 'Henrique', expectedCaseVersion: c.caseVersion, action: 'RETRY', params: {} });
