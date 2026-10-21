@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Throwaway prototype of the Signal Noir operator UI with synthetic data and a mock API. Not submission code.">
+<title>Signal Noir prototype</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#view">Skip to content</a>
+<header class="top">
+  <div class="top-inner">
+    <a class="brand" href="#/cases">signal noir<span class="dot">.</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="#/cases">Cases</a>
+      <a href="#/benchmark">Benchmark</a>
+    </nav>
+    <span class="proto-badge" title="Throwaway prototype. All data is synthetic.">PROTOTYPE · SYNTHETIC DATA</span>
+    <div class="top-tools">
+      <label class="operator">You are <input id="operator" placeholder="your name" autocomplete="name" aria-describedby="operator-hint"></label>
+      <span id="operator-hint" class="sr">Declared name, not authenticated. Recorded as the author of your decisions.</span>
+      <span class="clock mono small" id="clock" aria-label="Virtual time"></span>
+      <button type="button" class="btn" id="log-toggle" aria-expanded="false" aria-controls="apilog">API log</button>
+      <button type="button" class="btn primary" id="panel-toggle" aria-expanded="false" aria-controls="panel">Scenarios</button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <main id="view" tabindex="-1"></main>
+  <aside id="panel" class="panel" hidden aria-labelledby="panel-h">
+    <div class="panel-head">
+      <h2 id="panel-h">Scenarios</h2>
+      <button type="button" class="btn small-btn" id="panel-close" aria-label="Close scenarios">Close</button>
+    </div>
+    <p class="small muted">Prototype-only controls. They drive the mock server; the real UI has no such panel.</p>
+    <div id="panel-body"></div>
+  </aside>
+</div>
+
+<section id="apilog" class="apilog" hidden aria-labelledby="apilog-h">
+  <div class="apilog-head">
+    <h2 id="apilog-h">API log <span class="small muted">mock of /signalnoir/api/v1</span></h2>
+    <label class="small"><input type="checkbox" id="log-polling"> include polling GETs</label>
+  </div>
+  <div id="log-list"></div>
+</section>
+
+<dialog id="approve-dialog" aria-labelledby="ap-title">
+  <form method="dialog" class="dialog-inner" onsubmit="return false">
+    <h2 id="ap-title">Approve this exact proposal</h2>
+    <div id="approve-body"></div>
+    <div class="dialog-actions">
+      <button type="button" class="btn primary" id="ap-approve">Approve</button>
+      <button type="button" class="btn" id="ap-deny-toggle">Deny…</button>
+      <button type="button" class="btn danger" id="ap-deny-confirm" hidden>Deny with this reason</button>
+      <button type="button" class="btn" id="ap-cancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<noscript><p class="empty">This prototype needs JavaScript.</p></noscript>
+<script src="fixtures.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
