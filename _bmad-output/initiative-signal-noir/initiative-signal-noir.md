@@ -5,7 +5,7 @@ parent: none
 status: draft
 updated: 2026-10-20
 sources: [prd-signal-noir/prd-signal-noir.md, prd-signal-noir/addendum.md, reconcile-fontes-2026-10-20.md]
-companions: [architecture-signal-noir/architecture-signal-noir.md, ../../contracts/openapi-signalnoir.yaml, ../../contracts/openapi-sim.yaml, tickets/epic-prototipo-solucao/epic-prototipo-solucao.md]
+companions: [architecture-signal-noir/architecture-signal-noir.md, ux-signal-noir/DESIGN.md, ux-signal-noir/EXPERIENCE.md, ../../contracts/openapi-signalnoir.yaml, ../../contracts/openapi-sim.yaml, tickets/epic-prototipo-solucao/epic-prototipo-solucao.md]
 ---
 
 # Signal Noir: AI Exception Resolution for Interoperability
@@ -179,6 +179,8 @@ O vocabulário segue o Glossário do PRD (§3). Os itens B01–B14 são o backlo
 ## References
 
 - architecture — architecture-signal-noir/architecture-signal-noir.md
+- design — ux-signal-noir/DESIGN.md
+- experience — ux-signal-noir/EXPERIENCE.md
 - contract — ../../contracts/openapi-signalnoir.yaml
 - contract — ../../contracts/openapi-sim.yaml
 - prd — prd-signal-noir/prd-signal-noir.md (§3 Glossário, §11 roteiro da demo)

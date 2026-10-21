@@ -5,7 +5,7 @@ title: "Interface operacional integrada e Dossiê de Revisão (B07, B10)"
 parent: ../../initiative-signal-noir.md
 covers: [R2, R30, R31, R32, R33, R34, R35]
 sources: [../../initiative-signal-noir.md]
-companions: [../../architecture-signal-noir/architecture-signal-noir.md]
+companions: [../../architecture-signal-noir/architecture-signal-noir.md, ../../ux-signal-noir/DESIGN.md, ../../ux-signal-noir/EXPERIENCE.md]
 after: [2, 3]
 refined: false
 hitl: false
