@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Signal Noir API
-  version: 1.0.0-draft.1
+  version: 1.0.0-draft.2
   summary: API REST do produto Signal Noir — Casos, Linha do Tempo, Aprovação, Dossiê e Benchmark.
   description: |
     Contrato normativo de `/signalnoir/api/v1` (AD-16). A SPA (servida em `/signalnoir/`, AD-17)
@@ -695,6 +695,13 @@ components:
       type: string
       enum: [correct, safe_review, unnecessary_review, incorrect]
       description: Classificação do desfecho contra o Gabarito (FR-33).
+    ExecutionOutcome:
+      type: string
+      enum: [in_progress, reconciling, resolved, held, cancelled, failed]
+      description: |
+        `in_progress` = autorizada, enviando ou aguardando resposta; `reconciling` = **resultado
+        desconhecido** (timeout ou resposta incerta), novos efeitos bloqueados até a
+        Reconciliação (FR-23); os demais são finais.
 
     ErrorEnvelope:
       type: object
@@ -817,6 +824,16 @@ components:
               minimum: 1
             lastExceptionSummary:
               type: string
+            executionOutcome:
+              description: |
+                `outcome` da Execução mais recente do Caso, ou `null` se não houver Execução
+                (protótipo F-2). Permite à lista distinguir "enviando" (`in_progress`) de
+                **resultado desconhecido** (`reconciling`) sem abrir o detalhe: com o Caso em
+                `Executing` e `reconciling`, a interface mostra "outcome unknown" e informa que
+                novos envios estão bloqueados até a Reconciliação.
+              oneOf:
+                - $ref: '#/components/schemas/ExecutionOutcome'
+                - type: 'null'
 
     CaseListPage:
       type: object
@@ -1274,6 +1291,17 @@ components:
 
     Execution:
       type: object
+      description: |
+        Execução autorizada de uma Ação (AD-5). Três identidades distintas (caderno de 19/10, ADR-04):
+        - `commandId` (AD-20) identifica o **trabalho interno** no outbox; admite reentrega e
+          processamento recuperável. Aparece na resposta dos comandos, não aqui.
+        - `executionId` identifica **esta execução autorizada**, seu lease (`stepLeaseUntil`,
+          `leaseGeneration`) e sua Reconciliação.
+        - `idempotencyKey` identifica o **efeito no Parceiro**, que o Parceiro deduplica
+          atomicamente por chave + payload (`openapi-sim.yaml`, `422 IDEMPOTENCY_KEY_REUSED`).
+          A derivação ainda está em aberto: ver `x-open-questions` API-Q11.
+        Enquanto uma Execução do Caso estiver em `reconciling`, nenhum novo efeito é autorizado,
+        nem a partir de uma nova Proposta (FR-23).
       required: [executionId, proposalId, action, idempotencyKey, authorizedAt, outcome, attempts]
       properties:
         executionId:
@@ -1296,6 +1324,15 @@ components:
           oneOf:
             - $ref: '#/components/schemas/UtcDateTime'
             - type: 'null'
+        leaseGeneration:
+          type: integer
+          minimum: 1
+          description: |
+            Geração do lease desta Execução (caderno de 19/10, ADR-05; AD-22). Começa em 1 no CAS de
+            autorização e incrementa a cada retomada (reinício, `lease_expired`). Uma escrita
+            feita sob geração anterior é descartada: um worker atrasado não sobrescreve a
+            execução posterior. Retomadas aparecem na Linha do Tempo (`CommandDiscarded` para a
+            escrita descartada).
         revalidation:
           oneOf:
             - type: object
@@ -1321,8 +1358,7 @@ components:
           items:
             $ref: '#/components/schemas/Attempt'
         outcome:
-          type: string
-          enum: [in_progress, reconciling, resolved, held, cancelled, failed]
+          $ref: '#/components/schemas/ExecutionOutcome'
         completedAt:
           oneOf:
             - $ref: '#/components/schemas/UtcDateTime'
@@ -1441,6 +1477,30 @@ components:
                 items:
                   type: string
                   enum: [patientId, examCodes, collectedAt, specimenId]
+        unknowns:
+          type: array
+          description: |
+            O que **não se sabe** neste ponto (protótipo F-1; caderno B10: "ausência de informação
+            é distinta de conclusão negativa"). Cada item é uma lacuna factual declarada pelo
+            sistema, nunca uma inferência: por exemplo, "o Agente não rodou, então não há
+            interpretação das Evidências" ou "nenhuma Evidência diz qual dos dois cadastros é o
+            paciente correto". A interface mostra esta lista separada das Evidências consultadas.
+            Lista vazia significa que nenhuma lacuna foi declarada, não que tudo é conhecido.
+          items:
+            type: object
+            required: [text]
+            properties:
+              text:
+                type: string
+              topic:
+                type: string
+                enum: [diagnosis, identity, prior_receipt, partner_acceptance, origin_status, policy, other]
+                description: Assunto da lacuna, para agrupar na interface.
+              relatedEvidenceIds:
+                type: array
+                description: Evidências que delimitam a lacuna, quando houver. Não é obrigatório.
+                items:
+                  $ref: '#/components/schemas/EvidenceId'
         suggestedNextStep:
           type: string
 
@@ -2179,3 +2239,22 @@ x-open-questions:
     proposal: |
       Contrato permite 409 `INVALID_TRANSITION` em `POST /benchmark-runs` quando já há run
       `running`; confirmar se a restrição é desejada.
+  - id: API-Q11
+    topic: Identidade do efeito — `idempotencyKey` (AD-21) vs. `businessEffectKey` (caderno ADR-04)
+    gap: |
+      AD-21 deriva `idempotencyKey = H(orderId, action, params canônicos, proposalId)`. O caderno
+      de 19/10 (ADR-04, R24) exige que a identidade do efeito **não dependa só de `proposalId`**:
+      duas Propostas que produzem o mesmo efeito no Parceiro hoje geram chaves diferentes, e a
+      proteção fica só na Reconciliação prévia por `orderId` (AD-5 passo 3). O Parceiro já
+      deduplica chave + payload (`openapi-sim.yaml`); falta a chave representar o efeito.
+    proposal: |
+      1. Derivar a chave do **efeito**, não da Proposta:
+         `H(orderId, partnerId, payload efetivo canônico)`, em que o payload efetivo é o Pedido
+         após o Mapeamento (`order.transformed.payload`) ou o snapshot, para `RETRY`.
+      2. No contrato Signal Noir, renomear `Execution.idempotencyKey`, `ReceiptCopy.idempotencyKey`
+         e `Reconciliation.queriedBy = idempotencyKey` para `businessEffectKey`. No contrato do
+         Simulador, manter `idempotencyKey` como nome do campo no fio, porque é a convenção HTTP do
+         Parceiro, e documentar que ele recebe a `businessEffectKey`.
+      3. Atualizar o AD-21 no spine antes de mudar este contrato (AD-16: contrato antes do
+         código, spine antes do contrato).
+      Decisão: José (IRIS), com Henry (Simulador). Nada foi renomeado nesta versão.
