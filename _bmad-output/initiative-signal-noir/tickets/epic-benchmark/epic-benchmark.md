@@ -1,14 +1,12 @@
 ---
-id: 8
 type: epic
 title: "Baseline, executor e Execução de Referência (B11–B12)"
-parent: ../../initiative-signal-noir.md
+parent: initiative-signal-noir
 covers: [R6, R42, R43, R44, R45, R46]
-sources: [../../initiative-signal-noir.md]
-companions: [../../architecture-signal-noir/architecture-signal-noir.md]
-after: [4, 5, 6]
+sources: [_bmad-output/initiative-signal-noir/initiative-signal-noir.md]
+companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md]
+after: []
 refined: false
-hitl: false
 risk: medium
 owner: "Henry (José no baseline; Henrique na revisão do avaliador)"
 window: "02–05/11"
@@ -34,6 +32,11 @@ Em 05/11 há um relatório versionado com dados brutos, honesto sobre ganho, emp
 ## Boundaries
 
 - Ajuste com o conjunto de teste invalida aquela avaliação final (R44).
+
+## References
+
+- parent — _bmad-output/initiative-signal-noir/initiative-signal-noir.md, section Requirements
+- architecture — _bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md
 
 ## Notes
 

@@ -1,14 +1,12 @@
 ---
-id: 6
 type: epic
 title: "Execução, Revalidação e Reconciliação (B09)"
-parent: ../../initiative-signal-noir.md
+parent: initiative-signal-noir
 covers: [R3, R24, R25, R26, R27, R28, R29]
-sources: [../../initiative-signal-noir.md]
-companions: [../../architecture-signal-noir/architecture-signal-noir.md]
-after: [3, 4]
+sources: [_bmad-output/initiative-signal-noir/initiative-signal-noir.md]
+companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md]
+after: []
 refined: false
-hitl: false
 risk: high
 owner: "José (revisão conjunta dos três)"
 window: "29/10–02/11"
@@ -34,6 +32,14 @@ Em 02/11, Aprovação, Revalidação e Reconciliação estão comprovadas, inclu
 ## Boundaries
 
 - Se o marco de 02/11 falhar, as Ações executáveis ficam restritas às testadas.
+- Shared R24: aqui, o B09 implementa a derivação e o uso na Execução. epic-contratos-e-spike: o B01 fixa as três identidades no contrato (incluindo a API-Q11).
+- Shared R25: aqui, o B09 depende dela para a Reconciliação. epic-fundacao-e-simulador: o B05 implementa a deduplicação atômica no Simulador.
+- Shared R28: aqui, o B09 entrega lease com geração e worker atrasado sem sobrescrita. epic-caso-e-decisao: o B06 entrega estado, evento e outbox na mesma transação.
+
+## References
+
+- parent — _bmad-output/initiative-signal-noir/initiative-signal-noir.md, section Requirements
+- architecture — _bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md
 
 ## Notes
 

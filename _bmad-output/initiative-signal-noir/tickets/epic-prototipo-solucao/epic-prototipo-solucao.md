@@ -1,14 +1,13 @@
 ---
-id: 1
 type: epic
 title: "Protótipo navegável da solução (HTML, CSS, JS)"
-parent: ../../initiative-signal-noir.md
+parent: initiative-signal-noir
 covers: [R36, R37, R38, R39]
-sources: [../../initiative-signal-noir.md]
-companions: [../../../../contracts/openapi-signalnoir.yaml, ../../prd-signal-noir/prd-signal-noir.md]
+sources: [_bmad-output/initiative-signal-noir/initiative-signal-noir.md]
+companions: [contracts/openapi-signalnoir.yaml, _bmad-output/initiative-signal-noir/prd-signal-noir/prd-signal-noir.md]
 after: []
 refined: true
-hitl: true
+status: in-progress
 risk: low
 owner: Henrique
 reviewers: [Henry, José]
@@ -110,12 +109,14 @@ Henry e José navegam pelas jornadas principais em poucos minutos e respondem co
 - Non-goal: backend, persistência real, chamadas de rede, autenticação.
 - Non-goal: estética final. O DESIGN.md sai de uma rodada de `bmad-ux` depois do protótipo.
 - Non-goal: cobertura de todos os estados e transições. B01 é a fonte normativa.
+- Shared R37: aqui, as fixtures do protótipo seguem o contrato e geram propostas de mudança. epic-contratos-e-spike: o B03 aceita ou recusa essas propostas no contrato.
 
 ## References
 
-- contract — ../../../../contracts/openapi-signalnoir.yaml
-- prd — ../../prd-signal-noir/prd-signal-noir.md (§2.3 UJ-1 a UJ-4, §11.1 roteiro da demo)
-- architecture — ../../architecture-signal-noir/architecture-signal-noir.md (AD-16, AD-17, Consistency Conventions)
+- parent — _bmad-output/initiative-signal-noir/initiative-signal-noir.md, section Requirements
+- contract — contracts/openapi-signalnoir.yaml
+- prd — _bmad-output/initiative-signal-noir/prd-signal-noir/prd-signal-noir.md (§2.3 UJ-1 a UJ-4, §11.1 roteiro da demo)
+- architecture — _bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md (AD-16, AD-17, Consistency Conventions)
 
 ## Notes
 

@@ -1,14 +1,12 @@
 ---
-id: 7
 type: epic
 title: "P9: entrega prévia sob outro identificador (condicionado)"
-parent: ../../initiative-signal-noir.md
+parent: initiative-signal-noir
 covers: [R4]
-sources: [../../initiative-signal-noir.md]
-companions: [../../architecture-signal-noir/architecture-signal-noir.md]
-after: [5, 6]
+sources: [_bmad-output/initiative-signal-noir/initiative-signal-noir.md]
+companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md]
+after: []
 refined: false
-hitl: false
 risk: medium
 owner: "Henry (cenário), José (Validador)"
 window: "após B09 e B10"
@@ -32,6 +30,11 @@ Uma história memorável para a demo, sem comprometer B12–B14.
 ## Boundaries
 
 - Entra só se B09 e B10 estiverem aceitos; sai primeiro em qualquer corte.
+
+## References
+
+- parent — _bmad-output/initiative-signal-noir/initiative-signal-noir.md, section Requirements
+- architecture — _bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md
 
 ## Notes
 

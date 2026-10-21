@@ -2,10 +2,9 @@
 type: initiative
 title: 'Signal Noir: AI Exception Resolution for Interoperability'
 parent: none
-status: draft
 updated: 2026-10-20
-sources: [prd-signal-noir/prd-signal-noir.md, prd-signal-noir/addendum.md, reconcile-fontes-2026-10-20.md]
-companions: [architecture-signal-noir/architecture-signal-noir.md, ux-signal-noir/DESIGN.md, ux-signal-noir/EXPERIENCE.md, ../../contracts/openapi-signalnoir.yaml, ../../contracts/openapi-sim.yaml, tickets/epic-prototipo-solucao/epic-prototipo-solucao.md]
+sources: [_bmad-output/initiative-signal-noir/prd-signal-noir/prd-signal-noir.md, _bmad-output/initiative-signal-noir/prd-signal-noir/addendum.md, _bmad-output/initiative-signal-noir/reconcile-fontes-2026-10-20.md, _bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md]
+companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md, _bmad-output/initiative-signal-noir/ux-signal-noir/DESIGN.md, _bmad-output/initiative-signal-noir/ux-signal-noir/EXPERIENCE.md, contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, _bmad-output/initiative-signal-noir/tickets/epic-prototipo-solucao/epic-prototipo-solucao.md]
 ---
 
 # Signal Noir: AI Exception Resolution for Interoperability
@@ -97,10 +96,10 @@ O vocabulário segue o Glossário do PRD (§3). Os itens B01–B14 são o backlo
 - R35 (FR-37, FR-38; caderno ADR-09) A interface marca dados sintéticos, mostra o nome do Operador como identificação declarada e dá acesso ao Visual Trace do Pedido.
 
 ### Protótipo da solução
-- R36 (pedido de 20/10) Antes de 26/10, um protótipo descartável em HTML, CSS e JavaScript puros dá ao time e aos revisores uma noção concreta da solução final. Ele percorre P5/P8b, P13, P3 e a recuperação com dados sintéticos, sem backend e sem build.
-- R37 (pedido de 20/10; AD-16) As fixtures do protótipo usam os nomes, estados, Ações e códigos de erro de `contracts/openapi-signalnoir.yaml`. Uma divergência encontrada vira proposta de mudança de contrato em B03, nunca ajuste silencioso.
-- R38 (pedido de 20/10; PRD Q-1, Q-2) O protótipo é material de preparação. Não vira código da submissão, não é copiado para `ui/` nem para a imagem e não reaproveita código do SentaiTask.
-- R39 (pedido de 20/10) Os aprendizados do protótipo são registrados e alimentam B03, uma rodada de `bmad-ux` e os critérios de B07 e B10.
+- R36 (reconcile §4) Antes de 26/10, um protótipo descartável em HTML, CSS e JavaScript puros dá ao time e aos revisores uma noção concreta da solução final. Ele percorre P5/P8b, P13, P3 e a recuperação com dados sintéticos, sem backend e sem build.
+- R37 (reconcile §4; AD-16) As fixtures do protótipo usam os nomes, estados, Ações e códigos de erro de `contracts/openapi-signalnoir.yaml`. Uma divergência encontrada vira proposta de mudança de contrato em B03, nunca ajuste silencioso.
+- R38 (reconcile §4; PRD Q-1, Q-2) O protótipo é material de preparação. Não vira código da submissão, não é copiado para `ui/` nem para a imagem e não reaproveita código do SentaiTask.
+- R39 (reconcile §4) Os aprendizados do protótipo são registrados e alimentam B03, uma rodada de `bmad-ux` e os critérios de B07 e B10.
 
 ### Simulador e Cenários
 - R40 (FR-30 a FR-33; B05) O Simulador é acessado por HTTP e:
@@ -175,21 +174,26 @@ O vocabulário segue o Glossário do PRD (§3). Os itens B01–B14 são o backlo
 - Non-goal: autenticação e perfis. O Operador só se identifica pelo nome.
 - Non-goal: decisão clínica e edição livre de payload.
 - Non-goal: protótipo com backend, build, framework ou integração real.
+- Touch point: IRIS AI Hub EAP build 154 (`%AI.Agent`, `%AI.ToolSet`, `%AI.Provider`) — consumido, não desenvolvido; owner: epic-contratos-e-spike (spike) e epic-fundacao-e-simulador (imagem e bootstrap).
+- Touch point: Visual Trace da Production — só linkado a partir do Caso; owner: epic-interface-e-dossie.
+- Touch point: Open Exchange e página do concurso — publicação e inscrição; owner: epic-entrega.
+- Tracer path: um Pedido sintético P5/P8b sai do Simulador (épico 3), vira Caso e Proposta validada (épico 4), aparece e é aprovado na interface (épico 5), é executado com Revalidação e Recibo (épico 6) e entra na Execução de Referência (épico 8) que a entrega publica (épico 9).
 
 ## References
 
-- architecture — architecture-signal-noir/architecture-signal-noir.md
-- design — ux-signal-noir/DESIGN.md
-- experience — ux-signal-noir/EXPERIENCE.md
-- contract — ../../contracts/openapi-signalnoir.yaml
-- contract — ../../contracts/openapi-sim.yaml
-- prd — prd-signal-noir/prd-signal-noir.md (§3 Glossário, §11 roteiro da demo)
-- addendum — prd-signal-noir/addendum.md (§D transições, §E Famílias, §F roteiro)
-- reconcile — reconcile-fontes-2026-10-20.md
-- breakdown — tickets/tickets.toml
+- prd — _bmad-output/initiative-signal-noir/prd-signal-noir/prd-signal-noir.md (§3 Glossário, §9 escopo, §11 roteiro da demo)
+- addendum — _bmad-output/initiative-signal-noir/prd-signal-noir/addendum.md (§D transições, §E Famílias, §F roteiro)
+- reconcile — _bmad-output/initiative-signal-noir/reconcile-fontes-2026-10-20.md (§7 índice do caderno de 19/10)
+- architecture — _bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md
+- design — _bmad-output/initiative-signal-noir/ux-signal-noir/DESIGN.md
+- experience — _bmad-output/initiative-signal-noir/ux-signal-noir/EXPERIENCE.md
+- contract — contracts/openapi-signalnoir.yaml
+- contract — contracts/openapi-sim.yaml
+- breakdown — _bmad-output/initiative-signal-noir/tickets/tickets.toml
 
 ## Notes
 
+- Decision (21/10): o primeiro épico é o protótipo, e não uma base de plataforma, porque nenhum código da submissão pode ser escrito antes de 26/10 (Q-1). A base da plataforma é o épico 3 (B04), depois dos contratos do épico 2.
 - Assumption: o caderno de 19/10 prevalece sobre o PRD de 18/10 onde os dois divergem (SM-1, Famílias da referência, Provedores, expiração da Aprovação, identidades). O PRD e a arquitetura ainda não foram atualizados (ver reconcile).
 - Decision (20/10, Henrique): o protótipo é responsabilidade de Henrique, com revisão de Henry (domínio) e José (contratos).
 - Decision (20/10, Henrique): o texto do protótipo e da interface final fica em inglês.
