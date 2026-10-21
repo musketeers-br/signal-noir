@@ -15,6 +15,7 @@ slug = "epic-contratos-e-spike"
 title = "Contratos de domínio, spike do AI Hub 154 e contrato da UX (B01–B03)"
 description = "As três frentes começam em 26/10 contra contratos estáveis, com o risco do build 154 conhecido."
 covers = ["R9", "R10", "R12", "R16", "R17", "R24", "R32", "R33", "R34", "R37", "R41"]
+after = [{ epic = 1, needs = "só a entrada 5 (B03): os aprendizados do protótipo revisado" }]
 
 [[epic]]
 id = 3

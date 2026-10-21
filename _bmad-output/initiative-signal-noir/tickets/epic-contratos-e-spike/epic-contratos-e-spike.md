@@ -6,7 +6,7 @@ covers: [R9, R10, R12, R16, R17, R24, R32, R33, R34, R37, R41]
 sources: [_bmad-output/initiative-signal-noir/initiative-signal-noir.md]
 companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md]
 after: []
-refined: false
+refined: true
 risk: medium
 owner: "Henry (B01), José (B02), Henrique (B03)"
 window: "até 25/10"
@@ -21,6 +21,25 @@ Preparação permitida antes de 26/10. Congela os contratos de Pedido, Caso, Pro
 ## Outcome
 
 As três frentes começam em 26/10 contra contratos estáveis e com o risco do build 154 conhecido.
+
+## Requirements
+
+- R1 (parent R9) Há uma única máquina de estados. B01 a congela com origem, destino, ator, pré-condições, evento e trabalho subsequente de cada transição.
+- R2 (parent R10) Estados terminais não reabrem implicitamente. Um novo episódio depois de um estado terminal cria um Caso relacionado. Rejeição e expiração têm destino e limite. `Held` só sai por nova Investigação.
+- R3 (parent R12) O Agente só tem Ferramentas de leitura. O servidor impõe o contexto e o orçamento. A Evidência Pré-coletada substitui as Ferramentas como plano B, mas a chamada real ao AI Hub continua.
+- R4 (parent R16) Cada Investigação registra modelo, Provedor, versões, duração, Chamadas de Ferramenta e tokens, quando disponíveis.
+- R5 (parent R17) Um Provedor e um modelo de referência são demonstrados. A troca por `.env` continua possível, mas o suporte aos quatro Provedores não é garantido nem anunciado.
+- R6 (parent R24) Há três identidades separadas: - `commandId` para o trabalho interno; - `executionId` para a execução autorizada, seu lease e sua Reconciliação; - `businessEffectKey` para o efeito no Parceiro. A identidade do efeito não depende só de `proposalId`.
+- R7 (parent R32) A interface é uma SPA estática, com polling e contratos HTTP versionados. Ela oferece lista, detalhe em camadas, Aprovação, Dossiê e resultado, e mostra o problema, as Evidências, a alteração prevista e o resultado.
+- R8 (parent R33) A Aprovação mostra o efeito exato e envia a versão exata. Um conflito de versão exige atualizar a Proposta. Uma recusa do servidor nunca aparece como sucesso.
+- R9 (parent R34) Fato observado e diagnóstico são distinguíveis. Espera, revisão e incerteza têm mensagens distintas. Falha do Provedor e ausência de dados têm apresentação própria.
+- R10 (parent R37) As fixtures do protótipo usam os nomes, estados, Ações e códigos de erro de `contracts/openapi-signalnoir.yaml`. Uma divergência encontrada vira proposta de mudança de contrato em B03, nunca ajuste silencioso.
+- R11 (parent R41) B01 fixa: - a separação entre ajuste e teste; - o Gabarito prévio, inclusive os casos em que `REQUEST_REVIEW` é o correto; - os negativos de mapeamento, identidade e Recibo; - a regra de novo episódio.
+
+## Constraints
+
+- Tudo aqui é preparação (contratos, especificação, fixtures, spike). Nenhum código da submissão antes de 26/10, e o spike fica fora do repositório (parent Constraints; PRD Q-1).
+- Contrato antes do código, spine antes do contrato (AD-16): a mudança de identidade (R5 aqui) atualiza o AD-21 antes do OpenAPI.
 
 ## Done when
 
@@ -51,5 +70,10 @@ As três frentes começam em 26/10 contra contratos estáveis e com o risco do b
 
 ## Notes
 
-- Decision (21/10): o épico não espera o protótipo. Só a história do B03 depende dele; ao planejar as histórias, a entrada do B03 leva `after = ["epic-prototipo-solucao"]`. B01 e B02 começam já.
-- Status: planejado; aceite ainda não demonstrado. Refinar com Sofia (`bmad-agent-po`) antes de planejar as histórias.
+- Decision (21/10): o épico não espera o protótipo como um todo. Só a entrada 5 (B03) depende dele (`after` da entrada); a dependência fica declarada no `tickets.toml` da iniciativa com esse escopo. As entradas 1 e 2 começam já.
+- Decision (21/10): refinado só com as linhas da iniciativa (uma linha por id pai). Nenhuma decisão de produto nova.
+- Decision (21/10): o tracer bullet é o spike do build 154 (entrada 1), porque é a parte menos certa e decide o modo da Investigação (FR-53) para os outros épicos.
+- Decision (21/10): sem "Refactor sweep". O épico só produz contratos, especificação e um spike descartável; não há código para varrer.
+- Open question: API-Q11, a chave do efeito deixa de depender de `proposalId`? Decisão de José com Henry, dentro da entrada 3.
+- Open question: Q-3 (Provedor e modelo de referência), Q-5 (IRIS ou IRIS for Health) e Q-A a Q-F da arquitetura. Respondidas pelo spike (entrada 1).
+- Open question: Q-10, cinco variantes de teste por Família cabem na capacidade? Henry decide na entrada 4.
