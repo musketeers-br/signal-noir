@@ -55,3 +55,18 @@ A regra de construção durante o concurso (Q-1) impõe três salvaguardas:
 ## 5. Questões levadas à iniciativa
 
 As 7 questões da revisão do caderno (§08) e as questões do PRD ainda abertas estão em Notes do ticket da iniciativa.
+
+## 6. Atualização de 21/10
+
+Depois do merge do PR #1, o PRD foi atualizado no branch `prd-update-caderno-19-10`. Situação das ações pendentes da §3:
+
+| Tema | Situação |
+|---|---|
+| Núcleo | Resolvido: PRD §9, com o recorte de 19/10, §9.1 e §9.2 (P9 condicional) |
+| Meta de sucesso | Resolvido: SM-1 sem meta de vitória |
+| Execução de Referência | Resolvido: FR-39, FR-40 e FR-49 |
+| Expiração da Aprovação | Resolvido: FR-18 |
+| Provedores | Resolvido: FR-50 |
+| Caso depois de estado terminal | Resolvido: FR-3 (Caso relacionado). O vínculo no contrato fica para o B01 |
+| Idempotência | Em aberto: API-Q11 do contrato (PR #2), decisão de José. AD-21 e FR-22 não foram alterados |
+| Saída de `HOLD` e lease | Contrato draft.2 (PR #2): `leaseGeneration`. Conferir o AD-22 em B06 |
