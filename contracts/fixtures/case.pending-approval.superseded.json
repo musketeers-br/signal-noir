@@ -1,0 +1,388 @@
+{
+  "caseId": "case_51b0e2",
+  "orderId": "ORD-24130",
+  "partnerId": "lab-partner-a",
+  "state": "PendingApproval",
+  "labels": {
+    "synthetic": true,
+    "replay": false
+  },
+  "proposerMode": "agent",
+  "benchmark": null,
+  "createdAt": "2026-10-29T13:00:19Z",
+  "lastEventAt": "2026-10-29T13:00:37Z",
+  "updatedAt": "2026-10-29T13:00:37Z",
+  "caseVersion": 7,
+  "lastEventSeq": 16,
+  "order": {
+    "orderId": "ORD-24130",
+    "correlationId": "corr_51b0e2",
+    "transactionIds": [
+      "TX-50130"
+    ],
+    "snapshot": {
+      "orderId": "ORD-24130",
+      "transactionId": "TX-50130",
+      "patient": {
+        "id": "SYN-PAT-0051",
+        "name": "Synthetic Patient 051",
+        "birthDate": "1980-01-01"
+      },
+      "exams": [
+        {
+          "code": "HBA1C-L",
+          "name": "Glycated hemoglobin (legacy code)"
+        }
+      ],
+      "specimen": {
+        "id": "SPC-7790",
+        "type": "WHOLE_BLOOD"
+      },
+      "collectedAt": "2026-10-29T11:52:00Z",
+      "orderingUnit": "UNIT-NORTH"
+    },
+    "equivalenceKey": {
+      "patientId": "SYN-PAT-0051",
+      "examCodes": [
+        "HBA1C-L"
+      ],
+      "collectedAt": "2026-10-29T11:52:00Z",
+      "specimenId": "SPC-7790"
+    },
+    "transformed": null
+  },
+  "visualTraceUrl": "/csp/signalnoir/EnsPortal.VisualTrace.zen?SESSIONID=42912",
+  "exceptions": [
+    {
+      "exceptionId": "exc_51b0e2_01",
+      "kind": "business_rejection",
+      "httpStatus": 422,
+      "body": {
+        "error": "UNKNOWN_CODE",
+        "message": "HBA1C-L is not a valid exam code"
+      },
+      "responseClass": "business_error",
+      "observedAt": "2026-10-29T13:00:19Z",
+      "attemptId": "att_51b0e2_1",
+      "duringExecution": false
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "evid_51b0e2_02",
+      "source": "system.exception",
+      "calledBy": "system",
+      "params": {
+        "exceptionId": "exc_51b0e2_01"
+      },
+      "result": {
+        "kind": "business_rejection",
+        "httpStatus": 422,
+        "responseClass": "business_error",
+        "body": {
+          "error": "UNKNOWN_CODE",
+          "message": "HBA1C-L is not a valid exam code"
+        }
+      },
+      "observedAt": "2026-10-29T13:00:19Z",
+      "durationMs": 254,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_51b0e2_03",
+      "source": "tool.policies",
+      "calledBy": "agent",
+      "params": {
+        "topic": "code_substitution",
+        "code": "HBA1C-L"
+      },
+      "result": {
+        "policyId": "POL-CODE-SUBST",
+        "version": "2026.10.1",
+        "rule": "Legacy codes are translated through the approved mapping catalog."
+      },
+      "observedAt": "2026-10-29T13:00:23Z",
+      "durationMs": 291,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_51b0e2_04",
+      "source": "tool.mapping_catalog",
+      "calledBy": "agent",
+      "params": {
+        "fromCode": "HBA1C-L"
+      },
+      "result": {
+        "catalogVersion": "2026.10.1",
+        "mappings": [
+          {
+            "mappingId": "map_hba1c_legacy",
+            "mappingVersion": "2026.10.1",
+            "sourceCode": "HBA1C-L",
+            "targetCode": "HBA1C",
+            "conditions": {}
+          }
+        ]
+      },
+      "observedAt": "2026-10-29T13:00:25Z",
+      "durationMs": 328,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": "evid_51b0e2_05"
+    },
+    {
+      "evidenceId": "evid_51b0e2_05",
+      "source": "tool.mapping_catalog",
+      "calledBy": "system",
+      "params": {
+        "fromCode": "HBA1C-L"
+      },
+      "result": {
+        "catalogVersion": "2026.10.2",
+        "mappings": [
+          {
+            "mappingId": "map_hba1c_legacy",
+            "mappingVersion": "2026.10.2",
+            "sourceCode": "HBA1C-L",
+            "targetCode": "HBA1C",
+            "conditions": {}
+          }
+        ],
+        "change": "Condition text clarified; translation unchanged."
+      },
+      "observedAt": "2026-10-29T13:00:33Z",
+      "durationMs": 365,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    }
+  ],
+  "diagnosis": {
+    "summary": "Legacy exam code HBA1C-L. The catalog has a single unconditional approved mapping for it.",
+    "claims": [
+      {
+        "text": "The partner rejected HBA1C-L as an unknown code.",
+        "evidenceIds": [
+          "evid_51b0e2_02"
+        ]
+      },
+      {
+        "text": "Policy routes legacy codes through the approved mapping catalog.",
+        "evidenceIds": [
+          "evid_51b0e2_03"
+        ]
+      },
+      {
+        "text": "Catalog 2026.10.2 has map_hba1c_legacy with no conditions.",
+        "evidenceIds": [
+          "evid_51b0e2_05"
+        ]
+      }
+    ],
+    "hypotheses": [
+      {
+        "text": "RETRY as is.",
+        "status": "discarded",
+        "reason": "An unknown code is rejected again on every retry.",
+        "evidenceIds": [
+          "evid_51b0e2_02"
+        ]
+      }
+    ],
+    "conflicts": []
+  },
+  "currentProposalId": "prop_51b0e2_v2",
+  "proposals": [
+    {
+      "proposalId": "prop_51b0e2_v1",
+      "author": "agent",
+      "createdAt": "2026-10-29T13:00:27Z",
+      "current": false,
+      "supersededBy": "prop_51b0e2_v2",
+      "diagnosis": {
+        "summary": "Legacy exam code HBA1C-L. The catalog has a single unconditional approved mapping for it.",
+        "claims": [
+          {
+            "text": "The partner rejected HBA1C-L as an unknown code.",
+            "evidenceIds": [
+              "evid_51b0e2_02"
+            ]
+          },
+          {
+            "text": "Policy routes legacy codes through the approved mapping catalog.",
+            "evidenceIds": [
+              "evid_51b0e2_03"
+            ]
+          },
+          {
+            "text": "Catalog 2026.10.1 has map_hba1c_legacy with no conditions.",
+            "evidenceIds": [
+              "evid_51b0e2_04"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "RETRY as is.",
+            "status": "discarded",
+            "reason": "An unknown code is rejected again on every retry.",
+            "evidenceIds": [
+              "evid_51b0e2_02"
+            ]
+          }
+        ],
+        "conflicts": []
+      },
+      "action": "APPLY_APPROVED_MAPPING",
+      "params": {
+        "mappingId": "map_hba1c_legacy",
+        "mappingVersion": "2026.10.1"
+      },
+      "scope": "single_case",
+      "confidence": "ALTA",
+      "preconditions": [
+        {
+          "check": "MAPPING_VERSION_UNCHANGED",
+          "expected": "2026.10.1"
+        },
+        {
+          "check": "ORDER_ACTIVE_AT_ORIGIN",
+          "expected": true
+        }
+      ],
+      "priorReceiptCandidate": null,
+      "versions": {
+        "policy": "2026.10.1",
+        "mapping": "2026.10.1",
+        "prompt": "investigate-v0.3",
+        "model": "reference-model (picked in B02)",
+        "provider": "reference-provider (picked in B02)"
+      },
+      "metrics": {
+        "durationMs": 5200,
+        "toolCalls": 2,
+        "tokensIn": 3010,
+        "tokensOut": 470,
+        "estCostUsd": 0.006
+      },
+      "validatorVerdict": {
+        "verdict": "accepted",
+        "reasons": [
+          "ACTION_IN_CATALOG",
+          "PARAMS_VALID",
+          "REQUIRED_EVIDENCE_PRESENT"
+        ],
+        "requiresApproval": true,
+        "at": "2026-10-29T13:00:28Z"
+      }
+    },
+    {
+      "proposalId": "prop_51b0e2_v2",
+      "author": "agent",
+      "createdAt": "2026-10-29T13:00:36Z",
+      "current": true,
+      "supersededBy": null,
+      "diagnosis": {
+        "summary": "Legacy exam code HBA1C-L. The catalog has a single unconditional approved mapping for it.",
+        "claims": [
+          {
+            "text": "The partner rejected HBA1C-L as an unknown code.",
+            "evidenceIds": [
+              "evid_51b0e2_02"
+            ]
+          },
+          {
+            "text": "Policy routes legacy codes through the approved mapping catalog.",
+            "evidenceIds": [
+              "evid_51b0e2_03"
+            ]
+          },
+          {
+            "text": "Catalog 2026.10.2 has map_hba1c_legacy with no conditions.",
+            "evidenceIds": [
+              "evid_51b0e2_05"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "RETRY as is.",
+            "status": "discarded",
+            "reason": "An unknown code is rejected again on every retry.",
+            "evidenceIds": [
+              "evid_51b0e2_02"
+            ]
+          }
+        ],
+        "conflicts": []
+      },
+      "action": "APPLY_APPROVED_MAPPING",
+      "params": {
+        "mappingId": "map_hba1c_legacy",
+        "mappingVersion": "2026.10.2"
+      },
+      "scope": "single_case",
+      "confidence": "ALTA",
+      "preconditions": [
+        {
+          "check": "MAPPING_VERSION_UNCHANGED",
+          "expected": "2026.10.2"
+        },
+        {
+          "check": "ORDER_ACTIVE_AT_ORIGIN",
+          "expected": true
+        }
+      ],
+      "priorReceiptCandidate": null,
+      "versions": {
+        "policy": "2026.10.1",
+        "mapping": "2026.10.2",
+        "prompt": "investigate-v0.3",
+        "model": "reference-model (picked in B02)",
+        "provider": "reference-provider (picked in B02)"
+      },
+      "metrics": {
+        "durationMs": 5200,
+        "toolCalls": 2,
+        "tokensIn": 3010,
+        "tokensOut": 470,
+        "estCostUsd": 0.006
+      },
+      "validatorVerdict": {
+        "verdict": "accepted",
+        "reasons": [
+          "ACTION_IN_CATALOG",
+          "PARAMS_VALID",
+          "REQUIRED_EVIDENCE_PRESENT"
+        ],
+        "requiresApproval": true,
+        "at": "2026-10-29T13:00:37Z"
+      }
+    }
+  ],
+  "approvals": [],
+  "denialCount": 0,
+  "executions": [],
+  "receipt": null,
+  "dossier": null,
+  "metrics": {
+    "provider": "reference-provider (picked in B02)",
+    "model": "reference-model (picked in B02)",
+    "promptVersion": "investigate-v0.3",
+    "policyVersion": "2026.10.1",
+    "mappingVersion": "2026.10.1",
+    "investigationDurationMs": 10400,
+    "toolCalls": 3,
+    "tokensIn": 6020,
+    "tokensOut": 940,
+    "estCostUsd": 0.012,
+    "attempts": 1,
+    "exceptionToValidatedProposalMs": 9000,
+    "approvalToEffectMs": null
+  },
+  "serverTime": "2026-10-29T13:00:37Z"
+}

@@ -1,0 +1,38 @@
+{
+  "mappingVersion": "2026.10.1",
+  "items": [
+    {
+      "mappingId": "map_glicj_plasma",
+      "mappingVersion": "2026.10.1",
+      "sourceCode": "GLIC-J",
+      "targetCode": "GLIC-P",
+      "conditions": {
+        "specimenType": "PLASMA"
+      }
+    },
+    {
+      "mappingId": "map_glicj_soro",
+      "mappingVersion": "2026.10.1",
+      "sourceCode": "GLIC-J",
+      "targetCode": "GLIC-S",
+      "conditions": {
+        "specimenType": "SERUM"
+      }
+    },
+    {
+      "mappingId": "map_hba1c_legacy",
+      "mappingVersion": "2026.10.1",
+      "sourceCode": "HBA1C-L",
+      "targetCode": "HBA1C",
+      "conditions": {}
+    },
+    {
+      "mappingId": "map_tsh_legacy",
+      "mappingVersion": "2026.10.1",
+      "sourceCode": "TSH-OLD",
+      "targetCode": "TSH",
+      "conditions": {}
+    }
+  ],
+  "serverTime": "2026-10-29T13:01:49Z"
+}

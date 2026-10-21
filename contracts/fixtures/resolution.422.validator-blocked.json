@@ -1,0 +1,19 @@
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "The validator blocked the operator proposal",
+    "details": {
+      "verdict": {
+        "verdict": "blocked",
+        "reasons": [
+          "MAPPING_CONDITION_MISMATCH"
+        ],
+        "requiresApproval": true,
+        "at": "2026-10-29T13:01:38Z"
+      },
+      "caseVersion": 3,
+      "lastEventSeq": 10,
+      "serverTime": "2026-10-29T13:01:38Z"
+    }
+  }
+}

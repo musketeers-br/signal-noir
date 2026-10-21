@@ -1,0 +1,21 @@
+{
+  "approval": {
+    "approvalId": "appr_9f3a1c_09",
+    "proposalId": "prop_9f3a1c_v1",
+    "decision": "approved",
+    "by": "operator:Carla",
+    "at": "2026-10-29T13:00:13Z",
+    "expiresAt": "2026-10-29T13:15:13Z",
+    "status": "valid",
+    "reason": null
+  },
+  "idempotentReplay": false,
+  "case": {
+    "caseId": "case_9f3a1c",
+    "state": "Approved",
+    "caseVersion": 5,
+    "lastEventSeq": 14,
+    "serverTime": "2026-10-29T13:00:13Z",
+    "commandId": "cmd_9f3a1c_01"
+  }
+}

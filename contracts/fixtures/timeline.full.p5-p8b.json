@@ -1,0 +1,165 @@
+{
+  "caseId": "case_9f3a1c",
+  "state": "PendingApproval",
+  "events": [
+    {
+      "seq": 1,
+      "at": "2026-10-29T13:00:00Z",
+      "type": "CaseOpened",
+      "actor": "system",
+      "refId": null,
+      "payload": {
+        "orderId": "ORD-24117",
+        "partnerId": "lab-partner-a"
+      }
+    },
+    {
+      "seq": 2,
+      "at": "2026-10-29T13:00:00Z",
+      "type": "ExceptionRecorded",
+      "actor": "system",
+      "refId": "exc_9f3a1c_01",
+      "payload": {
+        "kind": "timeout",
+        "httpStatus": null,
+        "summary": "Attempt 1 timed out"
+      }
+    },
+    {
+      "seq": 3,
+      "at": "2026-10-29T13:00:00Z",
+      "type": "ExceptionRecorded",
+      "actor": "system",
+      "refId": "exc_9f3a1c_03",
+      "payload": {
+        "kind": "http_error",
+        "httpStatus": 500,
+        "summary": "Attempt 2 · HTTP 500 with a validation body"
+      }
+    },
+    {
+      "seq": 4,
+      "at": "2026-10-29T13:00:02Z",
+      "type": "StateChanged",
+      "actor": "system",
+      "refId": null,
+      "payload": {
+        "from": "Open",
+        "to": "Investigating",
+        "reason": "exception recorded"
+      }
+    },
+    {
+      "seq": 5,
+      "at": "2026-10-29T13:00:04Z",
+      "type": "ToolCalled",
+      "actor": "agent",
+      "refId": "evid_9f3a1c_05",
+      "payload": {
+        "source": "tool.partner_failure_history",
+        "params": {
+          "orderId": "ORD-24117",
+          "partnerId": "lab-partner-a",
+          "windowMin": 60
+        }
+      }
+    },
+    {
+      "seq": 6,
+      "at": "2026-10-29T13:00:06Z",
+      "type": "ToolCalled",
+      "actor": "agent",
+      "refId": "evid_9f3a1c_06",
+      "payload": {
+        "source": "tool.partner_health",
+        "params": {
+          "partnerId": "lab-partner-a"
+        }
+      }
+    },
+    {
+      "seq": 7,
+      "at": "2026-10-29T13:00:08Z",
+      "type": "ToolCalled",
+      "actor": "agent",
+      "refId": "evid_9f3a1c_07",
+      "payload": {
+        "source": "tool.policies",
+        "params": {
+          "topic": "code_substitution",
+          "code": "GLIC-J"
+        }
+      }
+    },
+    {
+      "seq": 8,
+      "at": "2026-10-29T13:00:10Z",
+      "type": "ToolCalled",
+      "actor": "agent",
+      "refId": "evid_9f3a1c_08",
+      "payload": {
+        "source": "tool.mapping_catalog",
+        "params": {
+          "fromCode": "GLIC-J"
+        }
+      }
+    },
+    {
+      "seq": 9,
+      "at": "2026-10-29T13:00:12Z",
+      "type": "ProposalCreated",
+      "actor": "agent",
+      "refId": "prop_9f3a1c_v1",
+      "payload": {
+        "action": "APPLY_APPROVED_MAPPING",
+        "confidence": "ALTA"
+      }
+    },
+    {
+      "seq": 10,
+      "at": "2026-10-29T13:00:12Z",
+      "type": "StateChanged",
+      "actor": "agent",
+      "refId": null,
+      "payload": {
+        "from": "Investigating",
+        "to": "DecisionProposed",
+        "reason": "proposal prop_9f3a1c_v1"
+      }
+    },
+    {
+      "seq": 11,
+      "at": "2026-10-29T13:00:13Z",
+      "type": "ValidatorVerdict",
+      "actor": "system",
+      "refId": "prop_9f3a1c_v1",
+      "payload": {
+        "verdict": "accepted",
+        "reasons": [
+          "ACTION_IN_CATALOG",
+          "PARAMS_VALID",
+          "MAPPING_CONDITION_MATCHES",
+          "REQUIRED_EVIDENCE_PRESENT"
+        ],
+        "requiresApproval": true
+      }
+    },
+    {
+      "seq": 12,
+      "at": "2026-10-29T13:00:13Z",
+      "type": "StateChanged",
+      "actor": "system",
+      "refId": null,
+      "payload": {
+        "from": "DecisionProposed",
+        "to": "PendingApproval",
+        "reason": "validator: accepted"
+      }
+    }
+  ],
+  "hasMore": false,
+  "nextSinceSeq": 12,
+  "caseVersion": 4,
+  "lastEventSeq": 12,
+  "serverTime": "2026-10-29T13:00:13Z"
+}

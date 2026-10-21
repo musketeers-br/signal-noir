@@ -1,0 +1,12 @@
+{
+  "kind": "cancel",
+  "proposal": null,
+  "approval": null,
+  "case": {
+    "caseId": "case_0b6f19",
+    "state": "Cancelled",
+    "caseVersion": 5,
+    "lastEventSeq": 12,
+    "serverTime": "2026-10-29T13:01:38Z"
+  }
+}

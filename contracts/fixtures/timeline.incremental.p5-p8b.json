@@ -1,0 +1,105 @@
+{
+  "caseId": "case_9f3a1c",
+  "state": "Resolved",
+  "events": [
+    {
+      "seq": 13,
+      "at": "2026-10-29T13:00:13Z",
+      "type": "ApprovalRecorded",
+      "actor": "operator:Carla",
+      "refId": "appr_9f3a1c_09",
+      "payload": {
+        "decision": "approved",
+        "proposalId": "prop_9f3a1c_v1"
+      }
+    },
+    {
+      "seq": 14,
+      "at": "2026-10-29T13:00:13Z",
+      "type": "StateChanged",
+      "actor": "operator:Carla",
+      "refId": null,
+      "payload": {
+        "from": "PendingApproval",
+        "to": "Approved",
+        "reason": "approved by Carla"
+      }
+    },
+    {
+      "seq": 15,
+      "at": "2026-10-29T13:00:15Z",
+      "type": "ExecutionAuthorized",
+      "actor": "system",
+      "refId": "exec_9f3a1c_10",
+      "payload": {
+        "idempotencyKey": "idem_ORD-24117_apply_approved_mapping_v1",
+        "approvalId": "appr_9f3a1c_09"
+      }
+    },
+    {
+      "seq": 16,
+      "at": "2026-10-29T13:00:15Z",
+      "type": "StateChanged",
+      "actor": "system",
+      "refId": null,
+      "payload": {
+        "from": "Approved",
+        "to": "Executing",
+        "reason": "execution authorized"
+      }
+    },
+    {
+      "seq": 17,
+      "at": "2026-10-29T13:00:17Z",
+      "type": "RevalidationPerformed",
+      "actor": "system",
+      "refId": "exec_9f3a1c_10",
+      "payload": {
+        "passed": true,
+        "failed": []
+      }
+    },
+    {
+      "seq": 18,
+      "at": "2026-10-29T13:00:18Z",
+      "type": "AttemptRecorded",
+      "actor": "system",
+      "refId": "att_9f3a1c_3",
+      "payload": {
+        "n": 3,
+        "httpStatus": 200,
+        "responseClass": "success",
+        "idempotencyKey": "idem_ORD-24117_apply_approved_mapping_v1"
+      }
+    },
+    {
+      "seq": 19,
+      "at": "2026-10-29T13:00:19Z",
+      "type": "ReceiptRecorded",
+      "actor": "system",
+      "refId": "RCP-88231",
+      "payload": {
+        "receiptId": "RCP-88231",
+        "source": "delivery",
+        "orderId": "ORD-24117"
+      }
+    },
+    {
+      "seq": 20,
+      "at": "2026-10-29T13:00:19Z",
+      "type": "StateChanged",
+      "actor": "system",
+      "refId": null,
+      "payload": {
+        "from": "Executing",
+        "to": "Resolved",
+        "reason": "receipt RCP-88231 recorded"
+      }
+    }
+  ],
+  "hasMore": false,
+  "nextSinceSeq": 20,
+  "caseVersion": 7,
+  "lastEventSeq": 20,
+  "serverTime": "2026-10-29T13:00:19Z"
+}

@@ -193,7 +193,7 @@
       '<div class="page-head"><div><h1>Cases</h1><p class="lead">Every interrupted order becomes a case. The agent investigates and proposes; you approve; the system re-checks and sends once.</p></div></div>' +
       '<div class="filters" role="group" aria-label="Filter cases">' + FILTERS.map((x, i) => '<button type="button" class="btn" data-filter="' + x[0] + '" aria-pressed="' + (x[0] === ui.filter) + '">' + x[1] + ' <span class="count">' + counts[i] + '</span></button>').join('') + '</div>' +
       (items.length ? '<ul class="case-list">' + items.map(i => {
-        const s = { state: i.state, executions: [] };
+        const s = { state: i.state, executions: i.executionOutcome ? [{ outcome: i.executionOutcome }] : [] };
         return '<li><a class="case-row' + (flash.has(i.caseId) ? ' flash' : '') + '" href="#/cases/' + esc(i.caseId) + '">' +
           '<span class="cr-state">' + chip(s) + '</span>' +
           '<span class="cr-main"><b>' + esc(i.orderId) + '</b> <span class="muted mono small">' + esc(i.caseId) + '</span><br><span class="small">' + esc(i.lastExceptionSummary) + '</span></span>' +
@@ -321,7 +321,7 @@
   function layerExecution(c) {
     if (!c.executions.length && !c.receipt) return notYet(c.state === 'Held' || c.state === 'Cancelled' ? 'No execution.' : null);
     return c.executions.map(ex => '<div class="card exec"><div class="exec-head"><b>Execution</b> <span class="mono small">' + esc(ex.executionId) + '</span> <span class="chip small tone-' + ({ resolved: 'ok', reconciling: 'violet', held: 'hold', cancelled: 'muted', failed: 'danger', in_progress: 'info' }[ex.outcome]) + '">' + esc(ex.outcome) + '</span></div>' +
-      '<p class="small">Idempotency key <code>' + esc(ex.idempotencyKey) + '</code>: the partner applies at most one effect per key. Authorized ' + clock(ex.authorizedAt) + ' BRT.</p>' +
+      '<p class="small">Idempotency key <code>' + esc(ex.idempotencyKey) + '</code>: the partner applies at most one effect per key. Authorized ' + clock(ex.authorizedAt) + ' BRT · lease generation ' + ex.leaseGeneration + '.</p>' +
       (ex.revalidation ? '<h3 class="h-small">Revalidation ' + (ex.revalidation.passed ? '<span class="tag ok">passed</span>' : '<span class="tag danger">blocked the send</span>') + '</h3><table class="checks"><thead><tr><th>Check</th><th>Expected</th><th>Observed</th><th>Result</th></tr></thead><tbody>' +
         ex.revalidation.checks.map(x => '<tr class="' + (x.passed ? '' : 'bad') + '"><td><code>' + esc(x.check) + '</code></td><td>' + scalar(x.expected) + '</td><td>' + scalar(x.observed) + '</td><td>' + (x.passed ? '✓ holds' : '✕ fails') + '</td></tr>').join('') + '</tbody></table>' : '') +
       (ex.attempts.length ? '<h3 class="h-small">Attempts</h3><ul class="plain small">' + ex.attempts.map(a => '<li>#' + a.n + ' <span class="mono">' + esc(a.transactionId) + '</span> sent ' + clock(a.sentAt) + ' · ' + (a.completedAt ? (a.httpStatus ? 'HTTP ' + a.httpStatus + ' ' : '') + '<b>' + esc(a.responseClass) + '</b>' : '<b>waiting for response…</b>') + (a.bodyExcerpt ? '<br><span class="muted">' + esc(a.bodyExcerpt) + '</span>' : '') + '</li>').join('') + '</ul>' : '') +
@@ -334,13 +334,13 @@
     const d = c.dossier;
     if (!d) return '';
     const live = c.state === 'ReviewRequired';
-    const unknowns = (E.S.cases.get(c.caseId) || {})._unknowns || [];
+    const unknowns = d.unknowns || [];
     return '<section class="dossier" id="dossier" aria-labelledby="dossier-h" tabindex="-1"><h2 id="dossier-h">Review dossier' + (live ? '' : ' <span class="tag gray">closed</span>') + '</h2>' +
       '<p class="dossier-reason"><b>Why automation stopped:</b> ' + esc(d.reasonText) + ' <span class="tag">' + esc(DOSSIER_REASON[d.reason] || d.reason) + '</span></p>' +
       '<div class="grid2">' +
       '<div><h3 class="h-small">What was checked</h3><p class="chips">' + (d.relevantEvidenceIds || []).map(id => evChip(c, id)).join('') + '</p>' +
       '<h3 class="h-small">Hypotheses</h3>' + ((d.hypotheses || []).length ? '<ul class="hyps">' + d.hypotheses.map(h => '<li><span class="tag ' + (h.status === 'chosen' ? 'ok' : 'gray') + '">' + esc(h.status) + '</span> ' + esc(h.text) + (h.reason ? '<br><span class="small muted">Why: ' + esc(h.reason) + '</span>' : '') + '</li>').join('') + '</ul>' : '<p class="small muted">None. No interpretation was produced.</p>') + '</div>' +
-      '<div><h3 class="h-small">What we don\'t know</h3>' + (unknowns.length ? '<ul class="unknowns">' + unknowns.map(u => '<li>' + esc(u) + '</li>').join('') + '</ul>' : '<p class="small muted">Nothing flagged.</p>') +
+      '<div><h3 class="h-small">What we don\'t know</h3>' + (unknowns.length ? '<ul class="unknowns">' + unknowns.map(u => '<li>' + esc(u.text) + (u.relatedEvidenceIds && u.relatedEvidenceIds.length ? ' <span class="chips">' + u.relatedEvidenceIds.map(id => evChip(c, id)).join('') + '</span>' : '') + '</li>').join('') + '</ul>' : '<p class="small muted">Nothing flagged.</p>') +
       '<p class="small muted">Missing information is listed here. It is not a negative conclusion.</p></div></div>' +
       ((d.collidingRecords || []).length ? '<h3 class="h-small">Colliding records</h3><div class="table-wrap"><table class="checks"><thead><tr><th>Record</th>' + Object.keys(d.collidingRecords[0].fields).map(f => '<th>' + esc(f) + '</th>').join('') + '</tr></thead><tbody>' +
         d.collidingRecords.map(r => '<tr><td class="mono">' + esc(r.recordRef) + '</td>' + Object.keys(r.fields).map(f => '<td class="' + (r.divergentFields.indexOf(f) >= 0 ? 'diverge' : '') + '">' + esc(r.fields[f]) + (r.divergentFields.indexOf(f) >= 0 ? ' <span class="sr">differs</span><span aria-hidden="true"> ≠</span>' : '') + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>' : '') +

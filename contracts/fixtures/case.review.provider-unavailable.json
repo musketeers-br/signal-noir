@@ -1,0 +1,218 @@
+{
+  "caseId": "case_a37b5d",
+  "orderId": "ORD-24188",
+  "partnerId": "lab-partner-a",
+  "state": "ReviewRequired",
+  "labels": {
+    "synthetic": true,
+    "replay": false
+  },
+  "proposerMode": "agent",
+  "benchmark": null,
+  "createdAt": "2026-10-29T13:00:00Z",
+  "lastEventAt": "2026-10-29T13:00:09Z",
+  "updatedAt": "2026-10-29T13:00:09Z",
+  "caseVersion": 3,
+  "lastEventSeq": 9,
+  "order": {
+    "orderId": "ORD-24188",
+    "correlationId": "corr_a37b5d",
+    "transactionIds": [
+      "TX-50188"
+    ],
+    "snapshot": {
+      "orderId": "ORD-24188",
+      "transactionId": "TX-50188",
+      "patient": {
+        "id": "SYN-PAT-0094",
+        "name": "Synthetic Patient 094",
+        "birthDate": "1980-01-01"
+      },
+      "exams": [
+        {
+          "code": "GLIC-J",
+          "name": "Fasting glucose"
+        }
+      ],
+      "specimen": {
+        "id": "SPC-7833",
+        "type": "PLASMA"
+      },
+      "collectedAt": "2026-10-29T12:20:00Z",
+      "orderingUnit": "UNIT-NORTH"
+    },
+    "equivalenceKey": {
+      "patientId": "SYN-PAT-0094",
+      "examCodes": [
+        "GLIC-J"
+      ],
+      "collectedAt": "2026-10-29T12:20:00Z",
+      "specimenId": "SPC-7833"
+    },
+    "transformed": null
+  },
+  "visualTraceUrl": "/csp/signalnoir/EnsPortal.VisualTrace.zen?SESSIONID=45851",
+  "exceptions": [
+    {
+      "exceptionId": "exc_a37b5d_01",
+      "kind": "http_error",
+      "httpStatus": 500,
+      "body": {
+        "error": "VALIDATION_ERROR",
+        "message": "Exam code GLIC-J is discontinued since 2026-10-01. Use the replacement code."
+      },
+      "responseClass": "business_error",
+      "observedAt": "2026-10-29T13:00:00Z",
+      "attemptId": "att_a37b5d_1",
+      "duringExecution": false
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "evid_a37b5d_02",
+      "source": "system.exception",
+      "calledBy": "system",
+      "params": {
+        "exceptionId": "exc_a37b5d_01"
+      },
+      "result": {
+        "kind": "http_error",
+        "httpStatus": 500,
+        "responseClass": "business_error",
+        "body": {
+          "error": "VALIDATION_ERROR",
+          "message": "Exam code GLIC-J is discontinued since 2026-10-01. Use the replacement code."
+        }
+      },
+      "observedAt": "2026-10-29T13:00:00Z",
+      "durationMs": 254,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_a37b5d_03",
+      "source": "tool.policies",
+      "calledBy": "system",
+      "params": {
+        "topic": "code_substitution",
+        "code": "GLIC-J"
+      },
+      "result": {
+        "policyId": "POL-CODE-SUBST",
+        "version": "2026.10.1",
+        "rule": "GLIC-J discontinued on 2026-10-01. Replace it through an approved mapping chosen by specimen type."
+      },
+      "observedAt": "2026-10-29T13:00:03Z",
+      "durationMs": 291,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_a37b5d_04",
+      "source": "tool.mapping_catalog",
+      "calledBy": "system",
+      "params": {
+        "fromCode": "GLIC-J"
+      },
+      "result": {
+        "catalogVersion": "2026.10.1",
+        "mappings": [
+          {
+            "mappingId": "map_glicj_plasma",
+            "mappingVersion": "2026.10.1",
+            "sourceCode": "GLIC-J",
+            "targetCode": "GLIC-P",
+            "conditions": {
+              "specimenType": "PLASMA"
+            }
+          },
+          {
+            "mappingId": "map_glicj_soro",
+            "mappingVersion": "2026.10.1",
+            "sourceCode": "GLIC-J",
+            "targetCode": "GLIC-S",
+            "conditions": {
+              "specimenType": "SERUM"
+            }
+          }
+        ]
+      },
+      "observedAt": "2026-10-29T13:00:04Z",
+      "durationMs": 328,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_a37b5d_05",
+      "source": "tool.partner_health",
+      "calledBy": "system",
+      "params": {
+        "partnerId": "lab-partner-a"
+      },
+      "result": {
+        "status": "UP",
+        "errorRate5m": 0.01,
+        "p95LatencyMs": 410,
+        "maintenanceWindow": null
+      },
+      "observedAt": "2026-10-29T13:00:05Z",
+      "durationMs": 365,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    }
+  ],
+  "diagnosis": null,
+  "currentProposalId": null,
+  "proposals": [],
+  "approvals": [],
+  "denialCount": 0,
+  "executions": [],
+  "receipt": null,
+  "dossier": {
+    "createdAt": "2026-10-29T13:00:09Z",
+    "unknowns": [
+      {
+        "topic": "diagnosis",
+        "text": "No diagnosis: the agent never ran, so no interpretation of this evidence exists."
+      },
+      {
+        "topic": "partner_acceptance",
+        "text": "No mapped order has been sent to the partner yet, so its acceptance is untested."
+      }
+    ],
+    "reason": "provider_unavailable",
+    "reasonText": "The LLM provider rejected the call (HTTP 401, invalid key). Automation stopped before any proposal.",
+    "partialDiagnosis": null,
+    "hypotheses": [],
+    "relevantEvidenceIds": [
+      "evid_a37b5d_02",
+      "evid_a37b5d_03",
+      "evid_a37b5d_04",
+      "evid_a37b5d_05"
+    ],
+    "conflicts": [],
+    "collidingRecords": [],
+    "unconfirmedCandidates": [],
+    "suggestedNextStep": "Check the provider key in .env. To resolve now, compare the order specimen type with the conditions of the approved mappings in the catalog evidence."
+  },
+  "metrics": {
+    "provider": null,
+    "model": null,
+    "promptVersion": null,
+    "policyVersion": "2026.10.1",
+    "mappingVersion": "2026.10.1",
+    "investigationDurationMs": 0,
+    "toolCalls": 3,
+    "tokensIn": 0,
+    "tokensOut": 0,
+    "estCostUsd": 0,
+    "attempts": 1,
+    "exceptionToValidatedProposalMs": null,
+    "approvalToEffectMs": null
+  },
+  "serverTime": "2026-10-29T13:01:38Z"
+}

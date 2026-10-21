@@ -1,0 +1,433 @@
+{
+  "caseId": "case_0b6f19",
+  "orderId": "ORD-24195",
+  "partnerId": "lab-partner-a",
+  "state": "ReviewRequired",
+  "labels": {
+    "synthetic": true,
+    "replay": false
+  },
+  "proposerMode": "agent",
+  "benchmark": null,
+  "createdAt": "2026-10-29T13:00:00Z",
+  "lastEventAt": "2026-10-29T13:00:09Z",
+  "updatedAt": "2026-10-29T13:00:09Z",
+  "caseVersion": 4,
+  "lastEventSeq": 10,
+  "order": {
+    "orderId": "ORD-24195",
+    "correlationId": "corr_0b6f19",
+    "transactionIds": [
+      "TX-50195"
+    ],
+    "snapshot": {
+      "orderId": "ORD-24195",
+      "transactionId": "TX-50195",
+      "patient": {
+        "id": "SYN-PAT-0107",
+        "name": "Synthetic Patient 107",
+        "birthDate": "1979-03-14"
+      },
+      "exams": [
+        {
+          "code": "CBC",
+          "name": "Complete blood count"
+        }
+      ],
+      "specimen": {
+        "id": "SPC-7840",
+        "type": "WHOLE_BLOOD"
+      },
+      "collectedAt": "2026-10-29T12:24:00Z",
+      "orderingUnit": "UNIT-NORTH"
+    },
+    "equivalenceKey": {
+      "patientId": "SYN-PAT-0107",
+      "examCodes": [
+        "CBC"
+      ],
+      "collectedAt": "2026-10-29T12:24:00Z",
+      "specimenId": "SPC-7840"
+    },
+    "transformed": null
+  },
+  "visualTraceUrl": "/csp/signalnoir/EnsPortal.VisualTrace.zen?SESSIONID=42927",
+  "exceptions": [
+    {
+      "exceptionId": "exc_0b6f19_01",
+      "kind": "business_rejection",
+      "httpStatus": 422,
+      "body": {
+        "error": "PATIENT_IDENTITY",
+        "message": "Two patients match the demographic key of this order"
+      },
+      "responseClass": "business_error",
+      "observedAt": "2026-10-29T13:00:00Z",
+      "attemptId": "att_0b6f19_1",
+      "duringExecution": false
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "evid_0b6f19_02",
+      "source": "system.exception",
+      "calledBy": "system",
+      "params": {
+        "exceptionId": "exc_0b6f19_01"
+      },
+      "result": {
+        "kind": "business_rejection",
+        "httpStatus": 422,
+        "responseClass": "business_error",
+        "body": {
+          "error": "PATIENT_IDENTITY",
+          "message": "Two patients match the demographic key of this order"
+        }
+      },
+      "observedAt": "2026-10-29T13:00:00Z",
+      "durationMs": 254,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_0b6f19_03",
+      "source": "tool.receipts_and_orders_by_patient",
+      "calledBy": "agent",
+      "params": {
+        "name": "Synthetic Patient 107",
+        "windowDays": 30
+      },
+      "result": {
+        "matches": [
+          {
+            "name": "Synthetic Patient 107",
+            "birthDate": "1979-03-14",
+            "sex": "F",
+            "mrn": "MRN-0107"
+          },
+          {
+            "name": "Synthetic Patient 107",
+            "birthDate": "1979-04-13",
+            "sex": "F",
+            "mrn": "MRN-0170"
+          }
+        ],
+        "receipts": []
+      },
+      "observedAt": "2026-10-29T13:00:04Z",
+      "durationMs": 291,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_0b6f19_04",
+      "source": "tool.origin_order_status",
+      "calledBy": "agent",
+      "params": {
+        "orderId": "ORD-24195"
+      },
+      "result": {
+        "status": "ACTIVE",
+        "patientRef": "SYN-PAT-0107",
+        "note": "Origin record was merged on 2026-10-20 (synthetic)."
+      },
+      "observedAt": "2026-10-29T13:00:06Z",
+      "durationMs": 328,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    }
+  ],
+  "diagnosis": {
+    "summary": "The partner sees two patients matching this order. The origin points to one record, but a recent merge makes that unreliable.",
+    "claims": [
+      {
+        "text": "The partner rejected the order for patient identity, not for the exam.",
+        "evidenceIds": [
+          "evid_0b6f19_02"
+        ]
+      },
+      {
+        "text": "Two synthetic records share the name and differ in birth date and MRN.",
+        "evidenceIds": [
+          "evid_0b6f19_03"
+        ]
+      },
+      {
+        "text": "The origin record was merged recently, so its patient reference may be stale.",
+        "evidenceIds": [
+          "evid_0b6f19_04"
+        ]
+      }
+    ],
+    "hypotheses": [
+      {
+        "text": "Resend with the origin patient reference.",
+        "status": "discarded",
+        "reason": "The origin record was merged recently, and nothing confirms it.",
+        "evidenceIds": [
+          "evid_0b6f19_04"
+        ]
+      },
+      {
+        "text": "Pick the most recent record.",
+        "status": "discarded",
+        "reason": "No evidence ties the order to either record.",
+        "evidenceIds": [
+          "evid_0b6f19_03"
+        ]
+      }
+    ],
+    "conflicts": [
+      {
+        "evidenceIds": [
+          "evid_0b6f19_03",
+          "evid_0b6f19_04"
+        ],
+        "description": "The origin names SYN-PAT-0107, while the partner finds two candidates."
+      }
+    ]
+  },
+  "currentProposalId": "prop_0b6f19_v1",
+  "proposals": [
+    {
+      "proposalId": "prop_0b6f19_v1",
+      "author": "agent",
+      "createdAt": "2026-10-29T13:00:08Z",
+      "current": true,
+      "supersededBy": null,
+      "diagnosis": {
+        "summary": "The partner sees two patients matching this order. The origin points to one record, but a recent merge makes that unreliable.",
+        "claims": [
+          {
+            "text": "The partner rejected the order for patient identity, not for the exam.",
+            "evidenceIds": [
+              "evid_0b6f19_02"
+            ]
+          },
+          {
+            "text": "Two synthetic records share the name and differ in birth date and MRN.",
+            "evidenceIds": [
+              "evid_0b6f19_03"
+            ]
+          },
+          {
+            "text": "The origin record was merged recently, so its patient reference may be stale.",
+            "evidenceIds": [
+              "evid_0b6f19_04"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "Resend with the origin patient reference.",
+            "status": "discarded",
+            "reason": "The origin record was merged recently, and nothing confirms it.",
+            "evidenceIds": [
+              "evid_0b6f19_04"
+            ]
+          },
+          {
+            "text": "Pick the most recent record.",
+            "status": "discarded",
+            "reason": "No evidence ties the order to either record.",
+            "evidenceIds": [
+              "evid_0b6f19_03"
+            ]
+          }
+        ],
+        "conflicts": [
+          {
+            "evidenceIds": [
+              "evid_0b6f19_03",
+              "evid_0b6f19_04"
+            ],
+            "description": "The origin names SYN-PAT-0107, while the partner finds two candidates."
+          }
+        ]
+      },
+      "action": "REQUEST_REVIEW",
+      "params": {
+        "reason": "ambiguous identity"
+      },
+      "scope": "single_case",
+      "confidence": "BAIXA",
+      "preconditions": [],
+      "priorReceiptCandidate": null,
+      "versions": {
+        "policy": "2026.10.1",
+        "mapping": "2026.10.1",
+        "prompt": "investigate-v0.3",
+        "model": "reference-model (picked in B02)",
+        "provider": "reference-provider (picked in B02)"
+      },
+      "metrics": {
+        "durationMs": 6900,
+        "toolCalls": 2,
+        "tokensIn": 3880,
+        "tokensOut": 540,
+        "estCostUsd": 0.008
+      },
+      "validatorVerdict": {
+        "verdict": "accepted",
+        "reasons": [
+          "REVIEW_ALWAYS_ACCEPTED",
+          "IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION"
+        ],
+        "requiresApproval": false,
+        "at": "2026-10-29T13:00:09Z"
+      }
+    }
+  ],
+  "approvals": [],
+  "denialCount": 0,
+  "executions": [],
+  "receipt": null,
+  "dossier": {
+    "createdAt": "2026-10-29T13:00:09Z",
+    "unknowns": [
+      {
+        "topic": "identity",
+        "text": "No evidence says which of the two records is the right patient.",
+        "relatedEvidenceIds": [
+          "evid_0b6f19_03",
+          "evid_0b6f19_04"
+        ]
+      }
+    ],
+    "reason": "ambiguous_identity",
+    "reasonText": "Two patient records match this order. The system never acts automatically on ambiguous identity.",
+    "partialDiagnosis": {
+      "summary": "The partner sees two patients matching this order. The origin points to one record, but a recent merge makes that unreliable.",
+      "claims": [
+        {
+          "text": "The partner rejected the order for patient identity, not for the exam.",
+          "evidenceIds": [
+            "evid_0b6f19_02"
+          ]
+        },
+        {
+          "text": "Two synthetic records share the name and differ in birth date and MRN.",
+          "evidenceIds": [
+            "evid_0b6f19_03"
+          ]
+        },
+        {
+          "text": "The origin record was merged recently, so its patient reference may be stale.",
+          "evidenceIds": [
+            "evid_0b6f19_04"
+          ]
+        }
+      ],
+      "hypotheses": [
+        {
+          "text": "Resend with the origin patient reference.",
+          "status": "discarded",
+          "reason": "The origin record was merged recently, and nothing confirms it.",
+          "evidenceIds": [
+            "evid_0b6f19_04"
+          ]
+        },
+        {
+          "text": "Pick the most recent record.",
+          "status": "discarded",
+          "reason": "No evidence ties the order to either record.",
+          "evidenceIds": [
+            "evid_0b6f19_03"
+          ]
+        }
+      ],
+      "conflicts": [
+        {
+          "evidenceIds": [
+            "evid_0b6f19_03",
+            "evid_0b6f19_04"
+          ],
+          "description": "The origin names SYN-PAT-0107, while the partner finds two candidates."
+        }
+      ]
+    },
+    "hypotheses": [
+      {
+        "text": "Resend with the origin patient reference.",
+        "status": "discarded",
+        "reason": "The origin record was merged recently, and nothing confirms it.",
+        "evidenceIds": [
+          "evid_0b6f19_04"
+        ]
+      },
+      {
+        "text": "Pick the most recent record.",
+        "status": "discarded",
+        "reason": "No evidence ties the order to either record.",
+        "evidenceIds": [
+          "evid_0b6f19_03"
+        ]
+      }
+    ],
+    "relevantEvidenceIds": [
+      "evid_0b6f19_02",
+      "evid_0b6f19_03",
+      "evid_0b6f19_04"
+    ],
+    "conflicts": [
+      {
+        "evidenceIds": [
+          "evid_0b6f19_03",
+          "evid_0b6f19_04"
+        ],
+        "description": "The origin names SYN-PAT-0107, while the partner finds two candidates."
+      }
+    ],
+    "collidingRecords": [
+      {
+        "recordRef": "SYN-PAT-0107",
+        "source": "origin MPI (synthetic)",
+        "fields": {
+          "name": "Synthetic Patient 107",
+          "birthDate": "1979-03-14",
+          "sex": "F",
+          "mrn": "MRN-0107"
+        },
+        "divergentFields": [
+          "birthDate",
+          "mrn"
+        ]
+      },
+      {
+        "recordRef": "SYN-PAT-0170",
+        "source": "origin MPI (synthetic)",
+        "fields": {
+          "name": "Synthetic Patient 107",
+          "birthDate": "1979-04-13",
+          "sex": "F",
+          "mrn": "MRN-0170"
+        },
+        "divergentFields": [
+          "birthDate",
+          "mrn"
+        ]
+      }
+    ],
+    "unconfirmedCandidates": [],
+    "suggestedNextStep": "Confirm the patient with the ordering unit (UNIT-NORTH). Then cancel this case and let the origin resend with the confirmed patient, or hold it while you wait."
+  },
+  "metrics": {
+    "provider": "reference-provider (picked in B02)",
+    "model": "reference-model (picked in B02)",
+    "promptVersion": "investigate-v0.3",
+    "policyVersion": "2026.10.1",
+    "mappingVersion": "2026.10.1",
+    "investigationDurationMs": 6900,
+    "toolCalls": 2,
+    "tokensIn": 3880,
+    "tokensOut": 540,
+    "estCostUsd": 0.008,
+    "attempts": 1,
+    "exceptionToValidatedProposalMs": 9000,
+    "approvalToEffectMs": null
+  },
+  "serverTime": "2026-10-29T13:01:38Z"
+}

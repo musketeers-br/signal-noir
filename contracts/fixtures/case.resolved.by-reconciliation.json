@@ -1,0 +1,457 @@
+{
+  "caseId": "case_e8a0f4",
+  "orderId": "ORD-24172",
+  "partnerId": "lab-partner-a",
+  "state": "Resolved",
+  "labels": {
+    "synthetic": true,
+    "replay": false
+  },
+  "proposerMode": "agent",
+  "benchmark": null,
+  "createdAt": "2026-10-29T13:01:07Z",
+  "lastEventAt": "2026-10-29T13:01:38Z",
+  "updatedAt": "2026-10-29T13:01:38Z",
+  "caseVersion": 7,
+  "lastEventSeq": 21,
+  "order": {
+    "orderId": "ORD-24172",
+    "correlationId": "corr_e8a0f4",
+    "transactionIds": [
+      "TX-50172",
+      "TX-24172-2"
+    ],
+    "snapshot": {
+      "orderId": "ORD-24172",
+      "transactionId": "TX-50172",
+      "patient": {
+        "id": "SYN-PAT-0080",
+        "name": "Synthetic Patient 080",
+        "birthDate": "1980-01-01"
+      },
+      "exams": [
+        {
+          "code": "TSH-OLD",
+          "name": "Thyroid-stimulating hormone (legacy code)"
+        }
+      ],
+      "specimen": {
+        "id": "SPC-7821",
+        "type": "SERUM"
+      },
+      "collectedAt": "2026-10-29T12:14:00Z",
+      "orderingUnit": "UNIT-NORTH"
+    },
+    "equivalenceKey": {
+      "patientId": "SYN-PAT-0080",
+      "examCodes": [
+        "TSH-OLD"
+      ],
+      "collectedAt": "2026-10-29T12:14:00Z",
+      "specimenId": "SPC-7821"
+    },
+    "transformed": {
+      "payload": {
+        "orderId": "ORD-24172",
+        "transactionId": "TX-50172",
+        "patient": {
+          "id": "SYN-PAT-0080",
+          "name": "Synthetic Patient 080",
+          "birthDate": "1980-01-01"
+        },
+        "exams": [
+          {
+            "code": "TSH",
+            "name": "Thyroid-stimulating hormone (legacy code)"
+          }
+        ],
+        "specimen": {
+          "id": "SPC-7821",
+          "type": "SERUM"
+        },
+        "collectedAt": "2026-10-29T12:14:00Z",
+        "orderingUnit": "UNIT-NORTH"
+      },
+      "mappingId": "map_tsh_legacy",
+      "mappingVersion": "2026.10.1",
+      "proposalId": "prop_e8a0f4_v1"
+    }
+  },
+  "visualTraceUrl": "/csp/signalnoir/EnsPortal.VisualTrace.zen?SESSIONID=45552",
+  "exceptions": [
+    {
+      "exceptionId": "exc_e8a0f4_01",
+      "kind": "business_rejection",
+      "httpStatus": 422,
+      "body": {
+        "error": "UNKNOWN_CODE",
+        "message": "TSH-OLD is not a valid exam code"
+      },
+      "responseClass": "business_error",
+      "observedAt": "2026-10-29T13:01:07Z",
+      "attemptId": "att_e8a0f4_1",
+      "duringExecution": false
+    },
+    {
+      "exceptionId": "exc_e8a0f4_08",
+      "kind": "timeout",
+      "httpStatus": null,
+      "body": null,
+      "responseClass": "uncertain",
+      "observedAt": "2026-10-29T13:01:27Z",
+      "attemptId": null,
+      "duringExecution": true
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "evid_e8a0f4_02",
+      "source": "system.exception",
+      "calledBy": "system",
+      "params": {
+        "exceptionId": "exc_e8a0f4_01"
+      },
+      "result": {
+        "kind": "business_rejection",
+        "httpStatus": 422,
+        "responseClass": "business_error",
+        "body": {
+          "error": "UNKNOWN_CODE",
+          "message": "TSH-OLD is not a valid exam code"
+        }
+      },
+      "observedAt": "2026-10-29T13:01:07Z",
+      "durationMs": 254,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_e8a0f4_03",
+      "source": "tool.policies",
+      "calledBy": "agent",
+      "params": {
+        "topic": "code_substitution",
+        "code": "TSH-OLD"
+      },
+      "result": {
+        "policyId": "POL-CODE-SUBST",
+        "version": "2026.10.1",
+        "rule": "Legacy codes are translated through the approved mapping catalog."
+      },
+      "observedAt": "2026-10-29T13:01:11Z",
+      "durationMs": 291,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_e8a0f4_04",
+      "source": "tool.mapping_catalog",
+      "calledBy": "agent",
+      "params": {
+        "fromCode": "TSH-OLD"
+      },
+      "result": {
+        "catalogVersion": "2026.10.1",
+        "mappings": [
+          {
+            "mappingId": "map_tsh_legacy",
+            "mappingVersion": "2026.10.1",
+            "sourceCode": "TSH-OLD",
+            "targetCode": "TSH",
+            "conditions": {}
+          }
+        ]
+      },
+      "observedAt": "2026-10-29T13:01:13Z",
+      "durationMs": 328,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_e8a0f4_07",
+      "source": "system.revalidation",
+      "calledBy": "system",
+      "params": {
+        "executionId": "exec_e8a0f4_06"
+      },
+      "result": {
+        "passed": true,
+        "failed": []
+      },
+      "observedAt": "2026-10-29T13:01:20Z",
+      "durationMs": 439,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_e8a0f4_09",
+      "source": "system.exception",
+      "calledBy": "system",
+      "params": {
+        "exceptionId": "exc_e8a0f4_08"
+      },
+      "result": {
+        "kind": "timeout",
+        "httpStatus": null,
+        "responseClass": "uncertain",
+        "body": null
+      },
+      "observedAt": "2026-10-29T13:01:27Z",
+      "durationMs": 513,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_e8a0f4_10",
+      "source": "system.reconciliation",
+      "calledBy": "system",
+      "params": {
+        "queriedBy": "idempotencyKey",
+        "key": "idem_ORD-24172_apply_approved_mapping_v1"
+      },
+      "result": {
+        "found": true,
+        "receiptId": "RCP-88241"
+      },
+      "observedAt": "2026-10-29T13:01:37Z",
+      "durationMs": 550,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    }
+  ],
+  "diagnosis": {
+    "summary": "Legacy exam code TSH-OLD. The catalog has a single unconditional approved mapping for it.",
+    "claims": [
+      {
+        "text": "The partner rejected TSH-OLD as an unknown code.",
+        "evidenceIds": [
+          "evid_e8a0f4_02"
+        ]
+      },
+      {
+        "text": "Policy routes legacy codes through the approved mapping catalog.",
+        "evidenceIds": [
+          "evid_e8a0f4_03"
+        ]
+      },
+      {
+        "text": "Catalog 2026.10.1 has map_tsh_legacy with no conditions.",
+        "evidenceIds": [
+          "evid_e8a0f4_04"
+        ]
+      }
+    ],
+    "hypotheses": [
+      {
+        "text": "RETRY as is.",
+        "status": "discarded",
+        "reason": "An unknown code is rejected again on every retry.",
+        "evidenceIds": [
+          "evid_e8a0f4_02"
+        ]
+      }
+    ],
+    "conflicts": []
+  },
+  "currentProposalId": "prop_e8a0f4_v1",
+  "proposals": [
+    {
+      "proposalId": "prop_e8a0f4_v1",
+      "author": "agent",
+      "createdAt": "2026-10-29T13:01:15Z",
+      "current": true,
+      "supersededBy": null,
+      "diagnosis": {
+        "summary": "Legacy exam code TSH-OLD. The catalog has a single unconditional approved mapping for it.",
+        "claims": [
+          {
+            "text": "The partner rejected TSH-OLD as an unknown code.",
+            "evidenceIds": [
+              "evid_e8a0f4_02"
+            ]
+          },
+          {
+            "text": "Policy routes legacy codes through the approved mapping catalog.",
+            "evidenceIds": [
+              "evid_e8a0f4_03"
+            ]
+          },
+          {
+            "text": "Catalog 2026.10.1 has map_tsh_legacy with no conditions.",
+            "evidenceIds": [
+              "evid_e8a0f4_04"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "RETRY as is.",
+            "status": "discarded",
+            "reason": "An unknown code is rejected again on every retry.",
+            "evidenceIds": [
+              "evid_e8a0f4_02"
+            ]
+          }
+        ],
+        "conflicts": []
+      },
+      "action": "APPLY_APPROVED_MAPPING",
+      "params": {
+        "mappingId": "map_tsh_legacy",
+        "mappingVersion": "2026.10.1"
+      },
+      "scope": "single_case",
+      "confidence": "ALTA",
+      "preconditions": [
+        {
+          "check": "MAPPING_VERSION_UNCHANGED",
+          "expected": "2026.10.1"
+        },
+        {
+          "check": "ORDER_ACTIVE_AT_ORIGIN",
+          "expected": true
+        }
+      ],
+      "priorReceiptCandidate": null,
+      "versions": {
+        "policy": "2026.10.1",
+        "mapping": "2026.10.1",
+        "prompt": "investigate-v0.3",
+        "model": "reference-model (picked in B02)",
+        "provider": "reference-provider (picked in B02)"
+      },
+      "metrics": {
+        "durationMs": 5200,
+        "toolCalls": 2,
+        "tokensIn": 3010,
+        "tokensOut": 470,
+        "estCostUsd": 0.006
+      },
+      "validatorVerdict": {
+        "verdict": "accepted",
+        "reasons": [
+          "ACTION_IN_CATALOG",
+          "PARAMS_VALID",
+          "REQUIRED_EVIDENCE_PRESENT"
+        ],
+        "requiresApproval": true,
+        "at": "2026-10-29T13:01:16Z"
+      }
+    }
+  ],
+  "approvals": [
+    {
+      "approvalId": "appr_e8a0f4_05",
+      "proposalId": "prop_e8a0f4_v1",
+      "decision": "approved",
+      "by": "operator:Carla",
+      "at": "2026-10-29T13:01:16Z",
+      "expiresAt": "2026-10-29T13:16:16Z",
+      "status": "consumed",
+      "reason": null
+    }
+  ],
+  "denialCount": 0,
+  "executions": [
+    {
+      "executionId": "exec_e8a0f4_06",
+      "approvalId": "appr_e8a0f4_05",
+      "proposalId": "prop_e8a0f4_v1",
+      "action": "APPLY_APPROVED_MAPPING",
+      "idempotencyKey": "idem_ORD-24172_apply_approved_mapping_v1",
+      "authorizedAt": "2026-10-29T13:01:18Z",
+      "stepLeaseUntil": "2026-10-29T13:01:48Z",
+      "leaseGeneration": 1,
+      "revalidation": {
+        "passed": true,
+        "checks": [
+          {
+            "check": "MAPPING_VERSION_UNCHANGED",
+            "expected": "2026.10.1",
+            "observed": "2026.10.1",
+            "passed": true
+          },
+          {
+            "check": "ORDER_ACTIVE_AT_ORIGIN",
+            "expected": true,
+            "observed": true,
+            "passed": true
+          },
+          {
+            "check": "APPROVAL_VALID",
+            "expected": true,
+            "observed": true,
+            "passed": true
+          }
+        ],
+        "at": "2026-10-29T13:01:20Z",
+        "resultingState": "Executing"
+      },
+      "reconciliations": [
+        {
+          "at": "2026-10-29T13:01:37Z",
+          "trigger": "timeout",
+          "queriedBy": "idempotencyKey",
+          "found": true,
+          "receiptId": "RCP-88241",
+          "evidenceId": "evid_e8a0f4_10"
+        }
+      ],
+      "attempts": [
+        {
+          "attemptId": "att_e8a0f4_2",
+          "n": 2,
+          "transactionId": "TX-24172-2",
+          "sentAt": "2026-10-29T13:01:21Z",
+          "completedAt": "2026-10-29T13:01:27Z",
+          "httpStatus": null,
+          "bodyExcerpt": "No response within 10 s. The partner may have accepted the order.",
+          "receiptId": null,
+          "responseClass": "uncertain"
+        }
+      ],
+      "outcome": "resolved",
+      "completedAt": "2026-10-29T13:01:38Z"
+    }
+  ],
+  "receipt": {
+    "receiptId": "RCP-88241",
+    "orderId": "ORD-24172",
+    "idempotencyKey": "idem_ORD-24172_apply_approved_mapping_v1",
+    "receivedAt": "2026-10-29T13:01:38Z",
+    "partnerId": "lab-partner-a",
+    "source": "reconciliation",
+    "orderSnapshotMinimal": {
+      "orderId": "ORD-24172",
+      "examCodes": [
+        "TSH-OLD"
+      ]
+    },
+    "equivalenceConfirmed": null,
+    "externalRef": "partner:RCP-88241",
+    "annotations": []
+  },
+  "dossier": null,
+  "metrics": {
+    "provider": "reference-provider (picked in B02)",
+    "model": "reference-model (picked in B02)",
+    "promptVersion": "investigate-v0.3",
+    "policyVersion": "2026.10.1",
+    "mappingVersion": "2026.10.1",
+    "investigationDurationMs": 5200,
+    "toolCalls": 2,
+    "tokensIn": 3010,
+    "tokensOut": 470,
+    "estCostUsd": 0.006,
+    "attempts": 2,
+    "exceptionToValidatedProposalMs": 9000,
+    "approvalToEffectMs": null
+  },
+  "serverTime": "2026-10-29T13:01:38Z"
+}

@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": "STALE_VERSION",
+    "message": "The current proposal or case version changed since you loaded it",
+    "details": {
+      "currentProposalId": "prop_51b0e2_v2",
+      "caseId": "case_51b0e2",
+      "state": "PendingApproval",
+      "caseVersion": 7,
+      "lastEventSeq": 16,
+      "serverTime": "2026-10-29T13:00:37Z"
+    }
+  }
+}

@@ -40,6 +40,7 @@ Depois da revisão, registre tudo em `findings.md`.
 | `engine.js` | API simulada (`listCases`, `getCase`, `getTimeline`, `decide`, `resolve`) com as regras do contrato: 400, 409 `STALE_VERSION` e `INVALID_TRANSITION`, 200 `idempotentReplay` e 422 do validador. Inclui o motor determinístico dos roteiros. Não usa DOM. |
 | `app.js` | Interface com roteamento por hash e polling de 1,5 s, como no AD-17. Só fala com a API simulada. |
 | `tests/engine.test.js` | Teste do motor sem navegador: `node tests/engine.test.js .` |
+| `tools/export-api-fixtures.js` | Gera as fixtures da API em `contracts/fixtures/` a partir dos cenários. Elas são validadas contra o contrato por `contracts/tools/validate_fixtures.py`. |
 | `findings.md` | Aprendizados e propostas de mudança de contrato para B03. |
 
 ## Verificação feita em 20/10
@@ -51,5 +52,5 @@ Depois da revisão, registre tudo em `findings.md`.
 
 - Não há backend, persistência, autenticação nem chamadas de rede. "Restart the Production now" só registra um evento.
 - O link do Visual Trace é simulado.
-- A área "What we don't know" do Dossiê lê um campo interno do protótipo, porque o contrato ainda não tem esse campo (ver `findings.md`, F-1).
+- O protótipo segue o contrato `1.0.0-draft.2` (PR #2): `dossier.unknowns`, `executionOutcome` na lista e `leaseGeneration`.
 - O tema escuro segue a preferência do sistema.

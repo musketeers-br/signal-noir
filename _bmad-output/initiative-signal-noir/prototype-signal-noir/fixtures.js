@@ -251,7 +251,7 @@ window.SN_FIXTURES = (function () {
         { id: 'new-proposal', label: 'Try to send again with a new proposal', when: c => isUncertain(c),
           run: (k, c) => { k.event(c, 'CommandDiscarded', 'rules', null, { command: 'ProposeAction', action: 'RETRY', reason: 'EXECUTION_OUTCOME_UNKNOWN', executionId: k.lastExec(c).executionId }); return 'Blocked: the previous effect is still unknown. CommandDiscarded was recorded and nothing was sent.'; } },
         { id: 'restart', label: 'Restart the Production now', when: c => isUncertain(c),
-          run: (k, c) => { k.event(c, 'Annotation', 'system', null, { text: 'Production restarted. Reconciliation resumed from the outbox under lease generation 2; a late generation-1 worker cannot overwrite it.' }); return 'Restart simulated. Reconciliation continues from durable state.'; } }
+          run: (k, c) => { const ex = k.lastExec(c); ex.leaseGeneration += 1; ex.stepLeaseUntil = k.iso(k.now() + 30000); k.event(c, 'Annotation', 'system', ex.executionId, { text: 'Production restarted. Reconciliation resumed from the outbox under lease generation ' + ex.leaseGeneration + '; a late worker from an earlier generation cannot overwrite it.' }); return 'Restart simulated. Lease generation is now ' + ex.leaseGeneration + '; reconciliation continues from durable state.'; } }
       ]
     },
 
@@ -265,10 +265,6 @@ window.SN_FIXTURES = (function () {
         const o = { orderId: 'ORD-24188', tx: 'TX-50188', patientId: 'SYN-PAT-0094', code: 'GLIC-J', examName: 'Fasting glucose', specimenId: 'SPC-7833', specimenType: 'PLASMA', collectedAt: '2026-10-29T12:20:00Z' };
         const c = newOrderCase(k, 'case_a37b5d', 'lab-partner-a', o);
         c._flags.retryWouldFail = true;
-        c._unknowns = [
-          'No diagnosis: the agent never ran, so no interpretation of this evidence exists.',
-          'No mapped order has been sent to the partner yet, so its acceptance is untested.'
-        ];
         const ids = {};
         ids.e500 = k.exception(c, { kind: 'http_error', httpStatus: 500, body: BODY_GLICJ, responseClass: 'business_error', attempt: true, summary: 'Attempt 1 · HTTP 500 with a validation body' }).evidenceId;
         const pre = [
@@ -288,6 +284,10 @@ window.SN_FIXTURES = (function () {
                 partialDiagnosis: null, hypotheses: [],
                 relevantEvidenceIds: [ids.e500, ids.policy, ids.catalog, ids.health],
                 conflicts: [], collidingRecords: [], unconfirmedCandidates: [],
+                unknowns: [
+                  { topic: 'diagnosis', text: 'No diagnosis: the agent never ran, so no interpretation of this evidence exists.' },
+                  { topic: 'partner_acceptance', text: 'No mapped order has been sent to the partner yet, so its acceptance is untested.' }
+                ],
                 suggestedNextStep: 'Check the provider key in .env. To resolve now, compare the order specimen type with the conditions of the approved mappings in the catalog evidence.'
               });
             })
@@ -307,7 +307,6 @@ window.SN_FIXTURES = (function () {
         const o = { orderId: 'ORD-24195', tx: 'TX-50195', patientId: 'SYN-PAT-0107', patientName: 'Synthetic Patient 107', birthDate: '1979-03-14', code: 'CBC', examName: 'Complete blood count', specimenId: 'SPC-7840', specimenType: 'WHOLE_BLOOD', collectedAt: '2026-10-29T12:24:00Z' };
         const c = newOrderCase(k, 'case_0b6f19', 'lab-partner-a', o);
         c._flags.identityAmbiguous = true;
-        c._unknowns = ['No evidence says which of the two records is the right patient. This is missing information, not a negative finding.'];
         const ids = {};
         ids.e422 = k.exception(c, { kind: 'business_rejection', httpStatus: 422, body: { error: 'PATIENT_IDENTITY', message: 'Two patients match the demographic key of this order' }, responseClass: 'business_error', attempt: true, summary: 'Attempt 1 · HTTP 422 identity' }).evidenceId;
         const records = [
@@ -348,6 +347,7 @@ window.SN_FIXTURES = (function () {
             conflicts: cc.diagnosis.conflicts,
             collidingRecords: records,
             unconfirmedCandidates: [],
+            unknowns: [{ topic: 'identity', text: 'No evidence says which of the two records is the right patient.', relatedEvidenceIds: [ids.search, ids.origin] }],
             suggestedNextStep: 'Confirm the patient with the ordering unit (UNIT-NORTH). Then cancel this case and let the origin resend with the confirmed patient, or hold it while you wait.'
           })
         }));

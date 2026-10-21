@@ -1,0 +1,377 @@
+{
+  "caseId": "case_c4e1a9",
+  "orderId": "ORD-24166",
+  "partnerId": "lab-partner-b",
+  "state": "ReviewRequired",
+  "labels": {
+    "synthetic": true,
+    "replay": false
+  },
+  "proposerMode": "agent",
+  "benchmark": null,
+  "createdAt": "2026-10-29T13:00:37Z",
+  "lastEventAt": "2026-10-29T13:00:52Z",
+  "updatedAt": "2026-10-29T13:00:52Z",
+  "caseVersion": 8,
+  "lastEventSeq": 18,
+  "order": {
+    "orderId": "ORD-24166",
+    "correlationId": "corr_c4e1a9",
+    "transactionIds": [
+      "TX-50166"
+    ],
+    "snapshot": {
+      "orderId": "ORD-24166",
+      "transactionId": "TX-50166",
+      "patient": {
+        "id": "SYN-PAT-0071",
+        "name": "Synthetic Patient 071",
+        "birthDate": "1980-01-01"
+      },
+      "exams": [
+        {
+          "code": "K",
+          "name": "Potassium"
+        }
+      ],
+      "specimen": {
+        "id": "SPC-7815",
+        "type": "SERUM"
+      },
+      "collectedAt": "2026-10-29T12:10:00Z",
+      "orderingUnit": "UNIT-NORTH"
+    },
+    "equivalenceKey": {
+      "patientId": "SYN-PAT-0071",
+      "examCodes": [
+        "K"
+      ],
+      "collectedAt": "2026-10-29T12:10:00Z",
+      "specimenId": "SPC-7815"
+    },
+    "transformed": null
+  },
+  "visualTraceUrl": "/csp/signalnoir/EnsPortal.VisualTrace.zen?SESSIONID=45401",
+  "exceptions": [
+    {
+      "exceptionId": "exc_c4e1a9_01",
+      "kind": "http_error",
+      "httpStatus": 503,
+      "body": {
+        "status": "SERVICE_UNAVAILABLE",
+        "retryAfterSec": 30
+      },
+      "responseClass": "transient",
+      "observedAt": "2026-10-29T13:00:37Z",
+      "attemptId": "att_c4e1a9_1",
+      "duringExecution": false
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "evid_c4e1a9_02",
+      "source": "system.exception",
+      "calledBy": "system",
+      "params": {
+        "exceptionId": "exc_c4e1a9_01"
+      },
+      "result": {
+        "kind": "http_error",
+        "httpStatus": 503,
+        "responseClass": "transient",
+        "body": {
+          "status": "SERVICE_UNAVAILABLE",
+          "retryAfterSec": 30
+        }
+      },
+      "observedAt": "2026-10-29T13:00:37Z",
+      "durationMs": 254,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_c4e1a9_03",
+      "source": "tool.partner_failure_history",
+      "calledBy": "agent",
+      "params": {
+        "partnerId": "lab-partner-b",
+        "windowMin": 60
+      },
+      "result": {
+        "partnerErrorRate1h": 0.04,
+        "lastIncident": "2026-10-29T12:40:00Z"
+      },
+      "observedAt": "2026-10-29T13:00:41Z",
+      "durationMs": 291,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_c4e1a9_04",
+      "source": "tool.partner_health",
+      "calledBy": "agent",
+      "params": {
+        "partnerId": "lab-partner-b"
+      },
+      "result": {
+        "status": "UP",
+        "p95LatencyMs": 610,
+        "maintenanceWindow": null,
+        "errorRate5m": 0.01
+      },
+      "observedAt": "2026-10-29T13:00:43Z",
+      "durationMs": 328,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_c4e1a9_05",
+      "source": "tool.policies",
+      "calledBy": "agent",
+      "params": {
+        "topic": "retry"
+      },
+      "result": {
+        "policyId": "POL-RETRY",
+        "version": "2026.10.1",
+        "maxAttempts": 5,
+        "backoff": "exponential"
+      },
+      "observedAt": "2026-10-29T13:00:45Z",
+      "durationMs": 365,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    },
+    {
+      "evidenceId": "evid_c4e1a9_07",
+      "source": "operator.denial_reason",
+      "calledBy": "operator:Carla",
+      "params": {},
+      "result": {
+        "reason": "Partner B announced a maintenance window by phone."
+      },
+      "observedAt": "2026-10-29T13:00:50Z",
+      "durationMs": 439,
+      "suspicious": false,
+      "suspiciousExcerpts": [],
+      "obsoletedBy": null
+    }
+  ],
+  "diagnosis": {
+    "summary": "After the denial, no other catalog action is supported by the evidence.",
+    "claims": [
+      {
+        "text": "The operator denied the previous proposal: \"Partner B announced a maintenance window by phone.\".",
+        "evidenceIds": [
+          "evid_c4e1a9_07"
+        ]
+      }
+    ],
+    "hypotheses": [],
+    "conflicts": []
+  },
+  "currentProposalId": "prop_c4e1a9_v2",
+  "proposals": [
+    {
+      "proposalId": "prop_c4e1a9_v1",
+      "author": "agent",
+      "createdAt": "2026-10-29T13:00:47Z",
+      "current": false,
+      "supersededBy": "prop_c4e1a9_v2",
+      "diagnosis": {
+        "summary": "A sincere outage. The 503 carries no business error, the partner is back UP, and the retry budget allows another attempt.",
+        "claims": [
+          {
+            "text": "HTTP 503 with no business error in the body.",
+            "evidenceIds": [
+              "evid_c4e1a9_02"
+            ]
+          },
+          {
+            "text": "Partner health is UP now.",
+            "evidenceIds": [
+              "evid_c4e1a9_04"
+            ]
+          },
+          {
+            "text": "The retry policy allows up to 5 attempts.",
+            "evidenceIds": [
+              "evid_c4e1a9_05"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "Transient unavailability: RETRY.",
+            "status": "chosen",
+            "evidenceIds": [
+              "evid_c4e1a9_02",
+              "evid_c4e1a9_04"
+            ]
+          }
+        ],
+        "conflicts": []
+      },
+      "action": "RETRY",
+      "params": {},
+      "scope": "single_case",
+      "confidence": "MEDIA",
+      "preconditions": [
+        {
+          "check": "PARTNER_HEALTHY_WINDOW",
+          "expected": {
+            "maxErrorRate5m": 0.05
+          }
+        },
+        {
+          "check": "ORDER_ACTIVE_AT_ORIGIN",
+          "expected": true
+        },
+        {
+          "check": "POLICY_VERSION_UNCHANGED",
+          "expected": "POL-RETRY@2026.10.1"
+        }
+      ],
+      "priorReceiptCandidate": null,
+      "versions": {
+        "policy": "2026.10.1",
+        "mapping": "2026.10.1",
+        "prompt": "investigate-v0.3",
+        "model": "reference-model (picked in B02)",
+        "provider": "reference-provider (picked in B02)"
+      },
+      "metrics": {
+        "durationMs": 4600,
+        "toolCalls": 3,
+        "tokensIn": 2950,
+        "tokensOut": 420,
+        "estCostUsd": 0.005
+      },
+      "validatorVerdict": {
+        "verdict": "accepted",
+        "reasons": [
+          "ACTION_IN_CATALOG",
+          "RETRY_BUDGET_AVAILABLE",
+          "REQUIRED_EVIDENCE_PRESENT"
+        ],
+        "requiresApproval": true,
+        "at": "2026-10-29T13:00:48Z"
+      }
+    },
+    {
+      "proposalId": "prop_c4e1a9_v2",
+      "author": "agent",
+      "createdAt": "2026-10-29T13:00:52Z",
+      "current": true,
+      "supersededBy": null,
+      "diagnosis": {
+        "summary": "After the denial, no other catalog action is supported by the evidence.",
+        "claims": [
+          {
+            "text": "The operator denied the previous proposal: \"Partner B announced a maintenance window by phone.\".",
+            "evidenceIds": [
+              "evid_c4e1a9_07"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "conflicts": []
+      },
+      "action": "REQUEST_REVIEW",
+      "params": {
+        "reason": "operator denied the previous proposal"
+      },
+      "scope": "single_case",
+      "confidence": "MEDIA",
+      "preconditions": [],
+      "priorReceiptCandidate": null,
+      "versions": {
+        "policy": "2026.10.1",
+        "mapping": "2026.10.1",
+        "prompt": "investigate-v0.3",
+        "model": "reference-model (picked in B02)",
+        "provider": "reference-provider (picked in B02)"
+      },
+      "metrics": {
+        "durationMs": 3100,
+        "toolCalls": 0,
+        "tokensIn": 1900,
+        "tokensOut": 260,
+        "estCostUsd": 0.003
+      },
+      "validatorVerdict": {
+        "verdict": "accepted",
+        "reasons": [
+          "REVIEW_ALWAYS_ACCEPTED"
+        ],
+        "requiresApproval": false,
+        "at": "2026-10-29T13:00:52Z"
+      }
+    }
+  ],
+  "approvals": [
+    {
+      "approvalId": "appr_c4e1a9_06",
+      "proposalId": "prop_c4e1a9_v1",
+      "decision": "denied",
+      "by": "operator:Carla",
+      "at": "2026-10-29T13:00:48Z",
+      "expiresAt": null,
+      "reason": "Partner B announced a maintenance window by phone."
+    }
+  ],
+  "denialCount": 1,
+  "executions": [],
+  "receipt": null,
+  "dossier": {
+    "createdAt": "2026-10-29T13:00:52Z",
+    "unknowns": [],
+    "reason": "review_requested",
+    "reasonText": "After your denial the agent found no other action the evidence supports.",
+    "partialDiagnosis": {
+      "summary": "After the denial, no other catalog action is supported by the evidence.",
+      "claims": [
+        {
+          "text": "The operator denied the previous proposal: \"Partner B announced a maintenance window by phone.\".",
+          "evidenceIds": [
+            "evid_c4e1a9_07"
+          ]
+        }
+      ],
+      "hypotheses": [],
+      "conflicts": []
+    },
+    "hypotheses": [],
+    "relevantEvidenceIds": [
+      "evid_c4e1a9_02",
+      "evid_c4e1a9_03",
+      "evid_c4e1a9_04",
+      "evid_c4e1a9_05",
+      "evid_c4e1a9_07"
+    ],
+    "conflicts": [],
+    "collidingRecords": [],
+    "unconfirmedCandidates": [],
+    "suggestedNextStep": "Choose a catalog action below, or cancel the case."
+  },
+  "metrics": {
+    "provider": "reference-provider (picked in B02)",
+    "model": "reference-model (picked in B02)",
+    "promptVersion": "investigate-v0.3",
+    "policyVersion": "2026.10.1",
+    "mappingVersion": "2026.10.1",
+    "investigationDurationMs": 7700,
+    "toolCalls": 3,
+    "tokensIn": 4850,
+    "tokensOut": 680,
+    "estCostUsd": 0.008,
+    "attempts": 1,
+    "exceptionToValidatedProposalMs": 11000,
+    "approvalToEffectMs": null
+  },
+  "serverTime": "2026-10-29T13:00:52Z"
+}

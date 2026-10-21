@@ -1,0 +1,40 @@
+name: contracts
+
+# Keeps the HTTP contract, its fixtures and the prototype mock in agreement (AD-16, B03).
+on:
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - '_bmad-output/initiative-signal-noir/prototype-signal-noir/**'
+      - '.github/workflows/contracts.yml'
+  push:
+    branches: [master, main]
+    paths:
+      - 'contracts/**'
+      - '_bmad-output/initiative-signal-noir/prototype-signal-noir/**'
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Lint OpenAPI contracts
+        run: npx --yes @redocly/cli@1.34.0 lint contracts/openapi-signalnoir.yaml contracts/openapi-sim.yaml
+
+      - name: Prototype engine test
+        run: node _bmad-output/initiative-signal-noir/prototype-signal-noir/tests/engine.test.js _bmad-output/initiative-signal-noir/prototype-signal-noir
+
+      - name: Fixtures are up to date with the mock
+        run: |
+          node _bmad-output/initiative-signal-noir/prototype-signal-noir/tools/export-api-fixtures.js contracts/fixtures
+          git diff --exit-code -- contracts/fixtures || { echo "::error::contracts/fixtures is stale. Re-run the exporter and commit."; exit 1; }
+
+      - name: Fixtures validate against the contract
+        run: uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py

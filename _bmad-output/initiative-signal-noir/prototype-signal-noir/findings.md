@@ -18,6 +18,12 @@ Cada item é uma proposta para B03. Nenhum foi aplicado a `contracts/` (R37).
 | F-8 | O diff da Aprovação depende de `/reference/mappings` (`sourceCode` → `targetCode`), porque `order.transformed` só existe depois da execução. | Diálogo de Aprovação | Manter, ou expor `proposal.previewPayload` para a Aprovação mostrar o efeito exato sem montar o diff no cliente. | R21, R33 |
 | F-9 | O protótipo usava inicialmente `from`, `to` e `condition` nos mapeamentos, sem perceber que o contrato diz `sourceCode`, `targetCode` e `conditions`. | Fixtures | Já corrigido. Lição: B03 deve gerar as fixtures a partir do OpenAPI. | R37 |
 
+### Situação em 21/10
+
+- **F-1, F-2, F-3 (parte):** propostas no contrato `1.0.0-draft.2` (PR #2): `Dossier.unknowns`, `CaseSummary.executionOutcome`, `Execution.leaseGeneration`. A derivação da chave do efeito ficou como API-Q11, para José. O protótipo já usa os três campos pela API, sem ler estado interno.
+- **F-9:** resolvido de forma estrutural. As fixtures da API (`contracts/fixtures/`) são geradas por este motor (`tools/export-api-fixtures.js`) e validadas contra o contrato (`contracts/tools/validate_fixtures.py`). A validação encontrou mais uma divergência: a Aprovação negada tinha `status: null`, que o contrato não aceita. Corrigido no motor.
+- **F-4 a F-8:** seguem em aberto para o B01 e o B03.
+
 ## 2. Observações de UX (Henrique)
 
 - O banner de estado no topo, com texto próprio para cada situação (aguardando você, em espera, resultado desconhecido, revisão), resolveu a exigência de mensagens distintas melhor do que só o chip de estado.
