@@ -1,14 +1,12 @@
 ---
-id: 4
 type: epic
 title: "Estado, Aprovação, outbox, propositor e Validador (B06, B08)"
-parent: ../../initiative-signal-noir.md
+parent: initiative-signal-noir
 covers: [R1, R8, R11, R12, R13, R14, R15, R16, R18, R19, R20, R21, R22, R23, R28]
-sources: [../../initiative-signal-noir.md]
-companions: [../../architecture-signal-noir/architecture-signal-noir.md]
-after: [3]
+sources: [_bmad-output/initiative-signal-noir/initiative-signal-noir.md]
+companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md]
+after: []
 refined: false
-hitl: false
 risk: high
 owner: "José"
 window: "27–31/10 (primeira fatia de B08 até 29/10)"
@@ -34,6 +32,16 @@ O cenário principal P5/P8b produz uma Proposta validada e aprovável, com garan
 ## Boundaries
 
 - Execução e Reconciliação (épico 6).
+- Shared R12: aqui, o B08 implementa a Investigação no modo decidido. epic-contratos-e-spike: o spike B02 decide entre Ferramentas no BO e Evidência Pré-coletada.
+- Shared R16: aqui, o B08 grava esses dados em cada Investigação. epic-contratos-e-spike: o spike B02 confirma o que o build 154 expõe (modelo, duração, tokens).
+- Shared R8: aqui, o B06 entrega espera humana persistida e trabalho novo pelo outbox. epic-fundacao-e-simulador: o B04 entrega o primeiro Caso persistido e a Production como transporte.
+- Shared R11: aqui, o B06 garante Linha do Tempo append-only e bloqueio sem registro de autorização. epic-fundacao-e-simulador: o B04 persiste Proposta e Evidências com sobrevivência a reinício.
+- Shared R28: aqui, o B06 entrega estado, evento e outbox na mesma transação. epic-execucao-segura: o B09 entrega lease com geração e worker atrasado sem sobrescrita.
+
+## References
+
+- parent — _bmad-output/initiative-signal-noir/initiative-signal-noir.md, section Requirements
+- architecture — _bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md
 
 ## Notes
 

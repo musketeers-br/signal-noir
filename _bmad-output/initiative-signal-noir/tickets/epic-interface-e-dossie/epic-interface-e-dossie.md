@@ -1,14 +1,12 @@
 ---
-id: 5
 type: epic
 title: "Interface operacional integrada e Dossiê de Revisão (B07, B10)"
-parent: ../../initiative-signal-noir.md
+parent: initiative-signal-noir
 covers: [R2, R30, R31, R32, R33, R34, R35]
-sources: [../../initiative-signal-noir.md]
-companions: [../../architecture-signal-noir/architecture-signal-noir.md, ../../ux-signal-noir/DESIGN.md, ../../ux-signal-noir/EXPERIENCE.md]
-after: [2, 3]
+sources: [_bmad-output/initiative-signal-noir/initiative-signal-noir.md]
+companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md, _bmad-output/initiative-signal-noir/ux-signal-noir/DESIGN.md, _bmad-output/initiative-signal-noir/ux-signal-noir/EXPERIENCE.md]
+after: []
 refined: false
-hitl: false
 risk: medium
 owner: "Henrique (José no comando de resolução; Henry no conteúdo e na rubrica)"
 window: "27/10–02/11"
@@ -34,6 +32,14 @@ Em 29/10, um Caso P5/P8b real aparece na interface da falha ao resultado.
 ## Boundaries
 
 - Canvas, editor de Productions e Replay na interface.
+- Shared R32: aqui, o B07 e o B10 constroem a SPA sobre eles. epic-contratos-e-spike: o B03 fixa contrato HTTP, fixtures e especificação de telas.
+- Shared R33: aqui, o B07 implementa e testa na SPA integrada. epic-contratos-e-spike: o B03 define o comportamento de Aprovação e conflito de versão.
+- Shared R34: aqui, o B07 e o B10 implementam. epic-contratos-e-spike: o B03 define as mensagens e estados de apresentação.
+
+## References
+
+- parent — _bmad-output/initiative-signal-noir/initiative-signal-noir.md, section Requirements
+- architecture — _bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md
 
 ## Notes
 

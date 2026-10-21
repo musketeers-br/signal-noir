@@ -1,14 +1,12 @@
 ---
-id: 9
 type: epic
 title: "Instalação cruzada, documentação, vídeo e inscrição (B13–B14)"
-parent: ../../initiative-signal-noir.md
+parent: initiative-signal-noir
 covers: [R47, R48, R49, R50]
-sources: [../../initiative-signal-noir.md]
-companions: [../../architecture-signal-noir/architecture-signal-noir.md]
-after: [8]
+sources: [_bmad-output/initiative-signal-noir/initiative-signal-noir.md]
+companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md]
+after: []
 refined: false
-hitl: false
 risk: medium
 owner: "Henrique (B13), Henry (B14)"
 window: "05–07/11"
@@ -34,6 +32,13 @@ Em 07/11, a versão submetível está instalada por outro integrante e inscrita.
 ## Boundaries
 
 - Funcionalidade nova depois de 05/11.
+- Shared R47: aqui, o B13 valida reinício, recriação e reset documentados. epic-fundacao-e-simulador: o B04 entrega imagem local e bootstrap idempotente.
+- Shared R48: aqui, o B13 confere logs e exports sem segredos. epic-fundacao-e-simulador: o B04 sobe sem chave válida e mantém segredos fora de código e eventos.
+
+## References
+
+- parent — _bmad-output/initiative-signal-noir/initiative-signal-noir.md, section Requirements
+- architecture — _bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md
 
 ## Notes
 

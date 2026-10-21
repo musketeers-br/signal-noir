@@ -70,3 +70,43 @@ Depois do merge do PR #1, o PRD foi atualizado no branch `prd-update-caderno-19-
 | Caso depois de estado terminal | Resolvido: FR-3 (Caso relacionado). O vínculo no contrato fica para o B01 |
 | Idempotência | Em aberto: API-Q11 do contrato (PR #2), decisão de José. AD-21 e FR-22 não foram alterados |
 | Saída de `HOLD` e lease | Contrato draft.2 (PR #2): `leaseGeneration`. Conferir o AD-22 em B06 |
+
+## 7. Índice do caderno de 19/10 (ids citados nos Requirements)
+
+O caderno `signal-noir-revisao.html` fica fora do repositório. Este índice registra os ids dele citados pela iniciativa, para que cada citação exista numa fonte versionada. O conteúdo de cada item está distilado nos Requirements indicados.
+
+**Seções:** §01 O que mudou na consolidação (MVP menor, P13 no núcleo, Henry mantém a frente, P9 condicionado) · §02 MVP com fronteiras (obrigatório, condicionado, fora; tabela de Ações; cenários P5 + P8b, P13, P3, recuperação) · §03 fluxo e identidades (`commandId`, `executionId`, `businessEffectKey`) · §04 ADRs · §05 backlog e responsáveis · §06 benchmark (2 famílias × 5 variantes × 3 repetições; congelamento e independência) · §07 marcos e cortes · §08 roteiro de revisão (7 questões) · §09 origem e limites.
+
+**Cenário P13:** revisão humana pelo Dossiê, sem decisão segura (R2, R30, R31).
+
+| ADR | Título | Requirements |
+|---|---|---|
+| ADR-01 | Escopo e sucesso | R1, R3, R6 |
+| ADR-02 | Caso como fonte de verdade | R8 |
+| ADR-03 | Uma máquina de estados | R9, R10 |
+| ADR-04 | Identidade e idempotência | R24, R25, R26 |
+| ADR-05 | Outbox e recuperação | R28 |
+| ADR-06 | Aprovação vinculada ao efeito | R21, R22 |
+| ADR-07 | Validação de domínio | R18 |
+| ADR-08 | AI Hub build 154 | R12, R17 |
+| ADR-09 | Interface e contratos | R32, R33, R35 |
+| ADR-10 | Benchmark reproduzível | R42 |
+| ADR-11 | Empacotamento e durabilidade | R47 |
+| ADR-12 | Entrega e comunicação | R50 |
+
+| Item | Título | Responsável | Épico |
+|---|---|---|---|
+| B01 | Contratos de domínio, estados e cenários | Henry | epic-contratos-e-spike |
+| B02 | Spike descartável do AI Hub 154 | José | epic-contratos-e-spike |
+| B03 | Contrato da API e UX essencial | Henrique | epic-contratos-e-spike |
+| B04 | Ambiente e primeira fatia persistida | José | epic-fundacao-e-simulador |
+| B05 | Simulador HTTP e controle de falhas | Henry | epic-fundacao-e-simulador |
+| B06 | Estado, aprovação, eventos e outbox | José | epic-caso-e-decisao |
+| B07 | UI operacional integrada | Henrique | epic-interface-e-dossie |
+| B08 | Propositor e validador | José | epic-caso-e-decisao |
+| B09 | Execução, revalidação e reconciliação | José | epic-execucao-segura |
+| B10 | Dossiê e resolução humana | Henrique | epic-interface-e-dossie |
+| B11 | Baseline e executor de benchmark | Henry | epic-benchmark |
+| B12 | Execução de referência | Henry | epic-benchmark |
+| B13 | Instalação cruzada | Henrique | epic-entrega |
+| B14 | Documentação, vídeo e inscrição | Henry | epic-entrega |

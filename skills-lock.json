@@ -25,6 +25,12 @@
       "skillPath": "skills/bmad-agent-dev/SKILL.md",
       "computedHash": "fb3505e0837e2959db30b6c5aa2ca72f82ceda5255dad507c4ee37e1b7d05582"
     },
+    "bmad-agent-po": {
+      "source": "bmad-code-org/BMAD-METHOD",
+      "sourceType": "github",
+      "skillPath": "skills/bmad-agent-po/SKILL.md",
+      "computedHash": "e78c24e101ebade8b627acb81969f6ae50222c4ba7b3a986251b849cc2c33825"
+    },
     "bmad-agent-ux-designer": {
       "source": "bmad-code-org/BMAD-METHOD",
       "sourceType": "github",
