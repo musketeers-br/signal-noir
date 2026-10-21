@@ -1,0 +1,85 @@
+# Épicos da iniciativa Signal Noir, em ordem de construção.
+# Escrito à mão em 20/10/2026: bmad-agent-po (Sofia) não está instalado neste repositório.
+# Validar o formato com Sofia quando ela for instalada.
+next_id = 10
+
+[[epics]]
+id = 1
+slug = "epic-prototipo-solucao"
+title = "Protótipo navegável da solução (HTML, CSS, JS)"
+covers = ["R36", "R37", "R38", "R39"]
+after = []
+window = "21–24/10"
+owner = "Henrique"
+
+[[epics]]
+id = 2
+slug = "epic-contratos-e-spike"
+title = "Contratos de domínio, spike do AI Hub 154 e contrato da UX (B01–B03)"
+covers = ["R9", "R10", "R12", "R16", "R17", "R24", "R32", "R33", "R34", "R37", "R41"]
+after = []
+window = "até 25/10"
+owner = "Henry"
+
+[[epics]]
+id = 3
+slug = "epic-fundacao-e-simulador"
+title = "Ambiente, primeira fatia persistida e simulador HTTP (B04–B05)"
+covers = ["R7", "R8", "R11", "R25", "R40", "R47", "R48"]
+after = [2]
+window = "26–28/10"
+owner = "José"
+
+[[epics]]
+id = 4
+slug = "epic-caso-e-decisao"
+title = "Estado, Aprovação, outbox, propositor e Validador (B06, B08)"
+covers = ["R1", "R8", "R11", "R12", "R13", "R14", "R15", "R16", "R18", "R19", "R20", "R21", "R22", "R23", "R28"]
+after = [3]
+window = "27–31/10"
+owner = "José"
+
+[[epics]]
+id = 5
+slug = "epic-interface-e-dossie"
+title = "Interface operacional integrada e Dossiê de Revisão (B07, B10)"
+covers = ["R2", "R30", "R31", "R32", "R33", "R34", "R35"]
+after = [2, 3]
+window = "27/10–02/11"
+owner = "Henrique"
+
+[[epics]]
+id = 6
+slug = "epic-execucao-segura"
+title = "Execução, Revalidação e Reconciliação (B09)"
+covers = ["R3", "R24", "R25", "R26", "R27", "R28", "R29"]
+after = [3, 4]
+window = "29/10–02/11"
+owner = "José"
+
+[[epics]]
+id = 7
+slug = "epic-p9-recibo-anterior"
+title = "P9: entrega prévia sob outro identificador (condicionado)"
+covers = ["R4"]
+after = [5, 6]
+window = "após B09 e B10, sem comprometer B12–B14"
+owner = "Henry"
+
+[[epics]]
+id = 8
+slug = "epic-benchmark"
+title = "Baseline, executor e Execução de Referência (B11–B12)"
+covers = ["R6", "R42", "R43", "R44", "R45", "R46"]
+after = [4, 5, 6]
+window = "02–05/11"
+owner = "Henry"
+
+[[epics]]
+id = 9
+slug = "epic-entrega"
+title = "Instalação cruzada, documentação, vídeo e inscrição (B13–B14)"
+covers = ["R47", "R48", "R49", "R50"]
+after = [8]
+window = "05–07/11"
+owner = "Henrique"
