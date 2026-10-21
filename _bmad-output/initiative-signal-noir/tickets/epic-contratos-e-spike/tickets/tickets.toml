@@ -1,0 +1,64 @@
+# Stories of epic-contratos-e-spike (B01–B03), in build order.
+# Format: .agents/skills/bmad-agent-po/assets/tickets-template.toml. Ids are permanent.
+# Everything here is preparation before 26/10: contracts, specification, fixtures, a throwaway spike.
+
+[[entry]]
+id = 1
+type = "spike"
+title = "Spike do AI Hub build 154 dentro de um BO (B02)"
+description = "José prova, fora do repositório da submissão, o que um Business Operation consegue fazer com o AI Hub 154 (Agente, Ferramentas de leitura, credenciais no job, métricas e falhas) e registra a resposta às questões Q-A a Q-F, Q-3 e Q-5 num relatório na pasta da iniciativa."
+verify = "O relatório `spike-ai-hub-154.md` na pasta da iniciativa responde cada questão com o que foi executado e observado; quem o lê sabe se a Investigação usa Ferramentas no BO ou Evidência Pré-coletada (FR-53)."
+covers = ["R3", "R4", "R5"]
+after = []
+hitl = true # José monta e roda o ambiente build 154 localmente
+risk = "high" # define o modo da Investigação para quatro épicos
+notes = ["Owner: José. Revisão: Henry.", "Compatibilidade comprovada por execução, não por documentação (caderno B02)."]
+
+[[entry]]
+id = 2
+type = "story"
+title = "Tabela de estados, atores e regra de novo episódio (B01)"
+description = "Henry e José congelam a máquina de estados do Caso: cada transição com origem, destino, ator autorizado, pré-condições, evento da Linha do Tempo e trabalho subsequente, cobrindo envio inicial, espera, rejeição, expiração, incerteza, encerramento e o novo episódio após estado terminal."
+verify = "A tabela cobre todos os 13 estados de `CaseState`; José, sem ajuda de Henry, encontra nela a transição e o ator de cada passo dos fluxos UJ-1 a UJ-4 do EXPERIENCE.md."
+covers = ["R1", "R2"]
+after = []
+hitl = false
+risk = "medium"
+notes = ["Owner: Henry (domínio) com José (técnico). Revisão: Henrique.", "Base: addendum §D e AD-24; a tabela substitui as duas como fonte normativa."]
+
+[[entry]]
+id = 3
+type = "story"
+title = "Identidades do efeito e contrato do Recibo (B01, API-Q11)"
+description = "José decide a API-Q11 com Henry, atualiza o AD-21 no spine e depois os dois OpenAPI, para que `commandId`, `executionId` e a chave do efeito tenham papéis e derivação fixados e o Parceiro deduplique o efeito, não a Proposta."
+verify = "AD-21 e os dois contratos dizem a mesma derivação; a API-Q11 sai de `x-open-questions`; o lint dos contratos e a validação das fixtures passam no CI."
+covers = ["R6"]
+after = [2]
+hitl = false
+risk = "high" # a garantia de efeito único depende dela
+notes = ["Owner: José. Revisão: Henry.", "Ponto de partida: PR #2 (draft.2) e a proposta da API-Q11."]
+
+[[entry]]
+id = 4
+type = "story"
+title = "Catálogo de cenários P5, P8b, controles e garantias, com Gabarito (B01)"
+description = "Henry fixa, para P5 e P8b, as variantes de ajuste e as cinco de teste por Família com Gabarito prévio (inclusive onde REQUEST_REVIEW é o correto), os controles limpos, os negativos de mapeamento, identidade e Recibo, e os roteiros de P3 e da suíte de recuperação, com a variante P1 de P5 sem espera real."
+verify = "José escreve as regras do Modo Regras para uma variante de ajuste lendo só o catálogo; as variantes de teste ficam em arquivo separado, que o time de ajuste não abre."
+covers = ["R11"]
+after = [2]
+hitl = false
+risk = "medium"
+unknown = "Cinco variantes de teste por Família cabem na capacidade do Henry até 05/11 (Q-10)?"
+notes = ["Owner: Henry. Revisão: José (regras) e Henrique (avaliador)."]
+
+[[entry]]
+id = 5
+type = "story"
+title = "Congelar o contrato HTTP 1.0.0 com fixtures e telas (B03)"
+description = "Henrique leva o contrato de draft a 1.0.0: aplica as decisões das entradas 2 e 3 e as respostas de Henry e José aos findings F-4 a F-8 do protótipo, regenera as fixtures e alinha o EXPERIENCE.md, para que B07 e B10 comecem em 26/10 sem renegociar a API."
+verify = "Com `info.version` 1.0.0, o CI de contratos passa (lint, fixtures em dia, 25+ fixtures válidas) e cada finding F-1 a F-9 está marcado como incorporado ou recusado com motivo no findings.md."
+covers = ["R7", "R8", "R9", "R10"]
+after = [2, 3, "epic-prototipo-solucao"]
+hitl = false
+risk = "medium"
+notes = ["Owner: Henrique. Revisão: José (contrato) e Henry (texto).", "Já entregue em direção a isto: PR #2 (draft.2), PR #3 (UX), PR #5 (fixtures e CI)."]
