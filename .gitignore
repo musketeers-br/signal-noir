@@ -9,3 +9,8 @@ iris-main.log
 
 # iris-agentic-dev workspace config (holds credentials; the repo is public)
 .iris-agentic-dev.toml
+
+# Python tooling (contracts/tools)
+__pycache__/
+*.pyc
+.venv/
