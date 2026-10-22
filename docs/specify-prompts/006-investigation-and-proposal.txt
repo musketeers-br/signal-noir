@@ -1,0 +1,43 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+Feature: Investigation and Proposal production.
+
+Describe the behavior:
+1. An Investigation is a bounded session for one Case, with a server-enforced budget of at most 6 tool calls and 20 seconds. Exceeding the budget ends in ReviewRequired with the evidence collected so far.
+2. Every consultation from any proposer goes through a read-only Tools port. Each call is recorded as Evidence before it returns to the proposer, with source, parameters, result, moment and a suspicious-content marker when applicable.
+3. Order, partner and log content is data, never instruction. An embedded instruction must not change the outcome. The attempt and its blocking are recorded as Evidence.
+4. A single Proposer port returns the same Proposal DTO for every origin: agent, rules and replay. A Proposal is immutable and has its own proposalId. After the port, no component reads the proposer mode to decide behavior.
+5. The agent proposer invokes the AI Hub Agent inside the investigation process, with a new session per Investigation. The agent has only read tools. Its output is data and becomes a Proposal only after conversion to the DTO and validation.
+6. The Proposal contains: Diagnosis with claims linked to evidence IDs and discarded hypotheses with reasons; Action and parameters; scope single_case; confidence HIGH/MEDIUM/LOW; preconditions from the closed vocabulary; references to Evidence; versions of policy, prompt, model and provider; and metrics (duration, tool calls, tokens when available, estimated cost).
+7. Pre-collected evidence fallback: if the agent cannot call tools in the live build, the system gathers the evidence deterministically and gives it to the agent in one call. The real AI Hub call still happens.
+8. Invalid response, refusal, timeout, missing key or provider unavailable ends in ReviewRequired. A late agent response must not change an Investigation that has already closed.
+9. The system records model, provider, versions, duration, tool calls and tokens for every Investigation when available.
+
+Acceptance scenarios:
+- A P5/P8b Case produces a structured Proposal whose claims reference recorded Evidence.
+- The budget is exceeded: ReviewRequired, with the evidence collected so far.
+- No write tool exists; the Tools port rejects any write attempt.
+- An embedded instruction in an Order or partner response does not change the Action, and the attempt is recorded.
+- A late agent response after closure does not change the Case.
+- Provider failure or missing key: ReviewRequired, with the reason.
+- Rules and agent use the same Tools and the same protections.
+- Every tool call is recorded before the proposer sees its result.
+- The Proposal carries model, provider, versions, duration, tool calls and tokens when available.
+
+Out of scope: Validator rules, Approval decisions, Execution, the operator console, benchmark scoring.
+
+Success criteria: every Proposal is structured, evidence-linked, immutable and produced under a server-enforced read-only budget; untrusted content cannot steer the system.
+
+Anchors: contracts/openapi-signalnoir.yaml (Evidence, Proposal, metrics); contracts/openapi-sim.yaml (evidence sources).

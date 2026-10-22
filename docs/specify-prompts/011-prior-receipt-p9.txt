@@ -1,0 +1,39 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+This feature is conditional. Do not start it until 008 and 009 are accepted and the contract has an explicit representation for a no-effect closure by prior receipt. If the contract lacks that representation, stop and produce a contract-change proposal; do not invent an Action.
+
+Feature: prior receipt (P9).
+
+Describe the behavior:
+1. During Investigation or Reconciliation, the system may find a candidate receipt for the same real order under another transaction identifier and another orderId.
+2. The system obtains the candidate receipt and the raw Order snapshot through read-only tools. The Simulator never returns a ready-made equivalence key.
+3. The core canonically computes the equivalence key for both Orders. If the keys match, the Validator confirms the closure. The Case moves to ResolvedByPriorReceipt, links the earlier receipt, and no Execution occurs.
+4. If the keys do not match, or the identity is ambiguous, the Case moves to ReviewRequired with the candidate and its divergent fields in the Dossier. There is no automatic closure by inference.
+5. The closure records the prior receipt reference, the equivalence key evidence and the fact that nothing was resent.
+6. No new Action enters the catalog for this behavior. The representation is whatever the contract-change defines: a no-effect closure or an existing mechanism without a new effect Action.
+
+Acceptance scenarios:
+- Confirmed equivalence: ResolvedByPriorReceipt, no Execution, prior receipt linked.
+- Mismatched equivalence: ReviewRequired with the candidate in the Dossier.
+- Ambiguous identity: ReviewRequired, no automatic closure.
+- No tool returns a ready-made equivalence key.
+- The prior receipt can be found by receipt search and by the origin order snapshot.
+- No effect is sent and no duplicate receipt is created.
+
+Out of scope: general Execution behavior, the console, the Benchmark, a new Action outside the catalog.
+
+Success criteria: a prior receipt closes the Case only after deterministic equivalence confirmation; every uncertain case goes to review with the candidate; no resend happens.
+
+Anchors: contracts/openapi-sim.yaml (receipts, origin orders); contracts/openapi-signalnoir.yaml (prior-receipt fields).

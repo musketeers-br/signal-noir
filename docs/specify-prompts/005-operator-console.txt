@@ -1,0 +1,44 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+Feature: the operator console (static SPA over the frozen HTTP contract).
+
+Describe the behavior:
+1. Case list: shows open and recent Cases with state, partner, age, approval pending and labels. Filters: Needs you (default), Active, Closed, All. A new Case or a state change appears without a full page reload. The list uses the contract cursor.
+2. Case detail in separate layers: What failed, Evidence, Diagnosis, Proposal (Action, parameters, scope, confidence), Approval, Execution and Receipt, plus the Timeline. The current Proposal is shown; earlier versions are collapsed. Model, provider, duration, tool calls, attempts and estimated cost are visible.
+3. Evidence is read-only. Clicking an evidence reference in a claim scrolls to and focuses the evidence card. Conflicting evidence appears side by side and is marked as a conflict. Obsolete evidence remains, marked as obsoleted.
+4. Approval dialog: freezes the exact proposalId and caseVersion at open time and sends exactly those. Approve and Deny are separate. Deny requires a reason, which becomes evidence. Approve is disabled while the request is in flight.
+5. Server responses: 201 closes/resets with a toast about what happens next; 200 with idempotentReplay is shown as "already approved, no new effect", never as a new success; 409 STALE_VERSION keeps the dialog open, says nothing was recorded, and offers to reload the current version; 409 INVALID_TRANSITION keeps the dialog open and says the Case is now in another state; 422 shows the validator reasons inline and keeps the form values; 404 offers a link back; a network error says the request may not have reached the server and does not assume success or failure.
+6. Distinct copy for waiting, review and uncertain outcome. `Executing` with an uncertain outcome says the partner may already have the order and new sends are blocked until reconciliation. A missing diagnosis says no interpretation exists; it is never an empty card. Empty dossier unknowns says "nothing flagged", never "everything is known".
+7. Review Dossier is shown at the top when ReviewRequired and collapsed at the bottom once closed. It shows reason, partial diagnosis, hypotheses, conflicts, colliding records, unconfirmed candidates and the suggested next step. The operator chooses a catalog Action with parameters or cancels; there is no free payload field.
+8. Synthetic data is labelled on every row, header and export; Replay is labelled where applicable.
+9. Polling does not steal focus, reset inputs, collapse sections or clear inline errors. Data on screen changes only after a server answer or a poll. A lost connection shows a persistent "retrying" note and marks data as possibly stale.
+10. Accessibility floor: WCAG 2.2 AA, keyboard parity, no hover-only action, state conveyed by glyph and label, focus management for dialogs and evidence jumps, reduced-motion support, responsive layout.
+
+Acceptance scenarios:
+- List updates after a poll without a reload.
+- Detail shows the six layers; an evidence reference navigates to its card; conflicting evidence is marked.
+- Approval sends the frozen proposalId and caseVersion. A 409 keeps the dialog open and nothing is recorded. A 200 idempotent replay is not styled as a new success.
+- Waiting, review and uncertainty have distinct copy.
+- Dossier with an empty unknowns list says "nothing flagged".
+- Resolution form offers only catalog Actions and parameters; a 422 keeps the form and shows the reasons inline; no free payload field exists.
+- Synthetic and Replay labels are visible.
+- Polling while a form is focused preserves focus and values.
+- Keyboard-only operation completes the approval journey.
+
+Out of scope: backend behavior, new endpoints or fields, the scenario panel and API log (review tools, not product).
+
+Success criteria: the operator can go from the list to an exact-version approval or dossier resolution without ambiguity, and the interface never presents a refusal or an uncertain outcome as success.
+
+Anchors: contracts/openapi-signalnoir.yaml (Cases, Approvals, Review, Reference, Benchmark), contracts/fixtures/**.

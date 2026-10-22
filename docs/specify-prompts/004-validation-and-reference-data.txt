@@ -1,0 +1,49 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+Feature: the deterministic Validator and versioned reference data.
+
+Describe the behavior:
+1. The Validator accepts only the four catalog Actions. An unknown Action, an invalid parameter, or an incompatible scope is blocked and recorded.
+2. APPLY_APPROVED_MAPPING is accepted only when the approved mapping exists, is versioned, and its applicability conditions match the Order.
+3. Minimum evidence per Action:
+   - RETRY: attempt policy, attempt history and recent partner health.
+   - APPLY_APPROVED_MAPPING: substitution policy, the approved mapping and the Order field that satisfies the mapping condition.
+   - HOLD: recent partner health or a policy maintenance window.
+   - REQUEST_REVIEW: always accepted.
+4. A Proposal missing the mandatory evidence for its Action, or with confidence LOW, routes to ReviewRequired. An ambiguous identity never receives an automatic Action.
+5. Approval policy: outside a BenchmarkRun, every Action with an external effect (RETRY, APPLY_APPROVED_MAPPING) requires human Approval; HOLD does not. Automatic Approval exists only inside a BenchmarkRun and is identified as such. The actor `benchmark` is refused outside a BenchmarkRun.
+6. Emit a deterministic verdict: accepted, blocked, review or prior_receipt_confirmed; whether approval is required; a closed set of reason codes with a short human-readable text per code.
+7. Preconditions use only this closed vocabulary: PARTNER_HEALTHY_WINDOW, ORDER_ACTIVE_AT_ORIGIN, APPROVAL_VALID, POLICY_VERSION_UNCHANGED, MAPPING_VERSION_UNCHANGED.
+8. Policies and approved mappings are versioned reference data owned by the application and loaded from versioned fixtures. A BenchmarkRun may pin the fixture set. The Simulator never owns them.
+9. The Validator receives all inputs as parameters and performs no I/O.
+
+Acceptance scenarios:
+- Unknown Action or invalid parameter: blocked and recorded.
+- Nonexistent mapping: blocked. Existing mapping with a condition that does not match the Order: blocked.
+- Missing mandatory evidence: review with the specific reason code.
+- Confidence LOW: review with the specific reason code.
+- REQUEST_REVIEW: accepted.
+- RETRY or APPLY_APPROVED_MAPPING outside a benchmark: requires approval.
+- HOLD: no approval required.
+- Benchmark actor outside a BenchmarkRun: refused. Inside a BenchmarkRun: automatic approval allowed and labelled.
+- Same inputs twice: identical verdict.
+- Policy or mapping version changed: the corresponding precondition fails.
+- Validator run: no I/O performed.
+
+Out of scope: recording approvals, executing effects, generating proposals, the operator console, the Benchmark runner.
+
+Success criteria: no Proposal reaches approval or execution without a deterministic verdict; no Action outside the catalog can be accepted; the same inputs always produce the same verdict.
+
+Anchors: contracts/openapi-signalnoir.yaml (ActionCatalog, ApprovedMapping, ValidatorVerdict, error codes).

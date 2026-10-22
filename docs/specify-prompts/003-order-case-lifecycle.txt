@@ -1,0 +1,41 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+Feature: Order intake and Case lifecycle.
+
+Describe the behavior:
+1. Receive a synthetic JSON Order through a defined entry point. Validate its structure before any delivery attempt. An invalid Order is rejected with a recorded reason and produces no Attempt.
+2. Correlate the Order with its business orderId, transaction identifier and correlation IDs. Keep an immutable Order snapshot and a deterministic equivalence key computed only in the core.
+3. Open a Case on the first Exception. At most one non-terminal Case exists per orderId. A new Exception on a non-terminal Case is appended to that Case; a new episode after a terminal state creates a related Case.
+4. Maintain a single state machine over: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed. Each transition has an origin, a destination, an authorized actor, preconditions, an event and the subsequent work. Terminal states never reopen implicitly. Held leaves only through a new Investigation.
+5. Evidence, Diagnosis, Proposal, Approval, Execution and Receipt are separate, linked records. The Timeline is append-only. A transition commits its new state, its Timeline event and its pending-work record together, in a short transaction that performs no external I/O.
+6. Concurrency is optimistic. A command whose expected caseVersion, state or target no longer holds loses visibly and writes nothing.
+7. Expose read projections: case list with a cursor, case detail with caseVersion, executionOutcome, currentProposal, pendingApproval, labels and lastEventSeq, and an incremental timeline by sinceSeq. Every response carries caseVersion, lastEventSeq and serverTime. All projections label synthetic data.
+8. Rejection and expiry have a defined destination and limit. The first rejection may produce a new Investigation; a second rejection ends in ReviewRequired. Expiry returns the Case to a state that requires a new Proposal and, where applicable, a new Approval.
+
+Acceptance scenarios:
+- Invalid Order: rejected with a reason, no Attempt, no Case.
+- Valid Order with a failed delivery: a Case is opened and the Timeline contains the failure event.
+- Second Exception on the same open Case: appended, no second Case.
+- New Exception after a terminal Case: a related Case is created.
+- Restart: Case and Timeline survive unchanged.
+- Stale expected caseVersion: no write, and the command is refused.
+- Incremental timeline: no confirmed event is lost, including one confirmed late.
+- List/detail/timeline: every response conforms to contracts/openapi-signalnoir.yaml and labels synthetic data.
+
+Out of scope: Agent investigation, Validator rules, Approval decisions, Execution, the operator console, the Simulator implementation.
+
+Success criteria: a synthetic Order becomes a durable Case with a complete, append-only Timeline; invalid input never reaches the partner; two writers can never both win the same transition.
+
+Anchors: contracts/openapi-signalnoir.yaml; states and transitions above.

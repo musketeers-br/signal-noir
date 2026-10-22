@@ -1,0 +1,44 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+Feature: Approval and the transactional outbox.
+
+Describe the behavior:
+1. An Approval binds an immutable Proposal: Action, parameters, transformed payload and the versions it relied on. It records author, moment, proposal version and decision.
+2. Outside a BenchmarkRun, every Action with an external effect requires a valid recorded Approval. HOLD does not. Automatic Approval exists only inside a BenchmarkRun, is emitted by the process that opens the Case, carries actor `benchmark`, and is labelled. The Benchmark runner never approves.
+3. Approval has a deadline. An expired or materially incompatible Approval must not execute. New evidence alone does not expire an Approval unless it falsifies a declared precondition.
+4. Concurrent Approvals of the same version result in exactly one effective authorization. A repeated Approval returns the existing Approval idempotently and reports `idempotentReplay`. A stale or superseded Proposal is refused. A conflict returns 409 and records nothing.
+5. Denial moves the Case to Rejected. The first denial may start a new Investigation with the reason as evidence; a second denial ends in ReviewRequired.
+6. Every transition that requires downstream work writes, in the same short transaction, the new state, the timeline event and an outbox entry containing commandId, type, caseId and caseVersionAfter. I/O happens after commit, never inside the transaction.
+7. After commit, the transition owner dispatches the outbox entry to a single command entry point. A sweeper redelivers pending entries. The processor handles each commandId at most once and checks caseVersionAfter against the Case.
+8. Every transition has an authorized actor. An actor not listed for that transition receives INVALID_ACTOR. The actor `benchmark` is refused outside a BenchmarkRun.
+9. If the authorization cannot be recorded, the Execution must not happen.
+
+Acceptance scenarios:
+- Approve the exact version: Approved, approval persisted, survives restart.
+- Approve a stale version: 409, nothing recorded.
+- Approve twice: one effective authorization, idempotent replay reported.
+- Two operators approve concurrently: exactly one effective authorization.
+- Approval expires: no execution, and a new Proposal/Approval is required.
+- New evidence that does not affect a precondition: the Approval remains valid.
+- First denial: new Investigation. Second denial: ReviewRequired.
+- State, timeline event and outbox entry commit atomically; a lost dispatch is redelivered; a duplicate commandId produces no second effect.
+- Unauthorized actor: INVALID_ACTOR.
+- Persistence failure during authorization: no downstream effect.
+
+Out of scope: Revalidation and Execution (008), the operator console, Validator rules.
+
+Success criteria: no external effect is authorized without a durable, exact-version Approval; concurrent or repeated approvals never produce two authorizations; no committed transition loses its downstream work.
+
+Anchors: contracts/openapi-signalnoir.yaml (decision, approvals, error codes).

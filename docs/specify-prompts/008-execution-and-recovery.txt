@@ -1,0 +1,47 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+Feature: safe Execution and recovery.
+
+Describe the behavior:
+1. There is a single execution path. The winner of the authorization compare-and-swap moves the Case from Approved to Executing, creates an Execution with its idempotency key and takes a lease with owner and generation. Only that winner proceeds.
+2. Revalidation runs immediately before the external effect and rechecks: recent partner health, order status at the origin, approval validity and policy version. A blocking failure moves the Case to Held (partner/window) or Cancelled (order cancelled at the origin). No external effect happens.
+3. Before any send, the system reconciles by orderId and by idempotency key. If a receipt already exists, the Case moves to Resolved without sending.
+4. The send carries the idempotency key. The response is classified as success, business_error, transient or uncertain. Uncertain includes timeout, 5xx without a body and 200 without a valid receipt. Uncertain always triggers Reconciliation.
+5. Three identities are separate: commandId for internal work, executionId for the authorized execution and its lease/reconciliation, and businessEffectKey for the effect on the partner. The effect identity must not depend on proposalId alone.
+6. The authorization is persisted before the effect is attempted. If it cannot be persisted, no partner call happens.
+7. The partner deduplicates atomically on key and payload: the same key with the same payload returns the original receipt; the same key with an incompatible payload is rejected. Only a valid receipt counts as success.
+8. An uncertain outcome blocks every new send for that effect, including one from a new Proposal, until Reconciliation settles it.
+9. A lease carries owner and generation; a late worker cannot overwrite a later execution. The sweeper acts only after the lease: in Executing it emits Reconcile, never ReviewRequired directly; in Investigating it moves the Case to ReviewRequired. A worker that loses a CAS after producing an external effect emits Reconcile.
+10. A Held Case is reassessed periodically. When the blocking condition clears, it returns to Investigating for a new Proposal; any new Action needs a new Approval. Leaving Held never reuses a previous Approval.
+11. The recovery suite exercises: lost response after acceptance, repeated click, restart during execution, repeated command, late worker and a blocking precondition.
+
+Acceptance scenarios:
+- Approved then partner degrades: no send, Held, reason recorded.
+- Approved then order cancelled at the origin: no send, Cancelled.
+- Send accepted but response lost: Reconciliation finds the receipt, Resolved, no resend.
+- Same key and same payload twice: original receipt, one effect.
+- Same key and incompatible payload: rejected.
+- Restart during Executing: reconciliation resumes, no duplicate effect.
+- Repeated command: one effect.
+- Late worker with an old lease generation: cannot overwrite the later execution.
+- Uncertain outcome then a new Proposal: new send blocked until reconciliation.
+- Held then condition clears: new Investigation, new Proposal, new Approval.
+- Recovery suite: zero duplicate receipts.
+
+Out of scope: creating Proposals or Approvals, the operator console, benchmark scoring, the Simulator implementation.
+
+Success criteria: no duplicate receipt under any recovery scenario; no send with stale context; an uncertain outcome always blocks new sends until reconciliation.
+
+Anchors: contracts/openapi-sim.yaml (delivery, receipts, health, origin status); contracts/openapi-signalnoir.yaml (execution, outcome).

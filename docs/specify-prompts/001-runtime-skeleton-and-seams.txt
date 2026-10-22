@@ -1,0 +1,36 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+Feature: runtime skeleton and shared seams.
+
+Describe the smallest walking skeleton of the product:
+1. A fresh checkout can be started by the documented command and reports readiness through a health surface.
+2. When no valid provider key is configured, the application still starts, reports the provider as unavailable, and does not crash. A Case that needs the provider ends in ReviewRequired with an explicit "provider unavailable" reason.
+3. One synthetic Order can be accepted, persisted as a Case, and read back through the API with its synthetic label. Restarting the application preserves the Case and its timeline.
+4. The application publishes a stable internal seam contract in docs/seams.md and implements it: opaque IDs with prefixes (case_, prop_, appr_, exec_, evid_, cmd_, run_); the error envelope {error:{code,message,details}} with the closed error-code vocabulary; the timeline event {seq,at,type,actor,refId,payload}; DTOs for Order, Case, CaseSummary, Evidence, Proposal, ValidatorVerdict, Approval, Execution, Receipt and Dossier; and ports for CaseCommands, CaseQueries, Validator, Proposer, Tools, PartnerClient, Clock and IdGenerator.
+5. The seam contract includes test doubles (fakes) for every port, so another feature can compile and test without editing this feature's files. The fakes must never be shipped as a runtime dependency.
+6. The test harness runs the ObjectScript unit tests on the live IRIS instance and includes one smoke test that proves the walking skeleton.
+
+Acceptance scenarios:
+- Start with a valid configuration, then read health: the response says the application is ready and the provider is configured.
+- Start without a key, then process an Order: the app stays up, the Order reaches ReviewRequired, and the reason names the unavailable provider.
+- Accept a synthetic Order, read the Case, restart, read it again: the Case and its timeline are unchanged.
+- Run the test harness: the smoke test and the seam-contract tests pass.
+- Compile a trivial consumer that imports only the published seam: it compiles without touching this feature's files.
+
+Out of scope: real agent calls, simulator scenarios, the operator console, the benchmark, execution semantics.
+
+Success criteria: a second feature can be built and tested against docs/seams.md without modifying this feature; no restart loses the persisted Case; no missing key prevents startup.
+
+Anchors: constitution Principles I, V, VII, IX; contracts/openapi-signalnoir.yaml; contracts/openapi-sim.yaml.
