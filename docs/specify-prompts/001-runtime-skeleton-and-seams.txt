@@ -20,7 +20,7 @@ Describe the smallest walking skeleton of the product:
 3. One synthetic Order can be accepted, persisted as a Case, and read back through the API with its synthetic label. Restarting the application preserves the Case and its timeline.
 4. The application publishes a stable internal seam contract in docs/seams.md and implements it: opaque IDs with prefixes (case_, prop_, appr_, exec_, evid_, cmd_, run_); the error envelope {error:{code,message,details}} with the closed error-code vocabulary; the timeline event {seq,at,type,actor,refId,payload}; DTOs for Order, Case, CaseSummary, Evidence, Proposal, ValidatorVerdict, Approval, Execution, Receipt and Dossier; and ports for CaseCommands, CaseQueries, Validator, Proposer, Tools, PartnerClient, Clock and IdGenerator.
 5. The seam contract includes test doubles (fakes) for every port, so another feature can compile and test without editing this feature's files. The fakes must never be shipped as a runtime dependency.
-6. The test harness runs the ObjectScript unit tests on the live IRIS instance and includes one smoke test that proves the walking skeleton.
+6. The test harness runs the ObjectScript unit tests on the local AI Hub `2026.3.0AI.154.0` container and includes one smoke test that proves the walking skeleton.
 
 Acceptance scenarios:
 - Start with a valid configuration, then read health: the response says the application is ready and the provider is configured.

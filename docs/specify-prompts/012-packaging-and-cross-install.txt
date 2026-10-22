@@ -15,22 +15,25 @@ CONTEXT (apply to this specification):
 Feature: packaging, installation and cross-install validation.
 
 Describe the behavior:
-1. From a clean installation, `docker compose up` starts the application using the locally loaded AI Hub build 154 image. The build 162 is not accepted. No AI Hub image, nor any image derived from it, is pushed to a public registry.
-2. The README is in English and covers: the `docker load` of the build 154 files (x64 and ARM64), the retag to the exact tag used by compose, the image and build used, the supported providers and the key environment variable, the start/validate/benchmark commands, how the product works, the video link, the team's DC profiles, the limitations (synthetic data and Replay) and the reset behavior.
-3. Secrets enter only at runtime through `.env` or environment variables. No key is committed, baked into the image, written to a Case, Timeline, log or export. Without a valid key, the application starts, reports the provider as unavailable, and Cases that need the provider end in ReviewRequired with that reason.
-4. Durability: data survives `docker compose restart` and `stop`/`start`. `docker compose down` recreates the demo state, and the README says so.
+1. From a clean installation, the operator downloads the AI Hub build 154 from the EAP portal, runs `docker load`, and retags the loaded image to the fixed tag `signalnoir/iris-aihub:2026.3.0AI.154.0`. The Docker build uses that tag through a single `ARG IMAGE` and the default Docker builder; a container build driver that cannot see local images would try to pull `docker.iscinternal.com` and must not be used. The submission compose starts one `iris` service with `env_file: .env`, `ISC_CPF_MERGE_FILE`, fixed host ports `1972:1972` and `52773:52773`, a healthcheck on `1972`, and no repository bind mount. The build 162 is not accepted. No AI Hub image, nor any image derived from it, is pulled from a registry at runtime and none is pushed to a registry.
+2. The README is in English and covers: the controlled EAP download, the `docker load` of the build 154 files (x64 and ARM64), the retag to the fixed tag `signalnoir/iris-aihub:2026.3.0AI.154.0`, the image and build used, the supported providers and the key environment variable, the start/validate/benchmark commands, how the product works, the video link, the team's DC profiles, the limitations (synthetic data and Replay) and the reset behavior.
+3. Secrets enter only at runtime through `.env` or environment variables, declared with placeholders in `.env.example` and never committed. No key is baked into the image, passed as a build argument, written to a Case, Timeline, log or export. Without a valid key, the application starts, reports the provider as unavailable, and Cases that need the provider end in ReviewRequired with that reason.
+4. Durability: the submission compose declares no named volume and no bind mount; data lives in the container writable layer. Data survives `docker compose restart` and `stop`/`start`. `docker compose down` removes the container and recreates the demo state, and the README says so.
 5. Cross-install: a team member who did not write the README installs on a clean machine and runs the smoke test with their own key, reaching the first Case in at most 15 minutes.
 6. The quick validation command runs 3 reference cases in at most 3 minutes and reports match/diverged with a reason.
-7. CI performs static analysis and, if viable on a public IRIS image, the core unit tests. No workflow publishes, pushes or deploys an image.
+7. CI performs static analysis and, if viable on a public IRIS image, the core unit tests. No workflow publishes, pushes or deploys an image, and no workflow tries to build or run the private build 154 image.
 8. The demonstration video is at most 5 minutes, follows the demo script, covers the decision, platform-guarantee, dossier and resilience moments, and labels synthetic data and Replay.
 9. Submission: the Open Exchange page points to the public repository and the contest entry is verified. Only tested platforms and providers are announced as validated. Published results match the benchmark report. Profiles and links are verified.
+10. The SPA is built in a multi-stage step with a pinned Node version and copied into the image at a path outside any bind mount, so the person installing does not need Node or a front-end toolchain.
 
 Acceptance scenarios:
-- Clean install following only the README: the application starts and the smoke reaches the first Case.
+- Clean install following only the README: the operator loads the build 154 image, retags it to the fixed tag, and `docker compose up` starts the application; the smoke reaches the first Case.
+- Build on a machine with local images: the default Docker builder is used, the build never contacts `docker.iscinternal.com`, and the fixed tag is identical in README, Dockerfile and compose.
 - Start without a key: the app is up, the provider is unavailable, and the affected Cases are in ReviewRequired.
 - Restart and stop/start: Case, Approval and Timeline survive.
-- Down and up: the documented reset behavior matches the README.
-- Search the image, repository, logs and exports for the key: nothing is found.
+- Down and up: the documented reset behavior matches the README, and no named volume is required.
+- Search the image, repository, logs, exports and build arguments for the key: nothing is found.
+- Install without Node on the machine: the static front end comes from the image and loads.
 - Quick validation: 3 cases, ≤ 3 minutes, per-case match/diverged.
 - CI: no image publication.
 - Cross-install by a different team member: succeeds with their own key.
@@ -38,6 +41,6 @@ Acceptance scenarios:
 
 Out of scope: new product behavior, new endpoints, new Actions, changes to the benchmark result.
 
-Success criteria: a new team member installs and runs the smoke using only the README; no secret leaks; restart and reset behave as documented; no untested platform is announced as validated.
+Success criteria: a new team member installs and runs the smoke using only the README; the EAP image is never pulled from a registry and the fixed tag never diverges across README, Dockerfile and compose; no secret leaks; restart and reset behave as documented; no untested platform is announced as validated.
 
-Anchors: contracts/openapi-signalnoir.yaml (quick validation endpoints if any); benchmark report.
+Anchors: contracts/openapi-signalnoir.yaml (quick validation endpoints if any); benchmark report; docs/ai-hub-start.md.
