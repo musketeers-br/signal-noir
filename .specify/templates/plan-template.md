@@ -40,7 +40,19 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+Each gate MUST be marked pass, or listed under Complexity Tracking with its justification.
+
+- [ ] **I. Pure Core** — domain rules live only in the core, without I/O; outer layers call it and never reimplement it; the Simulator is reached only over HTTP.
+- [ ] **II. Closed Action Catalog / Read-Only Agent** — no new Action outside the catalog; Agent Tools are read-only; payloads are treated as data; no runtime code execution.
+- [ ] **III. One Validator** — every Proposal and closure, from any origin, passes the same Validator; no free payload editing.
+- [ ] **IV. Human Authority** — Approval binds an immutable Proposal, has a deadline and is revalidated right before the send; Automatic Approval only in the Benchmark.
+- [ ] **V. Case as Source of Truth** — mutations through the single command path; state + event + outbox in one short transaction without I/O; CAS on transitions.
+- [ ] **VI. Effects at Most Once** — separate identities; authorization persisted before the effect; uncertain outcome blocks resends until Reconciliation; recovery cases covered.
+- [ ] **VII. Honest Outcomes** — failures cross layers as values; refusals never shown as success; fact, diagnosis and absence of data kept distinct.
+- [ ] **VIII. Honest Measurement** — (if the feature touches the Benchmark) shared Tools and protections, frozen setup, Replay not counted, all outcomes published.
+- [ ] **IX. Verifiable Increments** — sliced by observable behavior, each slice with its test; dependencies explicit.
+- [ ] **Platform Constraints** — AI Hub build 154; synthetic data; secrets only at runtime; no EAP image published.
+- [ ] **iris-agentic-dev** — platform claims this plan relies on were verified on the live instance with iris-agentic-dev (cite the check in research.md); ObjectScript tests will run through it; nothing in the runtime depends on it.
 
 ## Project Structure
 
