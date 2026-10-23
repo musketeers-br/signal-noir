@@ -28,4 +28,10 @@
     set ^UnitTestRoot="/usr/irissys/.vscode/IRISAPP/UnitTestRoot"
 
     zpm "load /home/irisowner/dev/ -v":1:1
+
+    // Signal Noir (feature 001): install the startup hook into %SYS.
+    // boot/ sits outside the IPM SourcesRoot because ^%ZSTART must live in %SYS.
+    zn "%SYS"
+    do $system.OBJ.Load("/home/irisowner/dev/boot/%ZSTART.mac","ck")
+
     halt

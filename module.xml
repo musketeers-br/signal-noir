@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Export generator="Cache" version="25">
-  <Document name="dc-sample.ZPM">
+  <Document name="signalnoir.ZPM">
     <Module>
-      <Name>dc-sample</Name>
-      <Version>2.0.25</Version>
-      <Description>Basic InterSystems IRIS Development Template</Description>
+      <Name>signalnoir</Name>
+      <Version>0.1.0</Version>
+      <Description>Signal Noir — runtime skeleton and shared seams (feature 001)</Description>
       <Packaging>module</Packaging>
       <SourcesRoot>src</SourcesRoot>
-      <Resource Name="dc.sample.PKG"/>
-      <UnitTest Name="/tests" Package="dc.sample.unittests" Phase="test"/>
-
+      <Resource Name="SignalNoir.PKG"/>
+      <UnitTest Name="/tests" Package="SignalNoir.Tests" Phase="test"/>
     </Module>
   </Document>
 </Export>

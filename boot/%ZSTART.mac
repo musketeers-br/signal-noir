@@ -1,0 +1,15 @@
+ROUTINE %ZSTART [ Type=MAC ]
+	; Signal Noir startup hook (feature 001, AD-27).
+	; Installed in the %SYS namespace by the build (see iris.script).
+	; SYSTEM^%ZSTART runs at instance start; it must never crash the instance,
+	; so every failure is caught and logged, never thrown.
+SYSTEM
+	Try {
+		New $Namespace
+		Zn "IRISAPP"
+		Do ##class(SignalNoir.Interop.Bootstrap).OnStart()
+	}
+	Catch ex {
+		Do ex.Log()
+	}
+	Quit

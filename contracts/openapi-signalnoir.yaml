@@ -52,6 +52,40 @@ tags:
     description: Dados de referência para formulários da interface (Catálogo de Ações, Mapeamentos).
 
 paths:
+  /health:
+    get:
+      tags: [Reference]
+      summary: Liveness, readiness and provider availability
+      operationId: getHealth
+      responses:
+        "200":
+          description: >
+            Always returned while the process is alive; the body distinguishes ready from degraded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, liveness, provider, serverTime]
+                properties:
+                  status:
+                    type: string
+                    enum: [ready, degraded]
+                  liveness:
+                    type: string
+                    enum: [alive]
+                  provider:
+                    type: object
+                    required: [configured]
+                    properties:
+                      configured:
+                        type: boolean
+                      reason:
+                        type: string
+                        description: Present when configured is false; names the unavailable provider.
+                  serverTime:
+                    type: string
+                    format: date-time
+
   /cases:
     get:
       tags: [Cases]
