@@ -15,6 +15,13 @@ ObjectScript is the **provisional** language (R1). Every decision that depends o
 
 ## Spike-dependent decisions
 
+Status as of 2026-10-22 (the spike has not run yet; see the Verification log in research.md):
+
+- **S1** unchanged (ObjectScript).
+- **S2** open: all runs so far are on the 2026.2 dev container; T051 must repeat them on build 154.
+- **S3** resolved early: the tests read the table from the generated `TableFixture` class, never a file.
+- **S4** fallback in use: `iris_test` does not find the classes, so a test-only runner calls `%UnitTest.Manager`; `module.xml` untouched.
+
 | # | Decision | What the spike must confirm | Fallback if it does not | Research |
 |---|---|---|---|---|
 | S1 | ObjectScript for Core, Application and tests | nothing for ObjectScript itself; Q-F (Embedded Python version) only matters if the team prefers R4 option 2 or 3 | option 2: Python method bodies in the same classes, same signatures and tests; option 3 needs a Constitution amendment and AD-1/AD-16 changes. Decide by 10/27 | R1 |

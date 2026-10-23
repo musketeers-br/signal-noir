@@ -62,12 +62,15 @@ What `Decide` reads. Built by the Application from the stored Case and its child
 
 ## Stored records (`SignalNoir.Application.Store`, persistent) — see research R11
 
+As built (2026-10-22): `Case` (SQL table `CaseRecord`, because `Case` is an SQL keyword), `TimelineEvent`, `OutboxEntry`, and — because Constitution Principle V requires separate, linked records — `Approval` and `Execution`. `CaseSnapshot` carries the latest Approval and Execution as flat fields (`ApprovalId`, `ApprovalProposalId`, `ApprovalDecision`, `ApprovalExpiresAt`, `ExecutionId`, `ExecutionApprovalId`, `ExecutionOutcome`, `ExecutionAttemptsSent`, `ExecutionInconclusiveReconciliations`, `ExecutionAuthorizationVoided`) plus `PreviousCaseExists` and `PreviousCaseTerminal` for creation.
+
 ### Case
 
-Fields of `CaseSnapshot` that are stored on the Case, plus:
+Fields of `CaseSnapshot` that are stored on the Case (not the Approval and Execution fields), plus:
 
 | Field | Notes |
 |---|---|
+| `CurrentApprovalId`, `CurrentExecutionId` | the Case's latest Approval and Execution records |
 | `OpenOrderKey` | computed and stored: `OrderId` while non-terminal, `"closed:" _ CaseId` when terminal; **unique index** (research R7, AD-25) |
 | `LastEventAt` | updated by every transition and attachment (AD-17 list cursor) |
 | `Labels` | `synthetic` always true; `replay` (FR-38) |
@@ -78,9 +81,17 @@ Invariant checks enforced by the command path: at most one Execution in `in_prog
 
 `CaseId`, `Seq` (per-Case `$INCREMENT`), `At` (UTC), `Type` (`TimelineEventType`), `Actor`, `RefId`, `Payload` (JSON). Append-only: no update or delete method. `StateChanged` payload `{from, to, reason, caseVersionAfter}`; `CommandDiscarded` payload `{command, actor, currentState, requestedState, code}` (spec 001 C4).
 
+### Approval
+
+`ApprovalId`, `CaseId`, `ProposalId`, `Decision` (`approved`, `denied`), `ByActor` (`operator:<name>` or `benchmark`), `At`, `ExpiresAt` (approved only: `At` + `approvalTtl`), `Reason`.
+
+### Execution
+
+`ExecutionId`, `CaseId`, `ApprovalId` (empty for `HOLD`), `ProposalId`, `Outcome`, `AttemptsSent`, `InconclusiveReconciliations`, `AuthorizationVoided`, `AuthorizedAt`.
+
 ### OutboxEntry
 
-`CommandId`, `Kind` (work item), `CaseId`, `CaseVersionAfter`, `Status` (`pending`, `dispatched`, `done`), `CreatedAt`. Written in the same transaction as the transition (AD-20); dispatching and sweeper redispatch are outside this feature.
+`CommandId` (derived from the incoming command's id as `<commandId>.<n>` when it has one, so a redelivered command cannot queue its work twice), `Kind` (work item), `CaseId`, `CaseVersionAfter`, `Status` (`pending`, `dispatched`, `done`), `CreatedAt`. Written in the same transaction as the transition (AD-20); dispatching and sweeper redispatch are outside this feature.
 
 ## State transitions
 

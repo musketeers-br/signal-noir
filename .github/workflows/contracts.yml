@@ -8,6 +8,8 @@ on:
       - 'contracts/**'
       - '_bmad-output/initiative-signal-noir/prototype-signal-noir/**'
       - 'specs/001-case-state-machine/spec.md'
+      - 'tests/fixtures/**'
+      - 'tests/SignalNoir/Tests/Core/TableFixture.cls'
       - '.github/workflows/contracts.yml'
   push:
     branches: [master, main]
@@ -15,6 +17,8 @@ on:
       - 'contracts/**'
       - '_bmad-output/initiative-signal-noir/prototype-signal-noir/**'
       - 'specs/001-case-state-machine/spec.md'
+      - 'tests/fixtures/**'
+      - 'tests/SignalNoir/Tests/Core/TableFixture.cls'
 
 jobs:
   contracts:
@@ -44,3 +48,9 @@ jobs:
 
       - name: State machine validates
         run: uv run --with pyyaml python contracts/tools/test_validate_state_machine.py
+
+      - name: Core table fixture is up to date
+        run: |
+          uv run --with pyyaml python contracts/tools/test_export_state_machine_json.py
+          uv run --with pyyaml python contracts/tools/export_state_machine_json.py --xdata
+          git diff --exit-code -- tests/fixtures/case-state-machine.json tests/SignalNoir/Tests/Core/TableFixture.cls || { echo "::error::The Core table fixture is stale. Re-run the export and commit."; exit 1; }
