@@ -1,0 +1,39 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+Feature: the Review Dossier and operator resolution.
+
+Describe the behavior:
+1. When a Case enters ReviewRequired, produce a Review Dossier with: the reason; the partial diagnosis; hypotheses considered and discarded with reasons; the relevant evidence with conflicts highlighted; colliding records and their divergent fields for identity cases; unconfirmed prior-receipt candidates; the suggested next human step; and a list of factual unknowns.
+2. The Dossier must work when the agent fails before proposing: it states the reason (provider unavailable, invalid response, budget exceeded or interrupted investigation) and includes the evidence collected so far.
+3. The Dossier never contains a query or Evidence that did not happen. Absence of information is rendered as a factual unknown, distinct from a negative conclusion. An empty unknowns list means "nothing flagged", not "everything is known".
+4. Operator resolution: from the Dossier, the operator chooses a catalog Action with its parameters or cancels the Case. The chosen Action passes through the same Validator as any Proposal. The operator is recorded as the Proposal author with `operator:<name>`. There is no free payload editing. Cancellation requires a reason.
+5. If the Validator refuses the operator's choice, nothing is executed and only the verdict is recorded. The response names the reason codes and keeps the operator's input.
+6. A resolved Case follows the same Approval and Execution path as any other Proposal.
+
+Acceptance scenarios:
+- Ambiguous identity: the Dossier shows the colliding synthetic records and the divergent fields.
+- Budget exceeded, invalid response or provider unavailable: the Dossier names the reason and includes the evidence collected so far.
+- LLM fails before any Proposal: the Dossier still explains why automation stopped and contains no invented query or evidence.
+- Empty unknowns: "nothing flagged", never "everything is known".
+- Operator chooses a valid catalog Action: it passes the same Validator, the operator is recorded as author, and the normal Approval/Execution path follows.
+- Operator chooses an invalid Action or parameters: 422 with reason codes, nothing executed, form values kept.
+- Cancellation without a reason: refused. With a reason: recorded.
+- No free payload field exists anywhere in the resolution path.
+
+Out of scope: the console presentation (005), the Validator core (004), Execution (008), Benchmark scoring.
+
+Success criteria: every ReviewRequired Case has an actionable Dossier; no Dossier invents information; every human resolution passes the same Validator and records its author.
+
+Anchors: contracts/openapi-signalnoir.yaml (Dossier, resolveReview, error codes); contracts/fixtures/case.review.*.json.

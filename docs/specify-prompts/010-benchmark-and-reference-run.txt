@@ -1,0 +1,45 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+Feature: the reproducible Benchmark and the reference run.
+
+Describe the behavior:
+1. A BenchmarkRun is created with a runId, a mode (rules, agent or replay), a provider, a model and a scenario set. The Order envelope carries only the runId. When the Case opens, the application copies the run's mode and flags. Without a valid runId, the mode is agent and no benchmark flag is set.
+2. Automatic Approval exists only inside a BenchmarkRun, is emitted by the process that opens the Case, carries actor `benchmark`, and is labelled. The Benchmark runner observes and never approves.
+3. Rules and Agent use the same Tools, Evidence and protections. The rules baseline is the strongest deterministic baseline the team can write, is published, versioned and reviewed by someone other than the author of the answer key for that family.
+4. Scoring considers Action and parameters. Classify each outcome as correct, safe review, unnecessary review or incorrect. Separate a wrong Proposal blocked by the Validator (proposer error, protection success) from a wrong effect. Separate needed from unneeded review.
+5. The report has two parts:
+   - Agent decision: per core family (P5 and P8b), per mode, correct, safe review, unnecessary review, incorrect, p50/p95 latency, tool calls and estimated cost per Case. Clean scenarios are controls. P9 is a separate family only if it is included.
+   - Platform guarantees: P3, idempotency, timeout, restart, repeated approval and late worker, each pass/fail, with no comparative score.
+6. Training and test sets are separate; only the test set counts. Prompt, model, baseline, policies, fixtures and evaluator are frozen before the reserved test. Tuning on the test set turns it into development data and requires a new reserved test. Repetitions do not count as independent cases.
+7. Reference run: P5 and P8b, 5 test variants per family, k = 3 repetitions (30 agent investigations), plus clean controls and the Dossier case. Report each metric as a range over the k runs. Publish counts, denominators, dispersion, latency, cost and raw data enough to recalculate the report.
+8. A recorded response (Replay) never counts as a real run. A replay Case is labelled and excluded from the metrics.
+9. Quick validation: one command runs 3 reference cases (one clean, one P5/P8b and one that ends in a Dossier), finishes within 3 minutes, and reports per Case "matches the reference" or "diverged" with the reason. If P9 is included, it replaces the clean case.
+10. Independence: reserved cases, baseline and evaluator review are held by different team members. Encode this separation in the tasks and in the report metadata.
+
+Acceptance scenarios:
+- Create a run in rules mode and in agent mode over the same scenario set: both reports are produced.
+- A Case without a valid runId: mode agent, no benchmark flags.
+- Automatic approval outside a run: refused. Inside a run: recorded and labelled.
+- Wrong Proposal blocked by the Validator: counted separately from a wrong effect.
+- Replay Case: labelled and excluded from metrics.
+- Tuning on the test set: the run is marked as development and cannot be published as the reference result.
+- Reference run: 5 variants × 2 families × 3 repetitions = 30 agent investigations, plus controls and the Dossier case; ranges and raw data are present.
+- Quick validation: 3 cases, ≤ 3 minutes, per-case match/diverged result.
+
+Out of scope: the Simulator implementation, the Agent implementation, the console, submission packaging.
+
+Success criteria: the report is reproducible from raw data, honest about ties and losses, separates agent decisions from platform guarantees, and never counts Replay or repetitions as independent evidence.
+
+Anchors: contracts/openapi-signalnoir.yaml (benchmark-runs, benchmark-reports); contracts/fixtures/**.

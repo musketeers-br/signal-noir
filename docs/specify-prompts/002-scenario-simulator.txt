@@ -1,0 +1,52 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Calendar gate: before 2026-10-26 only contracts, specification, fixtures and the throwaway prototype are allowed. Do not write submission code before that date.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, contracts/fixtures/**, and docs/seams.md once it exists. Do not invent fields, states, actions, endpoints or error codes. If a needed field is missing, record a contract change; never adjust the contract silently.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Attempt, Receipt, Exception, Review Dossier, BenchmarkRun.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants every specification must preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal and is revalidated immediately before the effect; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values, never as success; fact, diagnosis and absence-of-information stay distinct; no new Action can enter by input or configuration; no runtime code execution is allowed; secrets enter only at runtime; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Slice by observable behavior. Do not slice by technical layer.
+
+Feature: Scenario Simulator. It is an external system reached only over HTTP. The contract is contracts/openapi-sim.yaml.
+
+Describe the behavior of the Simulator:
+1. Partner delivery: receive a synthetic Order for a partner and respond according to the active scenario instance. Responses include success with a valid receipt, business error, transient error, and uncertain outcomes (timeout, 5xx without a body, 200 without a valid receipt).
+2. Atomic deduplication: the same idempotency key with the same payload returns the original receipt; the same key with an incompatible payload is rejected with 422.
+3. Receipt lookup by idempotency key, by orderId and by synthetic patient. The response includes the receipt fields and the raw Order snapshot, never a ready-made equivalence key.
+4. Origin simulation: expose order status and a recent-order feed. An order can be cancelled at the origin, and its status is visible to evidence tools.
+5. Partner evidence: expose recent health and recent history. These can contradict superficial signals (for example, health UP while recent calls time out).
+6. Scenario instances: POST creates an isolated scenarioInstanceId. Orders emitted by the simulated origin are bound to that instance. Partner, health, history, logs and status answer according to that instance. There is no global active scenario.
+7. Determinism: the same seed produces the same sequence of responses and the same Order IDs. Order IDs are unique per scenario instance and repetition and never repeat across runs. The same seed reproduces a variant.
+8. Response loss: the partner can accept an Order and lose the response, leaving a valid receipt that can be found later.
+9. Post-approval change: an event can be injected after approval so that partner health degrades, a maintenance window starts, or the order is cancelled at the origin.
+10. Answer-key isolation: no endpoint and no evidence tool exposes the expected outcome (the answer key). The key is for the benchmark evaluator only.
+
+Scenario families to support:
+- Clean: success; sincere destination unavailable; unknown code with a single approved mapping; order already processed with the same orderId; ambiguous identity.
+- P5: a lying HTTP 500 for a business validation error, and a 200 with a rejection in free text; varied PT/EN wording.
+- P8a: health UP but recent calls time out.
+- P8b: two approved mappings for the same code, distinguishable only by order context (specimen type or unit).
+- P1: a timeout combined with a semantic cause, as a scaled variant of P5.
+- P3: the world changes between approval and execution (partner degrades, maintenance window, order cancelled at origin).
+- Recovery: lost response after acceptance, restart during execution, repeated approval, repeated command, late worker.
+- P9 (data only; product behavior is conditional): a prior receipt for the same real order under another transaction identifier and another orderId.
+
+Acceptance scenarios:
+- Create an instance from a seed, emit N orders, and repeat with the same seed: the sequences match.
+- Create two instances: their orderId namespaces do not overlap.
+- Deliver the same key and payload twice: the original receipt is returned. Deliver the same key with a different payload: 422.
+- Accept an Order, lose the response, then search receipts by orderId: the receipt is found.
+- Inject a post-approval degradation: health and history reflect it before the next send.
+- Probe every endpoint and evidence tool: none returns the answer key.
+- Run the contract test suite against contracts/openapi-sim.yaml: it passes.
+
+Out of scope: the Agent, Case state, the operator console, benchmark scoring, publishing the answer key.
+
+Success criteria: a scenario instance can be created from a seed, emits deterministic Orders, deduplicates atomically, and never leaks the expected outcome. Two concurrent instances never share IDs or state.
+
+Anchors: contracts/openapi-sim.yaml; contract fixture set.
