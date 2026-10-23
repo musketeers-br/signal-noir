@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "iris-agentic-dev": {
+      "type": "stdio",
+      "command": "iris-agentic-dev",
+      "args": ["mcp", "--workspace", "."]
+    }
+  }
+}

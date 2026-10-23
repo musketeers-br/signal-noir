@@ -56,6 +56,8 @@ Estes campos são ponto de partida para a arquitetura, não um schema final.
 
 ## D. Transições de estado (rascunho)
 
+> **Substituída em 2026-10-22 pela máquina de estados normativa (`contracts/case-state-machine.yaml`, legível em `specs/001-case-state-machine/spec.md`). Mantida só como histórico; não é fonte normativa.**
+
 | De | Para | Gatilho |
 |---|---|---|
 | — | Open | 1ª Exceção do Pedido (FR-3) |

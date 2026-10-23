@@ -207,7 +207,7 @@ A Production entrega o Pedido ao Parceiro. Só considera sucesso quando recebe u
 - No Cenário limpo de sucesso, o Pedido percorre entrada, orquestração e entrega, e o Recibo fica registrado.
 
 #### FR-3: Abrir Caso na primeira Exceção
-Quando uma Tentativa termina em Exceção, o sistema abre um Caso para o Pedido. Se já existir Caso aberto para o mesmo `orderId`, registra a nova Exceção nesse Caso, e ele volta a `Investigating`. Estados terminais não reabrem implicitamente: uma Exceção do mesmo `orderId` depois de um estado terminal é um **novo episódio** e abre um Caso novo, **relacionado** ao anterior (caderno de 19/10, ADR-03).
+Quando uma Tentativa termina em Exceção, o sistema abre um Caso para o Pedido. Se já existir Caso aberto para o mesmo `orderId`, registra a nova Exceção nesse Caso; a regra por estado (volta a `Investigating` só em `PendingApproval`, anexação nos demais) é a decisão D1 da máquina de estados normativa (`contracts/case-state-machine.yaml`). Estados terminais não reabrem implicitamente: uma Exceção do mesmo `orderId` depois de um estado terminal é um **novo episódio** e abre um Caso novo, **relacionado** ao anterior (caderno de 19/10, ADR-03).
 **Consequências (testáveis):**
 - Uma Exceção depois de `Resolved` abre um Caso novo que referencia o anterior, e o Caso anterior continua terminal.
 - Duas Exceções sucessivas do mesmo Pedido resultam em um Caso com duas Exceções na Linha do Tempo.
@@ -224,7 +224,7 @@ O Caso e sua Linha do Tempo são persistidos de forma durável na Production. Re
 **Descrição:** o Caso é a única fonte canônica da resolução. Ele se organiza em camadas explícitas: Evidências observadas → Diagnóstico → Proposta → Aprovação → Execução e Recibo. A Linha do Tempo guarda todos os eventos em ordem. Fatos observados e interpretações nunca se misturam. As projeções (interface, Benchmark, demo) derivam do mesmo Caso. Realiza UJ-1 a UJ-4.
 
 #### FR-5: Máquina de estados do Caso
-O Caso transita apenas pelas transições permitidas (tabela em `addendum.md` §D).
+O Caso transita apenas pelas transições permitidas (tabela normativa em `contracts/case-state-machine.yaml`, legível em `specs/001-case-state-machine/spec.md`; substitui `addendum.md` §D desde 2026-10-22).
 **Consequências (testáveis):**
 - Uma transição não permitida (por exemplo, `Open → Executing`) é recusada e registrada.
 - Cada transição gera um evento na Linha do Tempo com momento, origem (sistema, Agente, Modo Regras ou Operador) e motivo.

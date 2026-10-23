@@ -61,4 +61,4 @@ covers = ["R7", "R8", "R9", "R10"]
 after = [2, 3, "epic-prototipo-solucao"]
 hitl = false
 risk = "medium"
-notes = ["Owner: Henrique. Revisão: José (contrato) e Henry (texto).", "Já entregue em direção a isto: PR #2 (draft.2), PR #3 (UX), PR #5 (fixtures e CI)."]
+notes = ["Owner: Henrique. Revisão: José (contrato) e Henry (texto).", "Já entregue em direção a isto: PR #2 (draft.2), PR #3 (UX), PR #5 (fixtures e CI).", "Insumo da entrada 2 (máquina de estados): mudanças C1–C8 em specs/001-case-state-machine/contracts/openapi-delta.md; o validador lista as pendentes (contracts/tools/validate_state_machine.py)."]

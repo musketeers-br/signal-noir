@@ -1,0 +1,107 @@
+[
+  {
+    "file": "states-missing-failed.yaml",
+    "expect": "states differ from CaseState"
+  },
+  {
+    "file": "transition-without-precondition.yaml",
+    "expect": "T03: no preconditions"
+  },
+  {
+    "file": "unknown-event.yaml",
+    "expect": "T01: event ApprovalTimedOut not in TimelineEventType"
+  },
+  {
+    "file": "unknown-command.yaml",
+    "expect": "T03: command Investigar not allowed"
+  },
+  {
+    "file": "spec-parity-actor.yaml",
+    "expect": "T03: actors differ from spec.md"
+  },
+  {
+    "file": "id-gap.yaml",
+    "expect": "transition ids must be sequential"
+  },
+  {
+    "file": "trace-unknown-ref.yaml",
+    "expect": "journeyTrace UJ-1: unknown ref T99"
+  },
+  {
+    "file": "trace-missing-step.yaml",
+    "expect": "journeyTrace UJ-2: missing step \"step 5 (variant)\""
+  },
+  {
+    "file": "state-no-exit.yaml",
+    "expect": "Held: non-terminal state has no exit"
+  },
+  {
+    "file": "open-to-executing.yaml",
+    "expect": "T30: transition not in spec.md"
+  },
+  {
+    "file": "benchmark-outside-t12.yaml",
+    "expect": "T11: actor benchmark only allowed in T12"
+  },
+  {
+    "file": "proposer-outside-t04.yaml",
+    "expect": "T14: proposer actors only allowed in T04"
+  },
+  {
+    "file": "duplicate-owner.yaml",
+    "expect": "Executing → Held: rows T19, T20 not distinguishable by preconditions"
+  },
+  {
+    "file": "refusal-changes-state.yaml",
+    "expect": "refusals INVALID_ACTOR: must not change state"
+  },
+  {
+    "file": "expire-by-system.yaml",
+    "expect": "T18: expiration must be owned by sweeper only",
+    "spec": "spec-expire-by-system.md"
+  },
+  {
+    "file": "held-extra-exit.yaml",
+    "expect": "Held: only exit allowed is T27"
+  },
+  {
+    "file": "denials-param-mismatch.yaml",
+    "expect": "T15: denialCount must equal parameters.maxDenials"
+  },
+  {
+    "file": "review-auto-exit.yaml",
+    "expect": "T29: ReviewRequired exits only by operator"
+  },
+  {
+    "file": "executing-to-pending.yaml",
+    "expect": "Executing → PendingApproval is forbidden by D3"
+  },
+  {
+    "file": "t26-without-dossier.yaml",
+    "expect": "T26: rows into ReviewRequired must emit DossierCreated"
+  },
+  {
+    "file": "revalidation-after-attempt.yaml",
+    "expect": "T19: revalidation exits require noAttemptSent"
+  },
+  {
+    "file": "unmarked-contract-change.yaml",
+    "expect": "T26: Dossier reason outcome_unknown not in the contract"
+  },
+  {
+    "file": "exception-trigger-elsewhere.yaml",
+    "expect": "T27: only rows from PendingApproval may be triggered by a new Exception (D1)"
+  },
+  {
+    "file": "failed-reopens.yaml",
+    "expect": "Failed: terminal state has an exit"
+  },
+  {
+    "file": "terminal-annotation-kind.yaml",
+    "expect": "Annotation: terminal states only accept receipt_corrected, receipt_missing, new_episode_opened"
+  },
+  {
+    "file": "terminal-attachment.yaml",
+    "expect": "ExceptionRecorded: not accepted in terminal state Resolved"
+  }
+]

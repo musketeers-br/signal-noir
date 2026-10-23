@@ -284,7 +284,8 @@ flowchart TB
 - **Prevents:** duas unidades donas da mesma transição (expiração, Held, Rejected); nova Exceção arrancando um Caso em execução.
 - **Rule:**
   - O Core mantém a tabela de transições com o ator autorizado de cada uma. Cada comando declara seu ator, e um ator não listado recebe `INVALID_ACTOR`.
-  - Pontos fixados:
+  - **Substituída em 2026-10-22:** a tabela "Pontos fixados" abaixo fica só como histórico. A fonte normativa das transições e dos atores é `contracts/case-state-machine.yaml`, legível em `specs/001-case-state-machine/spec.md`. A regra acima (o Core mantém a tabela e recusa ator não listado com `INVALID_ACTOR`) continua valendo.
+  - Pontos fixados (histórico):
 
     | Transição ou regra | Ator autorizado |
     |---|---|

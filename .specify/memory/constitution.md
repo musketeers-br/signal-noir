@@ -1,43 +1,33 @@
 <!--
 Sync Impact Report
 ==================
-Version change: template (unversioned) → 1.0.0
-Bump rationale: initial ratification. Every placeholder of the template is replaced; there is no
-prior version to be compatible with.
+Version change: 1.1.0 → 1.2.0
+Bump rationale: MINOR. The Workflow section's calendar gate is materially changed (lifted): submission
+code may now be written before the contest opens. No principle is removed or redefined, and work
+done under 1.1.0 stays compliant. (Argued alternative: MAJOR, since a governance rule is removed;
+MINOR was chosen because the change only relaxes a schedule constraint outside the principles.)
 
-Principles defined:
-  - I. Pure Core, Production as Shell
-  - II. Closed Action Catalog and a Read-Only Agent
-  - III. One Validator, Blind to Origin
-  - IV. Human Authority over Effects
-  - V. The Case Is the Source of Truth
-  - VI. Effects at Most Once
-  - VII. Honest Outcomes, Errors as Values
-  - VIII. Honest Measurement
-  - IX. Verifiable Increments
+Review: PENDING. Requested by Henry on 2026-10-22; drafted with Claude. Governance requires review by
+at least one other team member (José Roberto or Henrique) before this version is relied on.
 
-Added sections: Platform Constraints, Engineering Standards, Development Environment
-(iris-agentic-dev), Workflow, Governance.
+Modified sections: Workflow — "Calendar gate" replaced by "Work before the contest opens".
 
-Removed sections: none (template slots only).
+Added sections: none. Removed sections: none.
 
-Departure from the reference (SentaiTask constitution 1.1.0): its "Technology Agnosticism"
-principle is replaced by "Platform Constraints", because the contest imposes the target platform
-and its build. Every other technology choice remains a Plan decision.
+Templates and artifacts requiring updates:
+  ✅ .specify/templates/*.md — no reference to the calendar gate; no change.
+  ✅ specs/002-case-state-machine-core/spec.md — status and assumptions no longer cite the gate.
+  ✅ specs/001-case-state-machine/plan.md, research.md, tasks.md — gate citations marked as the rule
+     in force under 1.1.0 (historical; that feature delivered no submission code).
+  ⚠ _bmad-output/initiative-signal-noir/ (initiative, tickets, decision notebook) — still say
+     preparation-only before 26/10; update when next revised. The 2026-10-19 decision notebook
+     prevails over the PRD (Governance), so the team should record this change there too.
 
-Templates requiring updates:
-  ✅ .specify/templates/plan-template.md — Constitution Check now lists the nine principles, the
-     platform constraints and the iris-agentic-dev verification gate.
-  ✅ .specify/templates/tasks-template.md — tests are mandatory (TDD), no longer "OPTIONAL";
-     ObjectScript tests run on the live instance through iris-agentic-dev.
-  ✅ .specify/templates/spec-template.md — no change needed (behavior-only, no constitution refs).
-  ✅ .gitignore — adds .iris-agentic-dev.toml (holds credentials; the repository is public).
-  ⚠ README.md — still the upstream intersystems-iris-dev-template README; it will be rewritten
-     for the submission (R50) and MUST NOT require iris-agentic-dev on the install path.
+Still pending from 1.1.0: OpenAPI translation (story 2.5), _bmad-output translation, README.md.
 
-Sources: _bmad-output/initiative-signal-noir/initiative-signal-noir.md (R1–R50),
-architecture-signal-noir.md (AD-1–AD-28), prd-signal-noir.md §3, addendum.md,
-reconcile-fontes-2026-10-20.md, contracts/.
+Previous reports: 1.1.0 added the Language section; 1.0.0 ratified principles I–IX, Platform
+Constraints, Engineering Standards, Development Environment (iris-agentic-dev), Workflow and
+Governance.
 
 Deferred TODOs: none.
 -->
@@ -241,6 +231,34 @@ Compliance is a review gate; each Plan MUST show how its approach satisfies them
   only the README, with their own key. A fix that affects installation MUST trigger a new
   cross-install validation.
 
+## Language
+
+English is the official language of the project.
+
+- All documentation MUST be written in English: specs, plans, research notes, data models,
+  quickstarts, tasks and checklists under `specs/`; contracts under `contracts/` (OpenAPI
+  descriptions, summaries, example prose and open questions, the state-machine table and any other
+  normative data); READMEs and guides.
+- Code MUST be in English: identifiers, comments, docstrings, test names, and the messages the code
+  emits (logs, Timeline texts, error messages).
+- Domain terms MUST use the English names used in this Constitution (Order, Case, Evidence,
+  Proposal, Approval, Execution, Receipt, Validator, Review Dossier, and so on). A term in another
+  language MAY appear only once, in parentheses, to map it to its English name.
+- Synthetic scenario content that is deliberately multilingual — for example Partner error bodies
+  that vary between Portuguese and English to defeat naive rules — is test data, not documentation,
+  and is exempt.
+- Conversation among team members MAY happen in any language; what is committed follows this
+  section.
+- **Transition rule.** An artifact written before version 1.1.0 in another language MUST be
+  translated before it is next amended, and in any case before the contract it belongs to is frozen
+  or the code that depends on it is written. A pull request that changes such an artifact without
+  translating it MUST NOT be merged.
+
+**Rationale**: The submission is public and judged internationally, and the coding agents and
+tools read and write the same artifacts the team does. One language for everything that is
+committed keeps specs, contracts and code searchable and consistent with each other, and stops the
+same concept from carrying two names in two languages.
+
 ## Development Environment — iris-agentic-dev
 
 - All interaction of developers and coding agents with the live IRIS instance during development
@@ -280,9 +298,11 @@ Every change to product behavior MUST proceed in this order:
 7. **Review** — the diff MUST be reviewed against this Constitution, the Spec, the Plan and the
    tests before it ships.
 
-Calendar gate: no submission code MAY be written before 2026-10-26. Before that date only
-contracts, specification, fixtures and the throwaway prototype are allowed, and the prototype MUST
-NOT be copied into the submission.
+Work before the contest opens: the contest's submission period starts on 2026-10-26, and
+submission code MAY be written before that date. Such code follows every rule of this Constitution
+from its first line: TDD, tests run on the contest build (AI Hub build 154) through
+iris-agentic-dev, and platform claims verified on that build before a Plan relies on them. The
+throwaway prototype MUST NOT be copied into the submission.
 
 ## Governance
 
@@ -301,4 +321,4 @@ Approval or Execution works, a change of target platform build — obliges a rev
 Constitution, whether or not it ends in an amendment. Where the sources diverge, the 2026-10-19
 decision notebook prevails over the 2026-10-18 PRD until the PRD is updated.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 1.2.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22

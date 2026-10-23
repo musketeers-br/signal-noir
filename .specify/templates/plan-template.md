@@ -52,6 +52,7 @@ Each gate MUST be marked pass, or listed under Complexity Tracking with its just
 - [ ] **VIII. Honest Measurement** — (if the feature touches the Benchmark) shared Tools and protections, frozen setup, Replay not counted, all outcomes published.
 - [ ] **IX. Verifiable Increments** — sliced by observable behavior, each slice with its test; dependencies explicit.
 - [ ] **Platform Constraints** — AI Hub build 154; synthetic data; secrets only at runtime; no EAP image published.
+- [ ] **Language** — this plan and every artifact and line of code it produces are in English; non-English artifacts it touches are translated in the same change.
 - [ ] **iris-agentic-dev** — platform claims this plan relies on were verified on the live instance with iris-agentic-dev (cite the check in research.md); ObjectScript tests will run through it; nothing in the runtime depends on it.
 
 ## Project Structure

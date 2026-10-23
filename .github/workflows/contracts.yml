@@ -1,17 +1,20 @@
 name: contracts
 
-# Keeps the HTTP contract, its fixtures and the prototype mock in agreement (AD-16, B03).
+# Keeps the HTTP contract, its fixtures and the prototype mock in agreement (AD-16, B03), and the
+# normative Case state machine in agreement with the contract and its spec (B01).
 on:
   pull_request:
     paths:
       - 'contracts/**'
       - '_bmad-output/initiative-signal-noir/prototype-signal-noir/**'
+      - 'specs/001-case-state-machine/spec.md'
       - '.github/workflows/contracts.yml'
   push:
     branches: [master, main]
     paths:
       - 'contracts/**'
       - '_bmad-output/initiative-signal-noir/prototype-signal-noir/**'
+      - 'specs/001-case-state-machine/spec.md'
 
 jobs:
   contracts:
@@ -38,3 +41,6 @@ jobs:
 
       - name: Fixtures validate against the contract
         run: uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py
+
+      - name: State machine validates
+        run: uv run --with pyyaml python contracts/tools/test_validate_state_machine.py

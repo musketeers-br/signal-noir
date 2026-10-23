@@ -8,6 +8,8 @@
 
 **Input**: User description: "$ARGUMENTS"
 
+<!-- Write this spec in English (Constitution, Language). Quote the user's description, translated to English if it was written in another language. -->
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--

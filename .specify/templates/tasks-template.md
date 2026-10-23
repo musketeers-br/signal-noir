@@ -11,6 +11,8 @@ description: "Task list template for feature implementation"
 
 **Tests**: Tests are MANDATORY (Constitution, Engineering Standards — TDD; Principle IX). Every user story carries the failing test that proves it, written before the implementation. ObjectScript tests (`%UnitTest`) MUST be compiled and run on the live IRIS instance through iris-agentic-dev.
 
+**Language**: tasks, code, comments and test names are in English (Constitution, Language).
+
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
 ## Format: `[ID] [P?] [Story] Description`
