@@ -71,20 +71,28 @@ Mudanças neles são aplicadas em lote no gate de integração.
 
 ## Board de claim
 
-| Spec | Status | Pessoa | Worktree |
-|---|---|---|---|
-| 001 runtime-skeleton-and-seams | livre | | |
-| 002 scenario-simulator | livre | | |
-| 003 order-case-lifecycle | livre | | |
-| 004 validation-and-reference-data | livre | | |
-| 005 operator-console | livre | | |
-| 006 investigation-and-proposal | livre | | |
-| 007 approval-and-outbox | livre | | |
-| 008 execution-and-recovery | livre | | |
-| 009 review-dossier-and-resolution | livre | | |
-| 010 benchmark-and-reference-run | livre | | |
-| 011 prior-receipt-p9 | condicional | | |
-| 012 packaging-and-cross-install | livre | | |
+| Spec | Status | Pessoa | Onda | Worktree |
+|---|---|---|---|---|
+| 001 runtime-skeleton-and-seams | concluída | José | 0 | |
+| 002 scenario-simulator | reservada | Henrique | 1 | |
+| 003 order-case-lifecycle | reservada | Henry | 1 | |
+| 004 validation-and-reference-data | reservada | José | 1 | |
+| 005 operator-console | reservada | Henrique | 2 | |
+| 006 investigation-and-proposal | reservada | Henry | 2 | |
+| 007 approval-and-outbox | reservada | José | 2 | |
+| 008 execution-and-recovery | reservada | José | 3 | |
+| 009 review-dossier-and-resolution | reservada | Henry | 3 | |
+| 010 benchmark-and-reference-run | reservada | Henrique | 3–4 | |
+| 011 prior-receipt-p9 | condicional | José | 4 | |
+| 012 packaging-and-cross-install | reservada | Henry | 4 | |
+
+Trilhas: José = efeito (004 → 007 → 008 → 011); Henry = Caso/Agente (003 → 006 → 009 → 012); Henrique = borda e integração (002 → 005 → 010) e integrador dos gates.
+
+Papéis fixos fora do board:
+
+- **010 independência:** casos reservados e gabarito P5/P8b com Henrique; baseline de regras com José; revisão do baseline e do avaliador com Henry. Henry (autor do Agente) não acessa o conjunto de teste reservado.
+- **012 cross-install:** Henry escreve o README; Henrique instala em máquina limpa. Se 011 não for aprovado, José reforça cross-install e vídeo.
+- **011:** José abre o `contract-change` de P9 ainda na fase de spec.
 
 ## Merge
 
