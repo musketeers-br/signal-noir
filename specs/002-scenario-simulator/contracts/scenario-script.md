@@ -40,6 +40,10 @@ holder, spec 010).
 - **`orders[]`**: emission template. Content not given explicitly (names, ids, dates, wording
   choice) is drawn from the seed (research D3). Raw-data quirks (mixed case, unordered codes,
   non-UTC offsets, embedded instructions in `notes`) are declared here.
+  An entry may declare `"priorOf": <ordinal>` with `"receivedAtOffsetSeconds": -180`: it is the
+  original of the Order at that ordinal (same patient, exams and specimen; its own orderId and
+  transactionId), seeded at emission with `inFeed = false` and a Receipt at the given offset from
+  the resend's emission time. Only P9 variants use it.
 - **`script.health`**: initial `PartnerHealth` (status, message, maintenance).
 - **`script.attempts[]`**: ordered rules; the first that matches answers the Attempt.
   - `match`: `attempt:<n>`, `attempt:<n>+`, `beforeMapping`, `wrongMapping`, `accepted`,
@@ -55,6 +59,10 @@ holder, spec 010).
     timeout (lost response).
   - `respond.delay`: `fast` (≤ 200 ms), `slow` (nominal 5 s), `timeout` (nominal 90 s); the
     applied hold follows research D6.
+- **`script.afterEvent`**: optional map `{ "<EVENT_TYPE>": { "health": {…}, "history": [ {
+  "outcome": "timeout", "httpStatus": null, "latencyMs": 90000, "message": "<wording key>" }, … ]
+  } }`. `health` overrides PartnerHealth; `history` entries are appended at event time as
+  third-party traffic (no orderId). Entry count and wording are drawn from the seed.
 - **`script.triggers[]`**: `{ "on": "read:health" | "read:history" | "read:originStatus" |
   "attempt", "nth": <n>, "event": "<EVENT_TYPE>", "orderOrdinal": <k>? }`.
 - **`partnerRule`** (private): what the Partner accepts. Never serialized by any endpoint;

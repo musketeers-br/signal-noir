@@ -138,6 +138,13 @@ Effect of each event:
 | `MAINTENANCE_ENDS` | `maintenance.active = false` | as scripted | — |
 | `ORDER_CANCELLED_AT_ORIGIN` | — | unchanged (the Partner does not know) | status `cancelled`, `reason` |
 
+`PARTNER_DEGRADES` and `MAINTENANCE_STARTS` also append the variant's
+`script.afterEvent.<TYPE>.history` entries to the instance history at event time: third-party
+traffic entries with no `orderId`, `transactionId` or `idempotencyKey`, `outcome` `error` /
+`timeout` / `unavailable`, raw message, so that the history window reflects the change before the
+next delivery (spec US5 AS1, FR-029). These entries never create a Receipt and are not Attempts of
+any instance Order.
+
 ## Relationships
 
 ```text

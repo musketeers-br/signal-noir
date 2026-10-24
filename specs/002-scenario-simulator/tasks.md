@@ -46,7 +46,7 @@ listed for gate G1 (T072).
 
 **Purpose**: verify the platform claims the plan relies on and prepare the capture validator.
 
-- [ ] T001 Verify V1 and V2 through iris-agentic-dev `exec` on the live build 154 instance: `$SYSTEM.Encryption.SHAHash(256,"a|b|c|1")` returns the same 32 bytes on two calls and across a restart; `$SYSTEM.Util.CreateGUID()` returns a 36-char GUID. Record command and result under "Verification log" in specs/002-scenario-simulator/research.md
+- [ ] T001 Confirm specs/002-scenario-simulator/research.md "Verification log" has V1, V2, V5 and V6 recorded as passing (verified with throwaway probes before implementation, per the plan gate); if any is missing, stop
 - [ ] T002 [P] Create tests/sim-contract/validate_sim_captures.py mirroring contracts/tools/validate_fixtures.py: contract `contracts/openapi-sim.yaml`, captures dir `tests/sim-contract/captures/`, `manifest.json` entries `{file, operationId, status, schema}` where `schema` is a component name or a JSON pointer; also fail when any of the 12 operationIds of the contract has no capture; exit 1 on any failure
 - [ ] T003 [P] Create tests/sim-contract/captures/manifest.json as `{"fixtures": []}` and tests/sim-contract/README.md explaining: captures are written by `SignalNoir.Tests.Sim.Contract.*`, validated with `uv run --with jsonschema --with pyyaml python tests/sim-contract/validate_sim_captures.py`, and never edited by hand
 
@@ -69,14 +69,14 @@ story uses.
 
 ### Implementation
 
-- [ ] T009 Implement src/SignalNoir/Sim/Result.cls (properties `ok`, `code`, `message`, `details` as `%DynamicObject`, `obj`, `list`; constructors `Ok`, `OkObj`, `OkList`, `Error(code, message, details)`), Sim-local, modeled on src/SignalNoir/Core/Result.cls without referencing it
+- [ ] T009 Write failing tests/SignalNoir/Tests/Sim/Core/TestResult.cls (`Ok`/`OkObj`/`OkList` set `ok = 1`; `Error(code, message, details)` sets `ok = 0` and keeps `details`), then implement src/SignalNoir/Sim/Result.cls (properties `ok`, `code`, `message`, `details` as `%DynamicObject`, `obj`, `list`), Sim-local, modeled on src/SignalNoir/Core/Result.cls without referencing it
 - [ ] T010 [P] Implement src/SignalNoir/Sim/Prng.cls (`Draw`, `Pick`, `Range` over SHA-256 counter mode) until T004 passes (depends on T001)
 - [ ] T011 [P] Implement src/SignalNoir/Sim/Ids.cls (`NewInstanceId` from GUID in base32, `OrderId`, `TransactionId`, `ReceiptId`) until T005 passes (depends on T001)
 - [ ] T012 [P] Implement src/SignalNoir/Sim/Canon.cls (`Payload(order As %DynamicObject) As %String`, recursive key sort, arrays kept in order) until T006 passes
-- [ ] T013 [P] Implement src/SignalNoir/Sim/Clock.cls (`NowUtc()` ISO-8601 with `Z`, `Shift(ts, seconds)`) — Sim-local, same format as SignalNoir.Application.SystemClock without referencing it
+- [ ] T013 [P] Write failing tests/SignalNoir/Tests/Sim/Core/TestClock.cls (`NowUtc()` matches `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z$`; `Shift(ts, -180)` is exactly 180 s earlier and still ends in `Z`), then implement src/SignalNoir/Sim/Clock.cls — Sim-local, same format as SignalNoir.Application.SystemClock without referencing it
 - [ ] T014 Implement src/SignalNoir/Sim/Catalog/Base.cls (abstract: `XData Variants` JSON array, `Parameter CATALOGVERSION`) and src/SignalNoir/Sim/Catalog/Loader.cls (`All()`, `Find(family, variant)`, `Served(variant)`, `List(family, set)`) per contracts/scenario-script.md, plus a one-variant src/SignalNoir/Sim/Catalog/Clean.cls (`clean-success-tune-01`) so the loader has data, until T008 passes
 - [ ] T015 Write failing tests/SignalNoir/Tests/Sim/Contract/TestSetup.cls, then implement src/SignalNoir/Sim/Setup.cls `EnsureWebApplication()` (delete-then-create `/sim/api/v1`, `DispatchClass = SignalNoir.Sim.Api.Dispatch`, `Type 18`, current namespace, `AutheEnabled 64`, `MatchRoles :%All`, as `SignalNoir.Interop.Bootstrap.EnsureWebApplications`); assert it is idempotent and that `/signalnoir/api/v1` still exists afterwards; record V5 in research.md
-- [ ] T016 Implement src/SignalNoir/Sim/Api/Dispatch.cls (`%CSP.REST`, empty `UrlMap` to be extended per story, helpers `WriteJson(obj, status)`, `WriteError(result)` mapping `INVALID_REQUEST`→400, `NOT_FOUND`→404, `IDEMPOTENCY_KEY_REUSED`→422, `ReadBody()`) and tests/SignalNoir/Tests/Sim/Contract/Client.cls (`Call(method, path, body)` with `%Net.HttpRequest` to `localhost:52773`, returns status, headers, body; `Capture(name, operationId, status, schema, body)` writes to tests/sim-contract/captures/ and appends manifest.json); verify V6 with a trivial route and record it in research.md
+- [ ] T016 Write failing tests/SignalNoir/Tests/Sim/Contract/TestDispatch.cls (a `GET /sim/api/v1/_unknown` returns 404 with the envelope `{error:{code:"NOT_FOUND",message}}`; `Client.Capture` appends one manifest entry), then implement src/SignalNoir/Sim/Api/Dispatch.cls (`%CSP.REST`, empty `UrlMap` to be extended per story, helpers `WriteJson(obj, status)`, `WriteError(result)` mapping `INVALID_REQUEST`→400, `NOT_FOUND`→404, `IDEMPOTENCY_KEY_REUSED`→422, `ReadBody()`) and tests/SignalNoir/Tests/Sim/Contract/Client.cls (`Call(method, path, body)` with `%Net.HttpRequest` to `localhost:52773`, returns status, headers, body; `Capture(name, operationId, status, schema, body)` writes to tests/sim-contract/captures/ and appends manifest.json); verify V6 with a trivial route and record it in research.md
 - [ ] T017 Make T007 pass (it should pass once T009–T016 exist without cross-references); keep it in every later run
 
 **Checkpoint**: helpers, catalog loader, web application and isolation guard ready.
@@ -95,7 +95,7 @@ create a third concurrently and check isolation.
 
 - [ ] T018 [P] [US1] Write failing tests/SignalNoir/Tests/Sim/Contract/TestScenarios.cls: `POST /scenarios` → 201 `ScenarioInstance` with `status: created`, `Location` header, no emission; unknown family/variant → 404 envelope; `seed < 0`, `timeScale` outside (0,1], `repetition < 1`, bad `runId` → 400; `GET /scenarios/{id}` → 200 / 404; `POST /scenarios/{id}/emissions` → 201 then 200 with identical `emitted`, instance `status: emitted`, `emittedOrderIds` filled; capture every response
 - [ ] T019 [P] [US1] Write failing tests/SignalNoir/Tests/Sim/Contract/TestOriginFeed.cls: `GET /origin/feed` returns items ordered by `feedSeq`, each with `scenarioInstanceId`, `runId`, `repetition`, `transactionId`, `emittedAt`, `order.synthetic = true`; `afterSeq` beyond the end → empty `items` and `lastSeq = afterSeq`; items unchanged on re-read; `GET /origin/orders/{orderId}` → `active` / 404; capture
-- [ ] T020 [P] [US1] Write failing tests/SignalNoir/Tests/Sim/Core/TestDeterminism.cls: two instances from the same `(family, variant, seed)` emit Orders equal after removing `orderId`/`transactionId`, with disjoint orderIds; a different seed changes drawn content; instances created in two `JOB`s concurrently never share ids or feed items' instance (FR-006–FR-008, SC-001, SC-003)
+- [ ] T020 [P] [US1] Write failing tests/SignalNoir/Tests/Sim/Core/TestDeterminism.cls: two instances from the same `(family, variant, seed)` emit Orders equal after removing `orderId`/`transactionId`, with disjoint orderIds; a different seed changes drawn content; two instances from the same seed, delivered the same Order body attempt by attempt, return equal HTTP status and equal bodies per Attempt (after removing `orderId`, `receiptId`, `idempotencyKey` and times) and equal `latencyMs` classes in history; instances created in two `JOB`s concurrently never share ids or feed items' instance (FR-006–FR-008, SC-001, SC-003). The delivery part runs after T041; mark it skipped until US2 lands
 - [ ] T021 [P] [US1] Write failing tests/SignalNoir/Tests/Sim/Contract/TestCatalog.cls: `GET /scenario-catalog` → 200 with `items` and `serverTime`, filters `family` and `set` work, invalid enum → 400, no item has `partnerRule`; capture
 
 ### Implementation for User Story 1
@@ -122,7 +122,7 @@ drive each family's attempts and compare with the declared script.
 
 ### Tests for User Story 2 (write first) ⚠️
 
-- [ ] T029 [US2] Verify V3 and V4 through iris-agentic-dev: (V3) two `JOB`s calling a probe that takes `Lock +^SignalNoir.Sim.Key(k)` and inserts into a unique index serialize and one insert wins; (V4) a `%CSP.REST` method that `Hang`s `SN_PARTNER_TIMEOUT_SECONDS + 5` seconds is observed by `%Net.HttpRequest` with `Timeout = SN_PARTNER_TIMEOUT_SECONDS` as a timeout, not a gateway 5xx; record the web gateway server response timeout. Record both in research.md; if V4 fails, stop and amend research D6 before T036
+- [ ] T029 [US2] Confirm specs/002-scenario-simulator/research.md "Verification log" has V3 and V4 recorded as passing; if V4 failed, research D6 must already have been amended before T036 starts
 - [ ] T030 [P] [US2] Write failing tests/SignalNoir/Tests/Sim/Core/TestScript.cls: attempt rules match in order (`attempt:<n>`, `attempt:<n>+`, `beforeMapping`, `wrongMapping`, `accepted`, `any`); `beforeMapping`/`wrongMapping`/`accepted` decided against `partnerRule` on the delivered `order.exams[].code` and `specimen` fields; `Hold(delayClass, timeScale)` returns `max(clientTimeout + 5, nominal × timeScale)` for `timeout`, ≤ 0.2 s for `fast`; wording keys resolve per `language` and seed, including injection text (contracts/scenario-script.md)
 - [ ] T031 [P] [US2] Write failing tests/SignalNoir/Tests/Sim/Contract/TestPartnerDeliver.cls: `clean.success` → 200 `Receipt` whose `orderId`/`idempotencyKey` match; same key + same payload (different `transactionId`, different `mappingRef`) → 200 same `receiptId`, header `Idempotent-Replayed: true`, history entry `duplicate`; same key + changed exam → 422 `IDEMPOTENCY_KEY_REUSED` with `details.originalReceiptId`; key with Receipt + script that would now fail → original Receipt; missing/short key or missing `order` → 400 and no history entry; unknown partner/instance or partner ≠ instance partner → 404; capture
 - [ ] T032 [P] [US2] Write failing tests/SignalNoir/Tests/Sim/Contract/TestDedupConcurrency.cls: 10 `JOB`s deliver the same key + payload at once → exactly one Receipt row, all callers get the same `receiptId` (SC-004)
@@ -201,14 +201,14 @@ and next deliveries of one instance.
 
 ### Tests for User Story 5 (write first) ⚠️
 
-- [ ] T056 [P] [US5] Write failing tests/SignalNoir/Tests/Sim/Contract/TestEvents.cls: `POST /scenarios/{id}/events` → 202 `ScenarioInstance` with updated `phase` and `appliedEvents`; `PARTNER_DEGRADES` → next health `DEGRADED` and next delivery per `afterEvent:` rule (503/timeout); `MAINTENANCE_STARTS` → health `maintenance.active` with `startsAt`/`endsAt`; `ORDER_CANCELLED_AT_ORIGIN` → Origin status `cancelled` with `statusChangedAt` and `reason`; without `orderId`, or with an orderId of another instance → 400; unknown instance → 404; another instance is unchanged; capture
+- [ ] T056 [P] [US5] Write failing tests/SignalNoir/Tests/Sim/Contract/TestEvents.cls: `POST /scenarios/{id}/events` → 202 `ScenarioInstance` with updated `phase` and `appliedEvents`; `PARTNER_DEGRADES` → next health `DEGRADED`, history (read before any new delivery) contains the variant's `afterEvent` entries with no `orderId` and a window `errorRate > 0`, and next delivery per `afterEvent:` rule (503/timeout); `MAINTENANCE_STARTS` → health `maintenance.active` with `startsAt`/`endsAt`; `ORDER_CANCELLED_AT_ORIGIN` → Origin status `cancelled` with `statusChangedAt` and `reason`; without `orderId`, or with an orderId of another instance → 400; unknown instance → 404; another instance is unchanged; capture
 - [ ] T057 [P] [US5] Write failing tests/SignalNoir/Tests/Sim/Contract/TestTriggers.cls: a P3 variant with `on: read:health, nth: 2` changes the world on the 2nd health read without any event call; `read:originStatus` and `attempt` triggers likewise; each trigger fires once (SC-007)
 
 ### Implementation for User Story 5
 
 - [ ] T058 [P] [US5] Create src/SignalNoir/Sim/Model/Event.cls (fields per data-model "ScenarioEvent")
-- [ ] T059 [US5] Implement `ApplyEvent(sci, req, source)` in src/SignalNoir/Sim/Scenarios.cls per the data-model event-effect table, and trigger evaluation in src/SignalNoir/Sim/Script.cls (`OnRead(sci, resource)`, `OnAttempt(sci, n)`) called from `Partner.Health`, `Partner.History`, `Origin.Status` and `Partner.Deliver` with per-instance read counters (depends on T058)
-- [ ] T060 [P] [US5] Create src/SignalNoir/Sim/Catalog/P3.cls with tuning variants `P3.partner_fails_again`, `P3.maintenance_window`, `P3.cancelled_at_origin`, each with a `read:health`/`read:originStatus` `nth: 2` trigger (research D12)
+- [ ] T059 [US5] Implement `ApplyEvent(sci, req, source)` in src/SignalNoir/Sim/Scenarios.cls per the data-model event-effect table, appending `script.afterEvent.<TYPE>.history` entries as Delivery records with empty order fields, and trigger evaluation in src/SignalNoir/Sim/Script.cls (`OnRead(sci, resource)`, `OnAttempt(sci, n)`) called from `Partner.Health`, `Partner.History`, `Origin.Status` and `Partner.Deliver` with per-instance read counters (depends on T058)
+- [ ] T060 [P] [US5] Create src/SignalNoir/Sim/Catalog/P3.cls with tuning variants `P3.partner_fails_again`, `P3.maintenance_window`, `P3.cancelled_at_origin`, each with a `read:health`/`read:originStatus` `nth: 2` trigger (research D12); `P3.partner_fails_again` and `P3.maintenance_window` declare `afterEvent` health and history
 - [ ] T061 [US5] Add route `POST /scenarios/:id/events` to src/SignalNoir/Sim/Api/Dispatch.cls (depends on T059)
 - [ ] T062 [US5] Run T056–T057 green; run the capture validator
 
@@ -226,7 +226,7 @@ sets separated.
 ### Tests for User Story 6 (write first) ⚠️
 
 - [ ] T063 [P] [US6] Write failing tests/SignalNoir/Tests/Sim/Isolation/TestAnswerKeyLeak.cls: for every catalog variant, create an instance, emit, drive every attempt rule, read health, history, receipts, Origin status/orders, instance and catalog; assert no response body, header or log message contains any `partnerRule` value, nor any of the strings `expectedAction`, `expectedParams`, `expectedState`, `expectedClass`, `answerKey`, `gabarito` (SC-006, FR-030)
-- [ ] T064 [P] [US6] Write failing tests/SignalNoir/Tests/Sim/Core/TestCatalogCoverage.cls: every subtype of the contract's `ScenarioVariant.subtype` enum has ≥ 1 `tuning` variant; every variant id is unique; `test` variants exist only in `*Test` classes; a check `FreezeReady()` reports whether P5 and P8b have ≥ 5 `test` variants each (FR-031, FR-032) — reported, not asserted, until the freeze
+- [ ] T064 [P] [US6] Write failing tests/SignalNoir/Tests/Sim/Core/TestCatalogCoverage.cls: every subtype of the contract's `ScenarioVariant.subtype` enum has ≥ 1 `tuning` variant; every variant id is unique; `test` variants exist only in `*Test` classes; a check `FreezeReady()` reports whether P5 and P8b have ≥ 5 `test` variants each (FR-031, FR-032 — P5 and P8b only) — reported, not asserted, until the freeze
 
 ### Implementation for User Story 6
 
@@ -250,7 +250,7 @@ the resend.
 
 ### Implementation for User Story 7
 
-- [ ] T068 [US7] Create src/SignalNoir/Sim/Catalog/P9.cls (tuning variant with `orders[]` declaring a `priorOf` original) and extend `Emit` in src/SignalNoir/Sim/Scenarios.cls to seed the original OriginOrder (`inFeed = false`) and its Receipt with `receivedAt = Clock.Shift(emittedAt, -180)` (research SIM-Q8); run T067 green
+- [ ] T068 [US7] Create src/SignalNoir/Sim/Catalog/P9.cls (tuning variant with `orders[]` declaring a `priorOf` original per contracts/scenario-script.md) and extend `Emit` in src/SignalNoir/Sim/Scenarios.cls to seed the original OriginOrder (`inFeed = false`) and its Receipt with `receivedAt = Clock.Shift(emittedAt, receivedAtOffsetSeconds)` (research SIM-Q8); run T067 green
 
 **Checkpoint**: 011 can be decided and tested without changing the Simulator.
 

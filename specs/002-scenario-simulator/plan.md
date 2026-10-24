@@ -84,16 +84,18 @@ controls → ~40 instances per run.
   dependencies explicit below.
 - [x] **Platform Constraints** — build 154, synthetic data (`synthetic: true` on every Order), no
   secrets involved, no image published.
-- [ ] **iris-agentic-dev** — **conditional**. Reused claims are 001-verified (`%CSP.REST`,
-  `Security.Applications`, `%Persistent`, `%UnitTest`). Six new claims (V1–V6 in research.md) were
-  not verified, because iris-agentic-dev was not reachable from the planning session. Tasks MUST
-  start with them, before any task that depends on them; the gate turns to pass when the
-  Verification log is filled. The runtime does not depend on iris-agentic-dev.
+- [ ] **iris-agentic-dev** — **blocking before /speckit-implement**. Reused claims are
+  001-verified (`%CSP.REST`, `Security.Applications`, `%Persistent`, `%UnitTest`). New claims V1–V6
+  (research.md) MUST be verified with throwaway probes through iris-agentic-dev and logged in
+  research.md "Verification log" before any task runs; probes are not submission code and are
+  deleted after the check. The gate turns to pass only when V1–V6 are logged; a failed V4 reopens
+  research D6 before tasks proceed. The runtime does not depend on iris-agentic-dev.
 
 ### Post-design re-check (after Phase 1)
 
 Re-evaluated after research.md, data-model.md, contracts/scenario-script.md and quickstart.md:
-gates I–IX and Platform remain pass; the iris-agentic-dev gate stays **conditional on V1–V6**.
+gates I–IX and Platform remain pass; the iris-agentic-dev gate stays **blocking until V1–V6 are
+logged**.
 No change to a frozen input is proposed: SIM-Q1…Q8 are resolved inside the existing contract.
 The one unresolved cross-feature value — the read count at which a P3 trigger fires (D12) — is
 per-variant data, to be confirmed with 006 and 008 at G1.
@@ -175,4 +177,4 @@ the existing `SignalNoir.PKG` resource, so `module.xml` does not change. Tests f
 | Sim-local `Result` type instead of `SignalNoir.Core.Result` | The Simulator must not reference product code (Principle I, D10) | Reusing the Core type couples an external system to the product and breaks the isolation test |
 | Private `partnerRule` alongside the served script | P8b and unknown-code variants need a Partner acceptance rule that implies the right Mapping | Serving it leaks answer-key content (FR-030); no script at all contradicts the contract's catalog |
 | Python capture validator outside `contracts/tools/` | Simulator captures are produced by this feature's tests; `contracts/fixtures/**` is a frozen input | Writing into `contracts/fixtures/` would edit a frozen input |
-| iris-agentic-dev gate conditional | The planning session had no iris-agentic-dev access | Verifying through `docker exec` is not an accepted path (Constitution, Development Environment) |
+| iris-agentic-dev gate blocking until V1–V6 are logged | The planning session had no iris-agentic-dev access | Verifying through `docker exec` is not an accepted path (Constitution, Development Environment) |

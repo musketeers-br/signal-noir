@@ -7,7 +7,7 @@ architecture AD-13, AD-14, AD-16, AD-21, AD-22, AD-25, AD-26, and the 001 resear
 
 Platform facts already verified live by 001 through iris-agentic-dev are reused and cited as
 "001-Vn". New platform claims this plan relies on are listed in **Verification backlog** and MUST
-be checked through iris-agentic-dev before the first implementation task that depends on them
+be checked through iris-agentic-dev, with throwaway probes, before `/speckit-implement` starts
 (iris-agentic-dev was not reachable from the planning session).
 
 ---
@@ -242,4 +242,5 @@ Each result is recorded in this file under "Verification log" when run.
 
 ## Verification log
 
-_Empty — to be filled by the first implementation task (calendar gate: not before 2026-10-26)._
+_Empty — to be filled with throwaway probes through iris-agentic-dev before `/speckit-implement`
+(probes are verification, not submission code, and are deleted after the check)._
