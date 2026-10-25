@@ -3,7 +3,10 @@
 **Status**: agreed draft for this feature. The published copy is `docs/seams.md`; this file is the
 spec-side source and the two MUST NOT diverge (a divergence is a contract change).
 
-**Version**: v3 (2026-10-25) — CaseCommands, CaseQueries, DTOs, Result, id prefixes and Timeline
+**Version**: v4 (2026-10-25) — Proposer port, Evidence and Proposal DTOs, the new
+`InvestigationContext` DTO and Order `scenarioInstanceId` changed by contract change 006
+(`specs/006-investigation-and-proposal/contracts/contract-change-006-investigation-seam.md`).
+v3 (2026-10-25) — CaseCommands, CaseQueries, DTOs, Result, id prefixes and Timeline
 event types changed by contract change 003
 (`specs/003-order-case-lifecycle/contracts/contract-change-003-case-lifecycle-seam.md`).
 v2 (2026-10-24) changed the Validator section by contract change 004
@@ -52,13 +55,14 @@ opening writes `CaseOpened` (`previousCaseId` for a new episode); an Exception w
 
 | DTO | Required fields in this slice |
 |-----|-------------------------------|
-| `Order` | `orderId`, `snapshot`, `equivalenceKey`, `receivedAt`, `synthetic`, `correlationId`, `transactionId` (input) / `transactionIds` (output), `partnerId`, `runId` |
+| `Order` | `orderId`, `snapshot`, `equivalenceKey`, `receivedAt`, `synthetic`, `correlationId`, `transactionId` (input) / `transactionIds` (output), `partnerId`, `runId`, `scenarioInstanceId` |
 | `CaseException` | `exceptionId`, `kind` (`timeout` / `http_error` / `invalid_receipt` / `business_rejection` / `processing_error`), `httpStatus?`, `body?`, `responseClass?`, `observedAt`, `attemptId?`, `duringExecution` |
 | `Case` | `caseId`, `orderId`, `state`, `caseVersion`, `lastEventSeq`, `lastEventAt`, `synthetic`, `replay`, `reviewReason?`, `denialCount`, `previousCaseId?`, `currentProposalId?`, `currentApprovalId?`, `currentExecutionId?`, `executionOutcome?`, `updatedAt` |
 | `CaseSummary` | `caseId`, `orderId`, `partnerId`, `state`, `caseVersion`, `lastEventSeq`, `lastEventAt`, `createdAt`, `synthetic`, `replay`, `exceptionCount`, `lastExceptionSummary?`, `executionOutcome?` |
 | `TimelineEvent` | `seq`, `at`, `type`, `actor`, `refId`, `payload` |
-| `Evidence` | `evidenceId`, `caseId`, `kind`, `source`, `observedAt`, `payload` |
-| `Proposal` | `proposalId`, `caseId`, `action`, `params`, `scope`, `confidence`, `preconditions[]` (`check`, `expected`), `versions` (`policy`, `mapping`), `priorReceiptCandidate?`, `origin` |
+| `Evidence` | `evidenceId`, `caseId`, `investigationId`, `kind` (`fact` / `absence`), `source` (contract enum), `calledBy`, `params`, `result` (raw, by value; `payload` is a v3 alias), `observedAt`, `durationMs`, `suspicious`, `suspiciousExcerpts[]`, `obsoletedBy?` |
+| `Proposal` | `proposalId`, `caseId`, `origin` (= contract `author`), `createdAt`, `current`, `supersededBy?`, `diagnosis` (`summary`, `claims[]` with `evidenceIds[]`, `hypotheses[]`, `conflicts[]`), `action`, `params`, `scope`, `confidence` (`HIGH`/`MEDIUM`/`LOW`), `preconditions[]` (`check`, `expected`), `versions` (`policy`, `mapping`, `prompt`, `model`, `provider`), `metrics`, `priorReceiptCandidate?` |
+| `InvestigationContext` | `investigationId`, `case`, `order`, `evidence[]`, `tools` (the read-only gateway), `maxToolCalls`, `budgetMs`, `startedAt` |
 | `ValidatorVerdict` | `verdict` (`accepted` / `blocked` / `review` / `prior_receipt_confirmed`), `reasons` (ordered closed codes), `requiresApproval`, `versions` (`policy`, `mapping`), `at` |
 | `ValidationInput` | `proposal`, `evidence[]`, `order` (snapshot), `priorReceiptOrder?`, `identity` (`clear` / `ambiguous`), `attemptCount`, `run` (`inRun`, `runId`, `policyVersion`, `mappingVersion`), `reference` (snapshot), `observed?` (Revalidation only), `now` |
 | `PreconditionResult` | `check`, `expected`, `observed`, `passed`, `evidenceId?` |
@@ -68,8 +72,9 @@ opening writes `CaseOpened` (`previousCaseId` for a new episode); an Exception w
 | `Receipt` | `receiptId`, `orderId`, `outcome`, `receivedAt`, `raw` |
 | `Dossier` | `caseId`, `facts`, `diagnosis`, `missingInformation`, `options` |
 
-`Order`, `CaseException`, `Case`, `CaseSummary` and `TimelineEvent` are produced by 001/003; the
-rest are declared so the seam does not change shape when later slices fill them in.
+`Order`, `CaseException`, `Case`, `CaseSummary` and `TimelineEvent` are produced by 001/003;
+`Evidence`, `Proposal` and `InvestigationContext` by 006; the rest are declared so the seam does not
+change shape when later slices fill them in.
 
 `Result` carries `ok`, `code`, `message`, `ref`, `obj`, `list` and `details`. A `STALE_VERSION` or
 `INVALID_TRANSITION` result carries `details` with `caseVersion`, `lastEventSeq`, `state`,
@@ -131,11 +136,16 @@ convention are in `specs/004-validation-and-reference-data/contracts/validation-
 ### Proposer
 
 ```
-Propose(case: Case) -> Result<Proposal>
+Propose(context: InvestigationContext) -> Result<ProposerAnswer>
 ```
 
-`SignalNoir.Proposers.Unavailable` returns a result value meaning "provider unavailable" instead
-of raising; that value is what drives `ReviewRequired`.
+`Result.obj` is the proposer's raw answer (data, the contract Proposal shape without ids);
+`SignalNoir.Core.ProposalShape` converts it into the `Proposal` DTO the same way for every origin.
+`Result.details` carries `provider`, `model`, `promptVersion`, `tokensIn`, `tokensOut`,
+`estCostUsd` when known. Failures are values (`provider_unavailable`, `invalid_response`,
+`refused`, `budget_exceeded`) that end in `ReviewRequired`. Only `SignalNoir.Proposers.Factory`
+reads the proposer mode, before the port. `SignalNoir.Proposers.Unavailable` returns
+"provider unavailable" instead of raising.
 
 ### Tools
 
@@ -143,8 +153,10 @@ of raising; that value is what drives `ReviewRequired`.
 Invoke(toolName, args) -> Result<Evidence>
 ```
 
-Read-only by contract. No write-capable tool may implement this port. Implementation arrives in
-later slices.
+Read-only by contract. No write-capable tool may implement this port. The runtime implementation
+(`SignalNoir.Application.ToolGateway`, feature 006) accepts only the reading Tools of the contract's
+Evidence `source` enum, charges the server-side budget (6 calls / 20 s), and returns Evidence that
+is already recorded on the Case.
 
 ### PartnerClient
 
@@ -179,8 +191,8 @@ a live provider:
 | `FakeCaseCommands` | in-memory command handling with version checks; acceptance opens no Case, `RecordException` does |
 | `FakeCaseQueries` | in-memory reads |
 | `FakeValidator` | configurable `ValidatorVerdict` (default `accepted`, `requiresApproval = true`, reasons `[ACTION_IN_CATALOG]`), `PreconditionResult[]` and `Admission` |
-| `FakeProposer` | configurable proposal or provider-unavailable result |
-| `FakeTools` | returns a canned Evidence |
+| `FakeProposer` | configurable answer or provider-unavailable result |
+| `FakeTools` | returns a canned Evidence (contract fields) |
 | `FakePartnerClient` | returns a canned Receipt |
 | `FixedClock` | a fixed, settable time |
 | `SeqIdGenerator` | deterministic prefixed ids |

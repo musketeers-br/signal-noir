@@ -12,8 +12,6 @@ Property Clock As SignalNoir.Core.Port.Clock;
 
 Property Ids As SignalNoir.Core.Port.IdGenerator;
 
-Property Proposer As SignalNoir.Core.Port.Proposer;
-
 /// Seconds to wait for a per-Case or per-Order lock
 Parameter LOCKTIMEOUT = 5;
 
@@ -22,7 +20,6 @@ ClassMethod Default() As SignalNoir.Application.CaseService
 	Set svc = ##class(SignalNoir.Application.CaseService).%New()
 	Set svc.Clock = ##class(SignalNoir.Application.SystemClock).%New()
 	Set svc.Ids = ##class(SignalNoir.Application.IdFactory).%New()
-	Set svc.Proposer = ##class(SignalNoir.Proposers.Unavailable).%New()
 	Return svc
 }
 
@@ -63,6 +60,7 @@ Method AcceptOrder(order As SignalNoir.Core.Dto.Order) As SignalNoir.Core.Result
 			Set rec.correlationId = ..Ids.New("corr_")
 			If order.transactionId '= "" Do rec.transactionIds.Insert(order.transactionId)
 			Set rec.runId = order.runId
+			Set rec.scenarioInstanceId = order.scenarioInstanceId
 			Set rec.snapshotJson = snapshot.%ToJSON()
 			Set rec.equivalenceKey = key
 			Set rec.receivedAt = now
@@ -144,8 +142,9 @@ Method RecordException(orderId As %String, exception As SignalNoir.Core.Dto.Case
 }
 
 /// Records the Exception and, when it opened a new Case, routes the Case:
-/// to ReviewRequired when the provider is unavailable (001 behavior), else
-/// to Investigating with an Investigate request.
+/// to ReviewRequired when the Case's proposer cannot run (no provider for
+/// agent mode, 001 behavior), else to Investigating with an Investigate
+/// request (handled by InvestigationService, feature 006).
 Method ProcessException(orderId As %String, exception As SignalNoir.Core.Dto.CaseException) As SignalNoir.Core.Result
 {
 	Set r = ..RecordException(orderId, exception)
@@ -153,11 +152,7 @@ Method ProcessException(orderId As %String, exception As SignalNoir.Core.Dto.Cas
 	Set g = ..GetCase(r.ref)
 	If 'g.ok Return g
 	Set caseDto = g.obj
-	Set unavailable = 0
-	If $IsObject(..Proposer) {
-		Set p = ..Proposer.Propose(caseDto)
-		Set unavailable = ('p.ok && (p.code = "provider_unavailable"))
-	}
+	Set unavailable = '##class(SignalNoir.Proposers.Factory).Ready(caseDto.proposerMode)
 	If unavailable {
 		Set reason = "provider unavailable: " _ ##class(SignalNoir.Application.CaseService).ProviderName()
 		Set moved = ..MarkReviewRequired(r.ref, caseDto.caseVersion, "system", reason)
@@ -297,6 +292,11 @@ Method GetCase(caseId As %String) As SignalNoir.Core.Result
 		Set ex = ##class(SignalNoir.Application.Model.ExceptionRecord).%OpenId(rs.%Get("exceptionId"))
 		If $IsObject(ex) Do dto.exceptions.Insert(..ToExceptionDto(ex))
 	}
+	Set evidence = ..ListEvidence(caseId)
+	For i = 1 : 1 : evidence.Count() Do dto.evidence.Insert(evidence.GetAt(i))
+	Set proposals = ..ListProposals(caseId)
+	For i = 1 : 1 : proposals.Count() Do dto.proposals.Insert(proposals.GetAt(i))
+	Set dto.metrics = ..CaseMetrics(caseId)
 	Return ##class(SignalNoir.Core.Result).OkObj(dto)
 }
 
@@ -410,7 +410,504 @@ Method ListCases(cursor As %String = "", direction As %String = "older", limit A
 	Return r
 }
 
+// --------------------------------------------------------- investigation
+
+/// Claims an Investigate request at most once (pending -> dispatched) and
+/// opens its Investigation when the Case is still Investigating at the
+/// request's version (006 FR-001, FR-002); records the Case's Exceptions as
+/// Evidence and scans the Order for embedded instructions. A stale or
+/// repeated request is discarded and recorded (details.discarded = 1).
+/// Result.ref = investigationId (the request's commandId).
+Method StartInvestigation(commandId As %String, proposerClass As %String, sourceClass As %String, budgetMs As %Integer = {##class(SignalNoir.Core.Budget).#MAXMILLIS}) As SignalNoir.Core.Result
+{
+	Set outbox = ##class(SignalNoir.Application.Model.OutboxRecord).%OpenId(commandId)
+	If '$IsObject(outbox) || (outbox.type '= "Investigate") Return ..Err("NOT_FOUND", "investigation request not found: " _ commandId)
+	Set caseId = outbox.caseId
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ caseId)
+			Quit
+		}
+		Do outbox.%Reload()
+		Set rec = ..Load(caseId)
+		Set why = ""
+		If outbox.status '= "pending" Set why = "request already " _ outbox.status
+		If (why = "") && ((rec.state '= "Investigating") || (rec.caseVersion '= outbox.caseVersionAfter)) Set why = "case moved: " _ rec.state _ " v" _ rec.caseVersion
+		If why '= "" {
+			If outbox.status = "pending" {
+				Set outbox.status = "done"
+				$$$ThrowOnError(outbox.%Save())
+			}
+			Do ..AppendEvent(rec, "CommandDiscarded", "system", commandId, {"commandId": (commandId), "reason": (why)}, now)
+			$$$ThrowOnError(rec.%Save())
+			Set result = ##class(SignalNoir.Core.Result).OkRef("")
+			Set result.details = {"discarded": 1, "reason": (why)}
+			Quit
+		}
+		Set outbox.status = "dispatched"
+		Set outbox.dispatchedAt = now
+		$$$ThrowOnError(outbox.%Save())
+		Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%New()
+		Set inv.investigationId = commandId
+		Set inv.caseId = caseId
+		Set inv.caseVersionAtStart = rec.caseVersion
+		Set inv.mode = rec.proposerMode
+		Set inv.proposerClass = proposerClass
+		Set inv.sourceClass = sourceClass
+		Set inv.status = "open"
+		Set inv.startedAt = now
+		Set inv.startedMs = ..NowMs()
+		Set inv.budgetMs = budgetMs
+		Set inv.toolCalls = 0
+		$$$ThrowOnError(inv.%Save())
+		Do ..AppendEvent(rec, "Annotation", "system", commandId, {"kind": "investigation_started", "investigationId": (commandId), "mode": (rec.proposerMode)}, now)
+		; the Exceptions already on the Case are system Evidence
+		Set ids = []
+		Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT exceptionId FROM SignalNoir_Application_Model.ExceptionRecord WHERE caseId = ? ORDER BY observedAt, exceptionId", caseId)
+		While rs.%Next() {
+			Set ex = ##class(SignalNoir.Application.Model.ExceptionRecord).%OpenId(rs.%Get("exceptionId"))
+			Set ev = ##class(SignalNoir.Core.Dto.Evidence).%New()
+			Set ev.source = "system.exception"
+			Set ev.kind = "fact"
+			Set ev.calledBy = "system"
+			Set ev.params = {"exceptionId": (ex.exceptionId)}
+			Set body = $Select(ex.bodyJson = "": "", 1: ##class(%DynamicAbstractObject).%FromJSON(ex.bodyJson))
+			Set res = {"exceptionId": (ex.exceptionId), "kind": (ex.kind), "observedAt": (ex.observedAt), "duringExecution": (+ex.duringExecution)}
+			Do res.%Set("httpStatus", ex.httpStatus, $Select(ex.httpStatus = "": "null", 1: "number"))
+			If $IsObject(body) Do res.%Set("body", body)
+			Set ev.result = res
+			Set ev.observedAt = ex.observedAt
+			Set ev.durationMs = 0
+			Set found = ##class(SignalNoir.Core.Suspicion).Scan(res)
+			Do ..SaveEvidence(rec, commandId, ev, found, now)
+			Do ids.%Push(ev.evidenceId)
+		}
+		; the Order itself is data: an embedded instruction is recorded, not obeyed
+		Set orderRec = ##class(SignalNoir.Application.Model.OrderRecord).%OpenId(rec.orderId)
+		If $IsObject(orderRec) {
+			Set found = ##class(SignalNoir.Core.Suspicion).Scan(..PayloadObject(orderRec.snapshotJson))
+			If found.Count() > 0 Do ..AppendEvent(rec, "Annotation", "system", rec.orderId, {"kind": "embedded_instruction_blocked", "source": "order.snapshot", "excerpts": (..ToArray(found))}, now)
+		}
+		$$$ThrowOnError(rec.%Save())
+		Set result = ##class(SignalNoir.Core.Result).OkRef(commandId)
+		Set result.details = {"discarded": 0, "evidenceIds": (ids)}
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "start investigation failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// Charges one Tool call against the server-side budget (006 FR-003). A call
+/// beyond 6, or after the time budget, closes the Investigation (the Case
+/// goes to ReviewRequired) and is refused with code budget_exceeded. A
+/// closed Investigation refuses with code closed.
+Method ChargeToolCall(investigationId As %String) As SignalNoir.Core.Result
+{
+	Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(investigationId)
+	If '$IsObject(inv) Return ..Err("NOT_FOUND", "investigation not found: " _ investigationId)
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", inv.caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ inv.caseId)
+			Quit
+		}
+		Do inv.%Reload()
+		If inv.status '= "open" {
+			Set result = ..Err("closed", "investigation is " _ inv.status)
+			Quit
+		}
+		Set breach = ##class(SignalNoir.Core.Budget).Breach(inv.toolCalls, ..NowMs() - inv.startedMs, inv.budgetMs)
+		If breach '= "" {
+			Set reason = ##class(SignalNoir.Core.Budget).Reason(breach)
+			Set closed = ..CloseLocked(inv, reason, "", now)
+			If 'closed.ok {
+				Set result = closed
+				Quit
+			}
+			; the closure commits; the call itself is refused
+			Set result = ##class(SignalNoir.Core.Result).OkRef("")
+			Set result.details = {"refused": 1, "code": "budget_exceeded", "reason": (reason)}
+			Quit
+		}
+		Set inv.toolCalls = inv.toolCalls + 1
+		$$$ThrowOnError(inv.%Save())
+		Set result = ##class(SignalNoir.Core.Result).OkRef(inv.toolCalls)
+		Set result.details = {"refused": 0}
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "charge tool call failed")
+	}
+	Set result = ..Finish(result, .locks)
+	If result.ok && result.details.refused Return ##class(SignalNoir.Core.Result).Error("budget_exceeded", result.details.reason)
+	Return result
+}
+
+/// Attachment: records one Evidence (and its ToolCalled event, and the
+/// blocked embedded instruction when suspicious). Result.ref = evidenceId.
+Method RecordEvidence(investigationId As %String, evidence As SignalNoir.Core.Dto.Evidence) As SignalNoir.Core.Result
+{
+	Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(investigationId)
+	If '$IsObject(inv) Return ..Err("NOT_FOUND", "investigation not found: " _ investigationId)
+	If '$IsObject(evidence) Return ..Err("VALIDATION_FAILED", "evidence is required")
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", inv.caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ inv.caseId)
+			Quit
+		}
+		Set rec = ..Load(inv.caseId)
+		Set found = ##class(%ListOfDataTypes).%New()
+		For i = 1 : 1 : evidence.suspiciousExcerpts.Count() Do found.Insert(evidence.suspiciousExcerpts.GetAt(i))
+		Do ..SaveEvidence(rec, investigationId, evidence, found, now)
+		$$$ThrowOnError(rec.%Save())
+		Set result = ##class(SignalNoir.Core.Result).OkRef(evidence.evidenceId)
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "record evidence failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// Attachment: a refused non-reading Tool (006 FR-008)
+Method RecordBlockedTool(investigationId As %String, toolName As %String, caller As %String) As SignalNoir.Core.Result
+{
+	Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(investigationId)
+	If '$IsObject(inv) Return ..Err("NOT_FOUND", "investigation not found: " _ investigationId)
+	Set event = ##class(SignalNoir.Core.Dto.TimelineEvent).%New()
+	Set event.type = "Annotation"
+	Set event.actor = $Select(##class(SignalNoir.Core.Vocab).IsActor(caller): caller, 1: "system")
+	Set event.refId = investigationId
+	Set event.payload = {"kind": "write_attempt_blocked", "tool": (toolName), "investigationId": (investigationId)}
+	Return ..Append(inv.caseId, event)
+}
+
+/// Records the Proposal and moves the Case Investigating -> DecisionProposed
+/// in one transaction, with the mode as actor, only while the Investigation
+/// is open, within its time budget, and the Case unchanged since it started
+/// (006 FR-005, FR-015, FR-016). A closed Investigation refuses with code
+/// closed. Result.ref = proposalId.
+Method CompleteInvestigation(investigationId As %String, proposal As SignalNoir.Core.Dto.Proposal, meta As %DynamicObject = "") As SignalNoir.Core.Result
+{
+	Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(investigationId)
+	If '$IsObject(inv) Return ..Err("NOT_FOUND", "investigation not found: " _ investigationId)
+	If '$IsObject(proposal) Return ..Err("VALIDATION_FAILED", "proposal is required")
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", inv.caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ inv.caseId)
+			Quit
+		}
+		Do inv.%Reload()
+		If inv.status '= "open" {
+			Set result = ..Err("closed", "investigation is " _ inv.status)
+			Quit
+		}
+		Set rec = ..Load(inv.caseId)
+		If (..NowMs() - inv.startedMs) >= inv.budgetMs {
+			Set result = ..CloseLocked(inv, ##class(SignalNoir.Core.Budget).Reason("time"), meta, now)
+			If result.ok Set result = ##class(SignalNoir.Core.Result).OkRef("")
+			Set result.details = {"closedLate": 1}
+			Quit
+		}
+		If (rec.state '= "Investigating") || (rec.caseVersion '= inv.caseVersionAtStart) {
+			Set inv.status = "discarded"
+			Set inv.closedAt = now
+			Set inv.outcomeReason = "case moved: " _ rec.state _ " v" _ rec.caseVersion
+			Do ..ApplyMeta(inv, meta)
+			$$$ThrowOnError(inv.%Save())
+			Do ..AppendEvent(rec, "CommandDiscarded", "system", investigationId, {"investigationId": (investigationId), "reason": (inv.outcomeReason)}, now)
+			$$$ThrowOnError(rec.%Save())
+			Set result = ..Err("closed", inv.outcomeReason)
+			Quit
+		}
+		Set proposalId = ..Ids.New("prop_")
+		If rec.currentProposalId '= "" {
+			Set old = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(rec.currentProposalId)
+			If $IsObject(old) {
+				Set old.current = 0
+				Set old.supersededBy = proposalId
+				$$$ThrowOnError(old.%Save())
+			}
+		}
+		Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%New()
+		Set pr.proposalId = proposalId
+		Set pr.caseId = rec.caseId
+		Set pr.investigationId = investigationId
+		Set pr.author = inv.mode
+		Set pr.createdAt = now
+		Set pr.current = 1
+		Set pr.diagnosisJson = ..Json(proposal.diagnosis)
+		Set pr.action = proposal.action
+		Set pr.paramsJson = ..Json(proposal.params)
+		Set pr.scope = "single_case"
+		Set pr.confidence = proposal.confidence
+		Set pr.preconditionsJson = $Select($IsObject(proposal.preconditions): proposal.preconditions.%ToJSON(), 1: "[]")
+		Set pr.versionsJson = ..Json(proposal.versions)
+		Set pr.metricsJson = ..Json(proposal.metrics)
+		Set prior = proposal.priorReceiptCandidate
+		Set pr.priorReceiptCandidateJson = $Select($IsObject(prior) && (prior.%Size() > 0): prior.%ToJSON(), 1: "")
+		$$$ThrowOnError(pr.%Save())
+		Set rec.currentProposalId = proposalId
+		Do ..AppendEvent(rec, "ProposalCreated", inv.mode, proposalId, {"proposalId": (proposalId), "author": (inv.mode), "action": (proposal.action), "confidence": (proposal.confidence), "investigationId": (investigationId)}, now)
+		Set moved = ..ApplyTransition(rec, "DecisionProposed", inv.mode, {"reason": "proposal recorded", "proposalId": (proposalId)}, "", now)
+		If 'moved.ok {
+			Set result = moved
+			Quit
+		}
+		$$$ThrowOnError(rec.%Save())
+		Set inv.status = "proposed"
+		Set inv.closedAt = now
+		Set inv.proposalId = proposalId
+		Set inv.outcomeReason = "proposal recorded"
+		Do ..ApplyMeta(inv, meta)
+		$$$ThrowOnError(inv.%Save())
+		Do ..FinishRequest(investigationId)
+		Set result = ##class(SignalNoir.Core.Result).OkRef(proposalId)
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "complete investigation failed")
+	}
+	Set result = ..Finish(result, .locks)
+	If result.ok && $IsObject(result.details) && result.details.closedLate Return ..Err("closed", ##class(SignalNoir.Core.Budget).Reason("time"))
+	Return result
+}
+
+/// Closes an open Investigation without a Proposal: the Case goes to
+/// ReviewRequired with the reason (006 FR-003, FR-018). A closed
+/// Investigation refuses with code closed.
+Method CloseInvestigation(investigationId As %String, reason As %String, meta As %DynamicObject = "") As SignalNoir.Core.Result
+{
+	Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(investigationId)
+	If '$IsObject(inv) Return ..Err("NOT_FOUND", "investigation not found: " _ investigationId)
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", inv.caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ inv.caseId)
+			Quit
+		}
+		Do inv.%Reload()
+		If inv.status '= "open" {
+			Set result = ..Err("closed", "investigation is " _ inv.status)
+			Quit
+		}
+		Set result = ..CloseLocked(inv, reason, meta, now)
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "close investigation failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// Attachment: an answer that arrived for a closed Investigation (FR-005)
+Method DiscardAnswer(investigationId As %String, reason As %String) As SignalNoir.Core.Result
+{
+	Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(investigationId)
+	If '$IsObject(inv) Return ..Err("NOT_FOUND", "investigation not found: " _ investigationId)
+	Set event = ##class(SignalNoir.Core.Dto.TimelineEvent).%New()
+	Set event.type = "CommandDiscarded"
+	Set event.actor = "system"
+	Set event.refId = investigationId
+	Set event.payload = {"investigationId": (investigationId), "reason": (reason)}
+	Set rec = ..Load(inv.caseId)
+	If ##class(SignalNoir.Core.Vocab).IsTerminal(rec.state) Set event.type = "Annotation", event.payload.kind = "late_answer_discarded"
+	Return ..Append(inv.caseId, event)
+}
+
+/// Evidence of a Case, in recording order
+Method ListEvidence(caseId As %String) As %ListOfObjects
+{
+	Set list = ##class(%ListOfObjects).%New()
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT evidenceId FROM SignalNoir_Application_Model.EvidenceRecord WHERE caseId = ? ORDER BY observedAt, evidenceId", caseId)
+	While rs.%Next() {
+		Set ev = ##class(SignalNoir.Application.Model.EvidenceRecord).%OpenId(rs.%Get("evidenceId"))
+		If $IsObject(ev) Do list.Insert(..ToEvidenceDto(ev))
+	}
+	Return list
+}
+
+/// Proposals of a Case, oldest first
+Method ListProposals(caseId As %String) As %ListOfObjects
+{
+	Set list = ##class(%ListOfObjects).%New()
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT proposalId FROM SignalNoir_Application_Model.ProposalRecord WHERE caseId = ? ORDER BY createdAt, proposalId", caseId)
+	While rs.%Next() {
+		Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(rs.%Get("proposalId"))
+		If $IsObject(pr) {
+			Do pr.%Reload()
+			Do list.Insert(..ToProposalDto(pr))
+		}
+	}
+	Return list
+}
+
+/// Metrics of the latest Investigation of a Case (contract CaseMetrics)
+Method CaseMetrics(caseId As %String) As %DynamicObject
+{
+	Set metrics = {}
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT TOP 1 investigationId FROM SignalNoir_Application_Model.InvestigationRecord WHERE caseId = ? ORDER BY startedAt DESC, investigationId DESC", caseId)
+	If 'rs.%Next() Return metrics
+	Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(rs.%Get("investigationId"))
+	Do metrics.%Set("provider", inv.provider, $Select(inv.provider = "": "null", 1: "string"))
+	Do metrics.%Set("model", inv.model, $Select(inv.model = "": "null", 1: "string"))
+	Do metrics.%Set("promptVersion", inv.promptVersion, $Select(inv.promptVersion = "": "null", 1: "string"))
+	If inv.policyVersion '= "" Do metrics.%Set("policyVersion", inv.policyVersion)
+	If inv.mappingVersion '= "" Do metrics.%Set("mappingVersion", inv.mappingVersion)
+	If inv.durationMs '= "" Do metrics.%Set("investigationDurationMs", +inv.durationMs)
+	Do metrics.%Set("toolCalls", +inv.toolCalls)
+	If inv.tokensIn '= "" Do metrics.%Set("tokensIn", +inv.tokensIn)
+	If inv.tokensOut '= "" Do metrics.%Set("tokensOut", +inv.tokensOut)
+	If inv.estCostUsd '= "" Do metrics.%Set("estCostUsd", +inv.estCostUsd)
+	Return metrics
+}
+
+/// UTC milliseconds since 1970 (budget arithmetic)
+ClassMethod NowMs() As %Integer
+{
+	Set z = $ZTimestamp
+	Return ((+z - 47117) * 86400000) + ($Piece(z, ",", 2) * 1000 \ 1)
+}
+
 // --------------------------------------------------------------- private
+
+Method CloseLocked(inv As SignalNoir.Application.Model.InvestigationRecord, reason As %String, meta As %DynamicObject, now As %String) As SignalNoir.Core.Result [ Private ]
+{
+	Set rec = ..Load(inv.caseId)
+	Set inv.closedAt = now
+	Set inv.outcomeReason = reason
+	Do ..ApplyMeta(inv, meta)
+	If (rec.state = "Investigating") && (rec.caseVersion = inv.caseVersionAtStart) {
+		Set moved = ..ApplyTransition(rec, "ReviewRequired", "system", {"reason": (reason), "investigationId": (inv.investigationId)}, "", now)
+		If 'moved.ok Return moved
+		Set inv.status = "review"
+	} Else {
+		Set inv.status = "discarded"
+		Do ..AppendEvent(rec, "CommandDiscarded", "system", inv.investigationId, {"investigationId": (inv.investigationId), "reason": (reason)}, now)
+	}
+	$$$ThrowOnError(rec.%Save())
+	$$$ThrowOnError(inv.%Save())
+	Do ..FinishRequest(inv.investigationId)
+	Set r = ##class(SignalNoir.Core.Result).OkRef(inv.investigationId)
+	Set r.details = {"status": (inv.status)}
+	Return r
+}
+
+/// Duration, versions and usage of an Investigation as it closes
+Method ApplyMeta(inv As SignalNoir.Application.Model.InvestigationRecord, meta As %DynamicObject) [ Private ]
+{
+	Set inv.durationMs = ..NowMs() - inv.startedMs
+	If '$IsObject(meta) Return
+	For key = "provider", "model", "promptVersion", "policyVersion", "mappingVersion", "tokensIn", "tokensOut", "estCostUsd" {
+		If meta.%Get(key) '= "" Set $Property(inv, key) = meta.%Get(key)
+	}
+}
+
+/// The request that carried the Investigation is done (dispatched -> done)
+Method FinishRequest(commandId As %String) [ Private ]
+{
+	Set outbox = ##class(SignalNoir.Application.Model.OutboxRecord).%OpenId(commandId)
+	If '$IsObject(outbox) Return
+	Do outbox.%Reload()
+	If outbox.status = "done" Return
+	Set outbox.status = "done"
+	$$$ThrowOnError(outbox.%Save())
+}
+
+/// Saves one Evidence row and its Timeline events inside the caller's
+/// transaction (record first, then return: 006 FR-009)
+Method SaveEvidence(rec As SignalNoir.Application.Model.CaseRecord, investigationId As %String, ev As SignalNoir.Core.Dto.Evidence, found As %ListOfDataTypes, now As %String) [ Private ]
+{
+	Set row = ##class(SignalNoir.Application.Model.EvidenceRecord).%New()
+	Set row.evidenceId = ..Ids.New("evid_")
+	Set row.caseId = rec.caseId
+	Set row.investigationId = investigationId
+	Set row.source = ev.source
+	Set row.kind = $Select(ev.kind = "": "fact", 1: ev.kind)
+	Set row.calledBy = ev.calledBy
+	Set row.paramsJson = ..Json(ev.params)
+	Set row.resultJson = $Select($IsObject(ev.result): ev.result.%ToJSON(), 1: "null")
+	Set row.observedAt = $Select(ev.observedAt = "": now, 1: ev.observedAt)
+	Set row.durationMs = ev.durationMs
+	Set row.suspicious = (found.Count() > 0)
+	For i = 1 : 1 : found.Count() Do row.suspiciousExcerpts.Insert(found.GetAt(i))
+	$$$ThrowOnError(row.%Save())
+	Set ev.evidenceId = row.evidenceId
+	Set ev.caseId = rec.caseId
+	Set ev.investigationId = investigationId
+	Set ev.suspicious = row.suspicious
+	Set actor = $Select(##class(SignalNoir.Core.Vocab).IsActor(ev.calledBy): ev.calledBy, 1: "system")
+	If $Extract(ev.source, 1, 5) = "tool." {
+		Do ..AppendEvent(rec, "ToolCalled", actor, row.evidenceId, {"evidenceId": (row.evidenceId), "tool": (ev.source), "kind": (row.kind), "suspicious": (+row.suspicious), "durationMs": (+ev.durationMs)}, now)
+	} Else {
+		Do ..AppendEvent(rec, "Annotation", actor, row.evidenceId, {"kind": "evidence", "evidenceId": (row.evidenceId), "source": (ev.source)}, now)
+	}
+	If row.suspicious Do ..AppendEvent(rec, "Annotation", "system", row.evidenceId, {"kind": "embedded_instruction_blocked", "evidenceId": (row.evidenceId), "source": (ev.source), "excerpts": (..ToArray(found))}, now)
+}
+
+Method ToEvidenceDto(row As SignalNoir.Application.Model.EvidenceRecord) As SignalNoir.Core.Dto.Evidence [ Private ]
+{
+	Set ev = ##class(SignalNoir.Core.Dto.Evidence).%New()
+	Set ev.evidenceId = row.evidenceId
+	Set ev.caseId = row.caseId
+	Set ev.investigationId = row.investigationId
+	Set ev.kind = row.kind
+	Set ev.source = row.source
+	Set ev.calledBy = row.calledBy
+	Set ev.params = ..PayloadObject(row.paramsJson)
+	Set ev.result = $Select((row.resultJson = "") || (row.resultJson = "null"): "", 1: ##class(%DynamicAbstractObject).%FromJSON(row.resultJson))
+	If $IsObject(ev.result) && ev.result.%IsA("%DynamicObject") Set ev.payload = ev.result
+	Set ev.observedAt = row.observedAt
+	Set ev.durationMs = row.durationMs
+	Set ev.suspicious = row.suspicious
+	For i = 1 : 1 : row.suspiciousExcerpts.Count() Do ev.suspiciousExcerpts.Insert(row.suspiciousExcerpts.GetAt(i))
+	Set ev.obsoletedBy = row.obsoletedBy
+	Return ev
+}
+
+Method ToProposalDto(pr As SignalNoir.Application.Model.ProposalRecord) As SignalNoir.Core.Dto.Proposal [ Private ]
+{
+	Set p = ##class(SignalNoir.Core.Dto.Proposal).%New()
+	Set p.proposalId = pr.proposalId
+	Set p.caseId = pr.caseId
+	Set p.origin = pr.author
+	Set p.createdAt = pr.createdAt
+	Set p.current = pr.current
+	Set p.supersededBy = pr.supersededBy
+	Set p.diagnosis = ..PayloadObject(pr.diagnosisJson)
+	Set p.action = pr.action
+	Set p.params = ..PayloadObject(pr.paramsJson)
+	Set p.scope = pr.scope
+	Set p.confidence = pr.confidence
+	Set p.preconditions = $Select(pr.preconditionsJson = "": [], 1: ##class(%DynamicArray).%FromJSON(pr.preconditionsJson))
+	Set p.versions = ..PayloadObject(pr.versionsJson)
+	Set p.metrics = ..PayloadObject(pr.metricsJson)
+	If (pr.priorReceiptCandidateJson '= "") && (pr.priorReceiptCandidateJson '= "{}") Set p.priorReceiptCandidate = ..PayloadObject(pr.priorReceiptCandidateJson)
+	Return p
+}
+
+Method Json(obj) As %String [ Private ]
+{
+	If '$IsObject(obj) Return "{}"
+	Return obj.%ToJSON()
+}
+
+ClassMethod ToArray(list As %ListOfDataTypes) As %DynamicArray [ Private ]
+{
+	Set arr = []
+	For i = 1 : 1 : list.Count() Do arr.%Push(list.GetAt(i))
+	Return arr
+}
 
 Method DoTransition(caseId As %String, expectedVersion As %Integer, toState As %String, actor As %String, event As SignalNoir.Core.Dto.TimelineEvent, expectedState As %String, expectedTarget As %String, followPayload As %DynamicObject) As SignalNoir.Core.Result [ Private ]
 {
@@ -705,6 +1202,7 @@ Method ToOrderDto(rec As SignalNoir.Application.Model.OrderRecord) As SignalNoir
 		Do dto.transactionIds.Insert(rec.transactionIds.GetAt(i))
 	}
 	Set dto.runId = rec.runId
+	Set dto.scenarioInstanceId = rec.scenarioInstanceId
 	Set dto.snapshot = ..PayloadObject(rec.snapshotJson)
 	Set dto.equivalenceKey = rec.equivalenceKey
 	Set dto.receivedAt = rec.receivedAt
@@ -758,6 +1256,13 @@ Method ToSummaryDto(rec As SignalNoir.Application.Model.CaseRecord) As SignalNoi
 		If count = 1 Set dto.lastExceptionSummary = rs.%Get("kind") _ $Select(rs.%Get("httpStatus") '= "": " " _ rs.%Get("httpStatus"), 1: "")
 	}
 	Set dto.exceptionCount = count
+	If rec.currentProposalId '= "" {
+		Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(rec.currentProposalId)
+		If $IsObject(pr) {
+			Set dto.currentAction = pr.action
+			Set dto.currentConfidence = pr.confidence
+		}
+	}
 	Return dto
 }
 

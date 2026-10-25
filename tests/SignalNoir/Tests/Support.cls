@@ -164,4 +164,67 @@ ClassMethod WaitResults(key As %String, n As %Integer) As %Integer
 	Return count
 }
 
+/// 006: a Case in Investigating with its pending Investigate request.
+/// Returns the caseId; cmdId is set by reference. mode sets the Case's
+/// proposer mode (test fixture written directly on the record).
+ClassMethod InvestigatingCase(svc As SignalNoir.Application.CaseService, tag As %String, mode As %String = "rules", ByRef cmdId As %String, specimenType As %String = "") As %String
+{
+	Set orderId = ..Uid(tag)
+	Set order = ..Order(orderId)
+	Set order.snapshot.exams = [{"code": "GLIC-J"}]
+	If specimenType '= "" Set order.snapshot.specimen.type = specimenType
+	Do svc.AcceptOrder(order)
+	Set caseId = svc.RecordException(orderId, ..Exception("http_error", 500)).ref
+	Set rec = ##class(SignalNoir.Application.Model.CaseRecord).%OpenId(caseId)
+	Set rec.proposerMode = mode
+	Do rec.%Save()
+	Kill rec
+	Do svc.Transition(caseId, 1, "Investigating", "system", ..Ev("routed"))
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT commandId FROM SignalNoir_Application_Model.OutboxRecord WHERE caseId = ? AND type = 'Investigate' AND status = 'pending'", caseId)
+	Set cmdId = $Select(rs.%Next(): rs.%Get("commandId"), 1: "")
+	Return caseId
+}
+
+/// Writes a test script entry for a Case
+ClassMethod Script(caseId As %String, key As %String, value As %String)
+{
+	Set ^SignalNoir.TestScript(caseId, key) = value
+}
+
+ClassMethod ClearScript(caseId As %String)
+{
+	Kill ^SignalNoir.TestScript(caseId)
+}
+
+/// Runs the Investigation of a request with scripted doubles
+ClassMethod Investigate(cmdId As %String, proposerClass As %String = "SignalNoir.Tests.Fakes.ScriptedProposer", budgetMs As %Integer = 20000) As SignalNoir.Core.Result
+{
+	Set inv = ##class(SignalNoir.Application.InvestigationService).%New()
+	Set inv.ProposerClass = proposerClass
+	Set inv.SourceClass = "SignalNoir.Tests.Fakes.ScriptedSource"
+	Set inv.BudgetMs = budgetMs
+	Return inv.Run(cmdId)
+}
+
+/// A P5-like answer: REQUEST_REVIEW citing the Exception and the history
+ClassMethod P5Answer() As %String
+{
+	Return "{""diagnosis"":{""summary"":""Partner rejects the exam code; no applicable mapping identified"",""claims"":[{""text"":""HTTP 500 body reports a validation error"",""evidenceIds"":[""@ev:system.exception""]},{""text"":""History shows the same rejection"",""evidenceIds"":[""@ev:tool.partner_failure_history""]}],""hypotheses"":[{""text"":""Partner outage"",""status"":""discarded"",""reason"":""health is UP"",""evidenceIds"":[""@ev:tool.partner_health""]},{""text"":""Business error on the exam code"",""status"":""chosen""}]},""action"":""REQUEST_REVIEW"",""params"":{""reason"":""business error""},""confidence"":""MEDIUM"",""preconditions"":[{""check"":""ORDER_ACTIVE_AT_ORIGIN"",""expected"":true}]}"
+}
+
+/// A P8b-like answer: the serum mapping chosen by specimen type
+ClassMethod P8bAnswer() As %String
+{
+	Return "{""diagnosis"":{""summary"":""Two approved mappings for GLIC-J; the Order is serum"",""claims"":[{""text"":""map_glicj_soro applies to SERUM"",""evidenceIds"":[""@ev:tool.mapping_catalog""]},{""text"":""Partner rejected GLIC-J"",""evidenceIds"":[""@ev:system.exception""]}],""hypotheses"":[{""text"":""map_glicj_plasma"",""status"":""discarded"",""reason"":""specimen is serum""},{""text"":""map_glicj_soro"",""status"":""chosen""}]},""action"":""APPLY_APPROVED_MAPPING"",""params"":{""mappingId"":""map_glicj_soro"",""mappingVersion"":""2026.10.1""},""confidence"":""HIGH"",""preconditions"":[{""check"":""MAPPING_VERSION_UNCHANGED"",""expected"":""2026.10.1""}]}"
+}
+
+/// Timeline event types of a Case, in order, as "type;type;..."
+ClassMethod Types(svc As SignalNoir.Application.CaseService, caseId As %String) As %String
+{
+	Set out = ""
+	Set tl = svc.GetTimeline(caseId, 0, 500).list
+	For i = 1 : 1 : tl.Count() Set out = out _ tl.GetAt(i).type _ ";"
+	Return out
+}
+
 }

@@ -20,6 +20,10 @@ Property transactionIds As list Of %String(MAXLEN = 128);
 /// BenchmarkRun id from the feed envelope; empty outside the Benchmark
 Property runId As %String(MAXLEN = 64);
 
+/// Scenario instance from the feed envelope; the Simulator's evidence
+/// endpoints require it (feature 006)
+Property scenarioInstanceId As %String(MAXLEN = 128);
+
 /// Raw snapshot as received, stored as JSON and never mutated
 Property snapshotJson As %String(MAXLEN = 32000);
 

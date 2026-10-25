@@ -425,7 +425,7 @@ window.SN_ENGINE = (function () {
           return;
         }
         const prop = propose(cc, {
-          action: 'REQUEST_REVIEW', params: { reason: 'operator denied the previous proposal' }, confidence: 'MEDIA',
+          action: 'REQUEST_REVIEW', params: { reason: 'operator denied the previous proposal' }, confidence: 'MEDIUM',
           diagnosis: { summary: 'After the denial, no other catalog action is supported by the evidence.', claims: [{ text: 'The operator denied the previous proposal: "' + reason + '".', evidenceIds: [ids.denial] }], hypotheses: [], conflicts: [] },
           preconditions: [], versions: (currentProposal(cc) || {}).versions, metrics: { durationMs: 3100, toolCalls: 0, tokensIn: 1900, tokensOut: 260, estCostUsd: 0.003 }
         });
@@ -535,7 +535,7 @@ window.SN_ENGINE = (function () {
         return respond('POST', path, body, 422, err('VALIDATION_FAILED', 'The validator blocked the operator proposal', { verdict: v, caseVersion: c.caseVersion, lastEventSeq: c.lastEventSeq, serverTime: iso(S.now) }));
       }
       const prop = propose(c, {
-        author: by, action: b.action, params: b.params || {}, confidence: 'ALTA',
+        author: by, action: b.action, params: b.params || {}, confidence: 'HIGH',
         diagnosis: Object.assign({ summary: 'Operator decision from the review dossier.', claims: [{ text: b.note && b.note.trim() ? b.note.trim() : 'Chosen by the operator after reviewing the dossier.', evidenceIds: [firstEvidence] }], hypotheses: [], conflicts: [] }),
         preconditions: b.action === 'APPLY_APPROVED_MAPPING' ? [{ check: 'MAPPING_VERSION_UNCHANGED', expected: b.params.mappingVersion }, { check: 'ORDER_ACTIVE_AT_ORIGIN', expected: true }] : [{ check: 'ORDER_ACTIVE_AT_ORIGIN', expected: true }]
       });

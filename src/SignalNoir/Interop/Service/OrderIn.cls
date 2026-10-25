@@ -6,14 +6,15 @@ Class SignalNoir.Interop.Service.OrderIn Extends %RegisteredObject
 /// the core's, the writes are CaseService's. The class stays portable: it
 /// never references Ensemble classes.
 /// Accepts one raw Origin Order (JSON) with the feed envelope's transaction
-/// id and run id. A malformed payload is refused with VALIDATION_FAILED and
+/// id, run id and scenario instance id. A malformed payload is refused with VALIDATION_FAILED and
 /// recorded. Result.ref is the orderId.
-ClassMethod Accept(json As %String, transactionId As %String = "", runId As %String = "") As SignalNoir.Core.Result
+ClassMethod Accept(json As %String, transactionId As %String = "", runId As %String = "", scenarioInstanceId As %String = "") As SignalNoir.Core.Result
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
 	Set order = ##class(SignalNoir.Core.Dto.Order).%New()
 	Set order.transactionId = transactionId
 	Set order.runId = runId
+	Set order.scenarioInstanceId = scenarioInstanceId
 	Set order.synthetic = 1
 	Set snapshot = ""
 	Try {

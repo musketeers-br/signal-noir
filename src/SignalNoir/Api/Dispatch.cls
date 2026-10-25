@@ -104,16 +104,31 @@ ClassMethod CasePayload(dto As SignalNoir.Core.Dto.Case) As %DynamicObject
 		Do exceptions.%Push(..ExceptionPayload(dto.exceptions.GetAt(i)))
 	}
 	Do payload.%Set("exceptions", exceptions)
-	Do payload.%Set("evidence", [])
-	Do payload.%Set("diagnosis", "", "null")
+	Set evidence = []
+	For i = 1 : 1 : dto.evidence.Count() {
+		Do evidence.%Push(..EvidencePayload(dto.evidence.GetAt(i)))
+	}
+	Do payload.%Set("evidence", evidence)
+	Set proposals = []
+	Set diagnosis = ""
+	For i = 1 : 1 : dto.proposals.Count() {
+		Set pr = dto.proposals.GetAt(i)
+		Do proposals.%Push(..ProposalPayload(pr))
+		If pr.proposalId = dto.currentProposalId Set diagnosis = pr.diagnosis
+	}
+	If $IsObject(diagnosis) {
+		Do payload.%Set("diagnosis", diagnosis)
+	} Else {
+		Do payload.%Set("diagnosis", "", "null")
+	}
 	Do payload.%Set("currentProposalId", dto.currentProposalId, $Select(dto.currentProposalId = "": "null", 1: "string"))
-	Do payload.%Set("proposals", [])
+	Do payload.%Set("proposals", proposals)
 	Do payload.%Set("approvals", [])
 	Do payload.%Set("denialCount", +dto.denialCount)
 	Do payload.%Set("executions", [])
 	Do payload.%Set("receipt", "", "null")
 	Do payload.%Set("dossier", "", "null")
-	Do payload.%Set("metrics", {})
+	Do payload.%Set("metrics", $Select($IsObject(dto.metrics): dto.metrics, 1: {}))
 	If dto.reviewReason '= "" Do payload.%Set("reviewReason", dto.reviewReason)
 	If dto.previousCaseId '= "" Do payload.%Set("previousCaseId", dto.previousCaseId)
 	Return payload
@@ -125,7 +140,11 @@ ClassMethod SummaryPayload(dto As SignalNoir.Core.Dto.CaseSummary) As %DynamicOb
 	Set payload = ..HeaderPayload(dto.caseId, dto.orderId, dto.partnerId, dto.state, dto.synthetic, dto.replay, dto.createdAt, dto.lastEventAt, dto.caseVersion, dto.lastEventSeq, dto.proposerMode, dto.runId)
 	Do payload.%Set("pendingApproval", (dto.state = "PendingApproval"), "boolean")
 	Do payload.%Set("approvalDeadline", "", "null")
-	Do payload.%Set("currentProposal", "", "null")
+	If dto.currentProposalId '= "" {
+		Do payload.%Set("currentProposal", {"proposalId": (dto.currentProposalId), "action": (dto.currentAction), "confidence": (dto.currentConfidence)})
+	} Else {
+		Do payload.%Set("currentProposal", "", "null")
+	}
 	Do payload.%Set("exceptionCount", +dto.exceptionCount)
 	If dto.lastExceptionSummary '= "" Do payload.%Set("lastExceptionSummary", dto.lastExceptionSummary)
 	Do payload.%Set("executionOutcome", dto.executionOutcome, $Select(dto.executionOutcome = "": "null", 1: "string"))
@@ -184,6 +203,51 @@ ClassMethod OrderPayload(order As SignalNoir.Core.Dto.Order) As %DynamicObject [
 	Do payload.%Set("snapshot", $Select($IsObject(order.snapshot): order.snapshot, 1: {}))
 	Do payload.%Set("equivalenceKey", ##class(SignalNoir.Core.Canon).Parts(order.equivalenceKey))
 	Do payload.%Set("transformed", "", "null")
+	Return payload
+}
+
+/// Evidence (contract Evidence): the raw result by value
+ClassMethod EvidencePayload(ev As SignalNoir.Core.Dto.Evidence) As %DynamicObject [ Private ]
+{
+	Set payload = {"evidenceId": (ev.evidenceId), "source": (ev.source)}
+	If ##class(SignalNoir.Core.Vocab).IsActor(ev.calledBy) Do payload.%Set("calledBy", ev.calledBy)
+	Do payload.%Set("params", $Select($IsObject(ev.params): ev.params, 1: {}))
+	If $IsObject(ev.result) {
+		Do payload.%Set("result", ev.result)
+	} Else {
+		Do payload.%Set("result", "", "null")
+	}
+	Do payload.%Set("observedAt", ev.observedAt)
+	If ev.durationMs '= "" Do payload.%Set("durationMs", +ev.durationMs)
+	Do payload.%Set("suspicious", ''ev.suspicious, "boolean")
+	Set excerpts = []
+	For i = 1 : 1 : ev.suspiciousExcerpts.Count() Do excerpts.%Push(ev.suspiciousExcerpts.GetAt(i))
+	If excerpts.%Size() > 0 Do payload.%Set("suspiciousExcerpts", excerpts)
+	Do payload.%Set("obsoletedBy", ev.obsoletedBy, $Select(ev.obsoletedBy = "": "null", 1: "string"))
+	Return payload
+}
+
+/// Proposal (contract Proposal)
+ClassMethod ProposalPayload(p As SignalNoir.Core.Dto.Proposal) As %DynamicObject [ Private ]
+{
+	Set payload = {"proposalId": (p.proposalId), "author": (p.origin), "createdAt": (p.createdAt)}
+	Do payload.%Set("current", ''p.current, "boolean")
+	Do payload.%Set("supersededBy", p.supersededBy, $Select(p.supersededBy = "": "null", 1: "string"))
+	Do payload.%Set("diagnosis", $Select($IsObject(p.diagnosis): p.diagnosis, 1: {}))
+	Do payload.%Set("action", p.action)
+	Do payload.%Set("params", $Select($IsObject(p.params): p.params, 1: {}))
+	Do payload.%Set("scope", p.scope)
+	Do payload.%Set("confidence", p.confidence)
+	Do payload.%Set("preconditions", $Select($IsObject(p.preconditions): p.preconditions, 1: []))
+	Do payload.%Set("versions", $Select($IsObject(p.versions): p.versions, 1: {}))
+	Do payload.%Set("metrics", $Select($IsObject(p.metrics): p.metrics, 1: {}))
+	; an unset %DynamicObject property reads as {}: only a real candidate counts
+	If $IsObject(p.priorReceiptCandidate) && (p.priorReceiptCandidate.%Size() > 0) {
+		Do payload.%Set("priorReceiptCandidate", p.priorReceiptCandidate)
+	} Else {
+		Do payload.%Set("priorReceiptCandidate", "", "null")
+	}
+	Do payload.%Set("validatorVerdict", "", "null")
 	Return payload
 }
 

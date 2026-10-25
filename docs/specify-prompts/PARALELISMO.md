@@ -83,7 +83,7 @@ Mudanças neles são aplicadas em lote no gate de integração.
 | 003 order-case-lifecycle | implementada (aguardando gate G1) | Henry | 1 | branch `003-order-case-lifecycle` |
 | 004 validation-and-reference-data | reservada | Henrique | 2 | |
 | 005 operator-console | reservada | Henry | 3 | |
-| 006 investigation-and-proposal | reservada | Henry | 2 | |
+| 006 investigation-and-proposal | implementada (aguardando gate G2; AI Hub ao vivo pendente, T060) | Henry | 2 | branch `006-investigation-and-proposal` |
 | 007 approval-and-outbox | reservada | Henrique | 3 | |
 | 008 execution-and-recovery | reservada | Henrique | 4 | |
 | 009 review-dossier-and-resolution | reservada | Henry | 4 | |

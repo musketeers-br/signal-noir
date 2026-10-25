@@ -219,7 +219,7 @@
       "action": "RETRY",
       "params": {},
       "scope": "single_case",
-      "confidence": "MEDIA",
+      "confidence": "MEDIUM",
       "preconditions": [
         {
           "check": "PARTNER_HEALTHY_WINDOW",
@@ -286,7 +286,7 @@
         "reason": "operator denied the previous proposal"
       },
       "scope": "single_case",
-      "confidence": "MEDIA",
+      "confidence": "MEDIUM",
       "preconditions": [],
       "priorReceiptCandidate": null,
       "versions": {

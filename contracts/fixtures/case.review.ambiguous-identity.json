@@ -253,7 +253,7 @@
         "reason": "ambiguous identity"
       },
       "scope": "single_case",
-      "confidence": "BAIXA",
+      "confidence": "LOW",
       "preconditions": [],
       "priorReceiptCandidate": null,
       "versions": {

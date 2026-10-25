@@ -28,4 +28,7 @@ Property partnerId As %String(MAXLEN = 128);
 /// BenchmarkRun id from the feed envelope; empty outside the Benchmark
 Property runId As %String(MAXLEN = 64);
 
+/// Scenario instance from the feed envelope (contract change 006)
+Property scenarioInstanceId As %String(MAXLEN = 128);
+
 }

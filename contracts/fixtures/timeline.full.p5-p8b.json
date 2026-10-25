@@ -112,7 +112,7 @@
       "refId": "prop_9f3a1c_v1",
       "payload": {
         "action": "APPLY_APPROVED_MAPPING",
-        "confidence": "ALTA"
+        "confidence": "HIGH"
       }
     },
     {

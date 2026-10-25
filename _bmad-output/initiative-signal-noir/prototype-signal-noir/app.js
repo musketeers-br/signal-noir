@@ -48,7 +48,7 @@
     REQUEST_REVIEW: 'Stop automation and ask a person'
   };
 
-  const CONFIDENCE = { ALTA: 'High', MEDIA: 'Medium', BAIXA: 'Low' };
+  const CONFIDENCE = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };
 
   const DOSSIER_REASON = {
     provider_unavailable: 'LLM provider unavailable', ambiguous_identity: 'Ambiguous patient identity', review_requested: 'Review requested',

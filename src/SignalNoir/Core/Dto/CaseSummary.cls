@@ -35,4 +35,9 @@ Property runId As %String(MAXLEN = 64);
 
 Property proposerMode As %String(MAXLEN = 16);
 
+/// Current Proposal's Action and confidence (contract change 006)
+Property currentAction As %String(MAXLEN = 64);
+
+Property currentConfidence As %String(MAXLEN = 16);
+
 }

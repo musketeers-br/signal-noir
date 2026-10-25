@@ -93,7 +93,10 @@ Method RunOnce(orderId As %String) As %DynamicObject
 	Do out.%Set("verdict", verdict.verdict)
 
 	; Proposer (unavailable by default in the fake)
-	Set proposal = ..Proposer.Propose(##class(SignalNoir.Core.Dto.Case).%New())
+	Set context = ##class(SignalNoir.Core.Dto.InvestigationContext).%New()
+	Set context.case = ##class(SignalNoir.Core.Dto.Case).%New()
+	Set context.tools = ..Tools
+	Set proposal = ..Proposer.Propose(context)
 	Do out.%Set("proposerOk", proposal.ok)
 	Do out.%Set("proposerCode", proposal.code)
 

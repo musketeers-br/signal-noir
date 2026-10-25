@@ -50,4 +50,12 @@ Property order As SignalNoir.Core.Dto.Order;
 
 Property exceptions As list Of SignalNoir.Core.Dto.CaseException;
 
+/// Filled by GetCase (contract change 006): Evidence, Proposals and the
+/// metrics of the latest Investigation
+Property evidence As list Of SignalNoir.Core.Dto.Evidence;
+
+Property proposals As list Of SignalNoir.Core.Dto.Proposal;
+
+Property metrics As %DynamicObject;
+
 }

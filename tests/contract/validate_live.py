@@ -1,6 +1,7 @@
 """Validate live Signal Noir API responses against contracts/openapi-signalnoir.yaml.
 
-Dev-only conformance check of feature 003 (FR-032, SC-006). It reads the list,
+Dev-only conformance check of features 003 (FR-032, SC-006) and 006 (Evidence,
+Proposal, Diagnosis and metrics layers of the Case detail). It reads the list,
 a polling page, one Case detail, its Timeline, an unknown Case and a bad cursor,
 and validates each body against the contract schema (JSON Schema 2020-12, as in
 contracts/tools/validate_fixtures.py).
@@ -66,6 +67,12 @@ def main() -> int:
             failures += 1
         check("timeline", f"/cases/{case_id}/timeline?sinceSeq=0&limit=2", 200, "TimelinePage")
         check("timeline tail", f"/cases/{case_id}/timeline?sinceSeq={detail['lastEventSeq']}", 200, "TimelinePage")
+    proposed = check("with proposals", "/cases?state=DecisionProposed&limit=2", 200, "CaseListPage")
+    for item in proposed["items"]:
+        detail = check("detail+proposal", f"/cases/{item['caseId']}", 200, "CaseDetail")
+        if not detail.get("proposals") or not detail.get("evidence"):
+            print("FAIL     DecisionProposed detail without proposals/evidence")
+            failures += 1
     check("unknown case", "/cases/case_doesnotexist", 404, "ErrorEnvelope")
     check("unknown timeline", "/cases/case_doesnotexist/timeline", 404, "ErrorEnvelope")
     check("bad cursor", "/cases?cursor=not-a-cursor!", 400, "ErrorEnvelope")
