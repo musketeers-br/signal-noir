@@ -121,6 +121,9 @@ Storage Default
 <Value name="17">
 <Value>contentHash</Value>
 </Value>
+<Value name="18">
+<Value>verdictJson</Value>
+</Value>
 </Data>
 <DataLocation>^SignalNoir70AE.ProposalRecordD</DataLocation>
 <DefaultData>ProposalRecordDefaultData</DefaultData>
