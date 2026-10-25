@@ -58,4 +58,10 @@ Property proposals As list Of SignalNoir.Core.Dto.Proposal;
 
 Property metrics As %DynamicObject;
 
+/// Filled by GetCase (feature 009): the latest Review Dossier (contract
+/// Dossier, empty when none) and the Approvals (contract Approval[])
+Property dossier As %DynamicObject;
+
+Property approvals As %DynamicArray;
+
 }

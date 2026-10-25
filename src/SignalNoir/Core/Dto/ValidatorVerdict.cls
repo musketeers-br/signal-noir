@@ -6,6 +6,8 @@ Property verdict As %String(MAXLEN = 32);
 
 Property reason As %String(MAXLEN = 256);
 
-Property failedPreconditions As %ListOfDataTypes;
+/// $List of failed checks (a %ListOfDataTypes here silently dropped the $List the
+/// Validator assigns; fixed by 009)
+Property failedPreconditions As %List;
 
 }

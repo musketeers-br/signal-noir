@@ -12,6 +12,9 @@ Property Clock As SignalNoir.Core.Port.Clock;
 
 Property Ids As SignalNoir.Core.Port.IdGenerator;
 
+/// The single Validator every Proposal passes (feature 009 resolution)
+Property Validator As SignalNoir.Core.Port.Validator;
+
 /// Seconds to wait for a per-Case or per-Order lock
 Parameter LOCKTIMEOUT = 5;
 
@@ -20,6 +23,7 @@ ClassMethod Default() As SignalNoir.Application.CaseService
 	Set svc = ##class(SignalNoir.Application.CaseService).%New()
 	Set svc.Clock = ##class(SignalNoir.Application.SystemClock).%New()
 	Set svc.Ids = ##class(SignalNoir.Application.IdFactory).%New()
+	Set svc.Validator = ##class(SignalNoir.Core.Validator).%New()
 	Return svc
 }
 
@@ -297,6 +301,8 @@ Method GetCase(caseId As %String) As SignalNoir.Core.Result
 	Set proposals = ..ListProposals(caseId)
 	For i = 1 : 1 : proposals.Count() Do dto.proposals.Insert(proposals.GetAt(i))
 	Set dto.metrics = ..CaseMetrics(caseId)
+	Set dto.dossier = ..LatestDossier(caseId)
+	Set dto.approvals = ..ListApprovals(caseId)
 	Return ##class(SignalNoir.Core.Result).OkObj(dto)
 }
 
@@ -779,7 +785,207 @@ ClassMethod NowMs() As %Integer
 	Return ((+z - 47117) * 86400000) + ($Piece(z, ",", 2) * 1000 \ 1)
 }
 
+// ------------------------------------------------------------ resolution
+
+/// Operator resolution of a review (feature 009, contract resolveReview):
+/// a catalog Action with its allowed parameters, which becomes a Proposal
+/// authored operator:<name> and passes the single Validator, or a
+/// cancellation with a reason. Refusals: VALIDATION_FAILED (shape, details.reasons;
+/// or the Validator's verdict in details.verdict, with only the verdict
+/// recorded), STALE_VERSION, INVALID_TRANSITION, NOT_FOUND. On success
+/// Result.details: kind, proposalId, approvalId, caseId, state, caseVersion,
+/// lastEventSeq, commandId.
+Method ResolveReview(caseId As %String, request As %DynamicObject) As SignalNoir.Core.Result
+{
+	Set reasons = ##class(SignalNoir.Core.ResolutionShape).Check(request)
+	If reasons.Count() > 0 {
+		Set list = []
+		For i = 1 : 1 : reasons.Count() Do list.%Push(reasons.GetAt(i))
+		Return ##class(SignalNoir.Core.Result).ErrorWith("VALIDATION_FAILED", "invalid resolution: " _ list.%Get(0), {"reasons": (list)})
+	}
+	If '##class(SignalNoir.Application.Model.CaseRecord).%ExistsId(caseId) Return ..Err("NOT_FOUND", "case not found: " _ caseId)
+	Set operatorName = ##class(SignalNoir.Core.Canon).Trim(request.operator)
+	Set actor = "operator:" _ operatorName
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ caseId)
+			Quit
+		}
+		Set rec = ..Load(caseId)
+		If rec.caseVersion '= request.expectedCaseVersion {
+			Set result = ..ErrorWithCase("STALE_VERSION", "Case changed since it was read", rec, request.expectedCaseVersion)
+			Quit
+		}
+		If rec.state '= "ReviewRequired" {
+			Set result = ..ErrorWithCase("INVALID_TRANSITION", "Case is " _ rec.state _ ", not ReviewRequired", rec, "")
+			Quit
+		}
+		Set out = {"kind": (request.kind), "proposalId": "", "approvalId": "", "commandId": ""}
+		If request.kind = "cancel" {
+			Set reason = ##class(SignalNoir.Core.Canon).Trim(request.reason)
+			Set moved = ..ApplyTransition(rec, "Cancelled", actor, {"reason": (reason)}, "", now)
+			If 'moved.ok {
+				Set result = moved
+				Quit
+			}
+			Do ..AppendEvent(rec, "OperatorResolution", actor, caseId, {"kind": "cancel", "reason": (reason)}, now)
+		} Else {
+			Set dossier = ..LatestDossier(caseId)
+			Set ids = $Select($IsObject(dossier.relevantEvidenceIds): dossier.relevantEvidenceIds, 1: [])
+			Set proposal = ##class(SignalNoir.Core.OperatorProposal).Build(request.action, request.params, operatorName, ids, request.note)
+			Set verdict = ##class(SignalNoir.Application.ResolutionValidator).Verdict(..Validator, proposal, now)
+			Do ..AppendEvent(rec, "ValidatorVerdict", actor, caseId, {"proposalAuthor": (actor), "action": (proposal.action), "verdict": (verdict.verdict), "reasons": (verdict.reasons), "requiresApproval": (verdict.requiresApproval)}, now)
+			If verdict.verdict '= "accepted" {
+				; only the verdict is recorded; the refusal is reported after the commit
+				$$$ThrowOnError(rec.%Save())
+				Set result = ##class(SignalNoir.Core.Result).OkRef("")
+				Set result.details = {"blocked": 1, "verdict": (verdict), "caseVersion": (rec.caseVersion), "lastEventSeq": (rec.lastEventSeq), "serverTime": (now)}
+				Quit
+			}
+			Set proposalId = ..Ids.New("prop_")
+			If rec.currentProposalId '= "" {
+				Set old = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(rec.currentProposalId)
+				If $IsObject(old) {
+					Set old.current = 0
+					Set old.supersededBy = proposalId
+					$$$ThrowOnError(old.%Save())
+				}
+			}
+			Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%New()
+			Set pr.proposalId = proposalId, pr.caseId = caseId, pr.author = actor, pr.createdAt = now, pr.current = 1
+			Set pr.diagnosisJson = ..Json(proposal.diagnosis), pr.action = proposal.action, pr.paramsJson = ..Json(proposal.params)
+			Set pr.scope = "single_case", pr.confidence = proposal.confidence, pr.preconditionsJson = proposal.preconditions.%ToJSON()
+			Set pr.versionsJson = ..Json(proposal.versions), pr.metricsJson = ..Json(proposal.metrics), pr.verdictJson = verdict.%ToJSON()
+			$$$ThrowOnError(pr.%Save())
+			Set rec.currentProposalId = proposalId
+			Do ..AppendEvent(rec, "ProposalCreated", actor, proposalId, {"proposalId": (proposalId), "author": (actor), "action": (proposal.action), "confidence": (proposal.confidence)}, now)
+			Set moved = ..ApplyTransition(rec, "DecisionProposed", actor, {"reason": "operator resolution", "proposalId": (proposalId)}, "", now)
+			If 'moved.ok {
+				Set result = moved
+				Quit
+			}
+			If verdict.requiresApproval {
+				Set moved = ..ApplyTransition(rec, "PendingApproval", "system", {"reason": "validator accepted; approval required", "proposalId": (proposalId)}, "", now)
+				If 'moved.ok {
+					Set result = moved
+					Quit
+				}
+				Set appr = ##class(SignalNoir.Application.Model.ApprovalRecord).%New()
+				Set appr.approvalId = ..Ids.New("appr_"), appr.caseId = caseId, appr.proposalId = proposalId, appr.decision = "approved", appr.by = actor
+				Set appr.at = now, appr.expiresAt = ..Plus(now, 15 * 60), appr.status = "valid"
+				$$$ThrowOnError(appr.%Save())
+				Set rec.currentApprovalId = appr.approvalId
+				Do ..AppendEvent(rec, "ApprovalRecorded", actor, appr.approvalId, {"approvalId": (appr.approvalId), "proposalId": (proposalId), "decision": "approved", "by": (actor), "expiresAt": (appr.expiresAt)}, now)
+				Set moved = ..ApplyTransition(rec, "Approved", actor, {"reason": "approved by the resolving operator", "proposalId": (proposalId)}, "", now)
+				Set out.approvalId = appr.approvalId
+			} Else {
+				Set moved = ..ApplyTransition(rec, "Executing", "system", {"reason": "validator accepted; no approval required", "proposalId": (proposalId)}, "", now)
+			}
+			If 'moved.ok {
+				Set result = moved
+				Quit
+			}
+			Set out.commandId = moved.details.commandId
+			Set out.proposalId = proposalId
+			Do ..AppendEvent(rec, "OperatorResolution", actor, proposalId, {"kind": "action", "action": (proposal.action), "proposalId": (proposalId)}, now)
+		}
+		$$$ThrowOnError(rec.%Save())
+		Do out.%Set("caseId", caseId), out.%Set("state", rec.state), out.%Set("caseVersion", rec.caseVersion), out.%Set("lastEventSeq", rec.lastEventSeq), out.%Set("serverTime", now)
+		Set result = ##class(SignalNoir.Core.Result).OkObj(out)
+		Set result.details = out
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "resolve review failed")
+	}
+	Set result = ..Finish(result, .locks)
+	If result.ok && $IsObject(result.details) && result.details.blocked {
+		Set message = "The validator blocked the operator proposal"
+		If result.details.verdict.message '= "" Set message = message _ ": " _ result.details.verdict.message
+		Do result.details.verdict.%Remove("message")
+		Do result.details.%Remove("blocked")
+		Return ##class(SignalNoir.Core.Result).ErrorWith("VALIDATION_FAILED", message, result.details)
+	}
+	Return result
+}
+
+/// The latest Review Dossier of a Case (contract Dossier), or {} when none
+Method LatestDossier(caseId As %String) As %DynamicObject
+{
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT TOP 1 dossierJson FROM SignalNoir_Application_Model.DossierRecord WHERE caseId = ? ORDER BY createdAt DESC, ID DESC", caseId)
+	If rs.%Next() Return ..PayloadObject(rs.%Get("dossierJson"))
+	Return {}
+}
+
+/// Approvals of a Case (contract Approval[]), oldest first
+Method ListApprovals(caseId As %String) As %DynamicArray
+{
+	Set out = []
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT approvalId FROM SignalNoir_Application_Model.ApprovalRecord WHERE caseId = ? ORDER BY approvalId", caseId)
+	While rs.%Next() {
+		Do out.%Push(..ApprovalJson(rs.%Get("approvalId")))
+	}
+	Return out
+}
+
+Method ApprovalJson(approvalId As %String) As %DynamicObject
+{
+	Set a = ##class(SignalNoir.Application.Model.ApprovalRecord).%OpenId(approvalId)
+	If '$IsObject(a) Return ""
+	Set o = {"approvalId": (a.approvalId), "proposalId": (a.proposalId), "decision": (a.decision), "by": (a.by), "at": (a.at), "status": (a.status)}
+	Do o.%Set("expiresAt", a.expiresAt, $Select(a.expiresAt = "": "null", 1: "string"))
+	Do o.%Set("reason", a.reason, $Select(a.reason = "": "null", 1: "string"))
+	Return o
+}
+
+/// One Proposal as the DTO (for command answers)
+Method ProposalById(proposalId As %String) As SignalNoir.Core.Dto.Proposal
+{
+	Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(proposalId)
+	If '$IsObject(pr) Return ""
+	Return ..ToProposalDto(pr)
+}
+
+/// The Validator's verdict recorded with a Proposal ({} when none)
+Method VerdictOf(proposalId As %String) As %DynamicObject
+{
+	Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(proposalId)
+	If '$IsObject(pr) || (pr.verdictJson = "") Return {}
+	Return ..PayloadObject(pr.verdictJson)
+}
+
 // --------------------------------------------------------------- private
+
+/// Builds and saves the Dossier inside the caller's transaction (009)
+Method SaveDossier(rec As SignalNoir.Application.Model.CaseRecord, reviewReason As %String, now As %String) [ Private ]
+{
+	Set evidence = ..ListEvidence(rec.caseId)
+	Set proposal = ""
+	If rec.currentProposalId '= "" Set proposal = ..ProposalById(rec.currentProposalId)
+	Set order = {}
+	Set orderRec = ##class(SignalNoir.Application.Model.OrderRecord).%OpenId(rec.orderId)
+	If $IsObject(orderRec) Set order = ..PayloadObject(orderRec.snapshotJson)
+	Set dossier = ##class(SignalNoir.Core.DossierBuilder).Build(reviewReason, evidence, proposal, order, now)
+	Set row = ##class(SignalNoir.Application.Model.DossierRecord).%New()
+	Set row.caseId = rec.caseId
+	Set row.createdAt = now
+	Set row.reason = dossier.reason
+	Set row.dossierJson = dossier.%ToJSON()
+	$$$ThrowOnError(row.%Save())
+	Do ..AppendEvent(rec, "DossierCreated", "system", rec.caseId, {"reason": (dossier.reason)}, now)
+}
+
+/// ISO-8601 UTC plus seconds
+ClassMethod Plus(iso As %String, seconds As %Integer) As %String [ Private ]
+{
+	Set day = $ZDateH($Extract(iso, 1, 10), 3)
+	Set secs = $ZTimeH($Extract(iso, 12, 19)) + seconds
+	Set day = day + (secs \ 86400), secs = secs # 86400
+	Set frac = $Piece($Piece(iso, ".", 2), "Z", 1)
+	Return $ZDate(day, 3) _ "T" _ $ZTime(secs, 1) _ $Select(frac '= "": "." _ frac, 1: "") _ "Z"
+}
 
 Method CloseLocked(inv As SignalNoir.Application.Model.InvestigationRecord, reason As %String, meta As %DynamicObject, now As %String) As SignalNoir.Core.Result [ Private ]
 {
@@ -965,6 +1171,8 @@ Method ApplyTransition(rec As SignalNoir.Application.Model.CaseRecord, toState A
 		}
 	}
 	Do ..AppendEvent(rec, "StateChanged", actor, rec.caseId, facts, now)
+	; every entry into review records its Dossier in the same transaction (009)
+	If toState = "ReviewRequired" Do ..SaveDossier(rec, rec.reviewReason, now)
 	Set command = ##class(SignalNoir.Core.CaseMachine).FollowUp(from, toState)
 	Set commandId = ""
 	If command '= "" {
