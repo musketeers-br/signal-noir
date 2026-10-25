@@ -3,6 +3,10 @@
 **Status**: agreed draft for this feature. The published copy is `docs/seams.md`; this file is the
 spec-side source and the two MUST NOT diverge (a divergence is a contract change).
 
+**Version**: v2 (2026-10-24) — Validator section changed by contract change 004
+(`specs/004-validation-and-reference-data/contracts/contract-change-004-validator-seam.md`). Every
+other section is unchanged from v1.
+
 **Scope**: the internal boundary that lets the next features compile and test without editing this
 feature. It is an internal contract, not the product HTTP API. The product HTTP API stays
 `contracts/openapi-signalnoir.yaml`.
@@ -44,8 +48,11 @@ NOT invent new codes.
 | `CaseSummary` | `caseId`, `state`, `caseVersion`, `lastEventAt`, `synthetic` |
 | `TimelineEvent` | `seq`, `at`, `type`, `actor`, `refId`, `payload` |
 | `Evidence` | `evidenceId`, `caseId`, `kind`, `source`, `observedAt`, `payload` |
-| `Proposal` | `proposalId`, `caseId`, `action`, `params`, `basedOnVersions`, `origin` |
-| `ValidatorVerdict` | `verdict` (`valid` / `invalid`), `reason`, `failedPreconditions` |
+| `Proposal` | `proposalId`, `caseId`, `action`, `params`, `scope`, `confidence`, `preconditions[]` (`check`, `expected`), `versions` (`policy`, `mapping`), `priorReceiptCandidate?`, `origin` |
+| `ValidatorVerdict` | `verdict` (`accepted` / `blocked` / `review` / `prior_receipt_confirmed`), `reasons` (ordered closed codes), `requiresApproval`, `versions` (`policy`, `mapping`), `at` |
+| `ValidationInput` | `proposal`, `evidence[]`, `order` (snapshot), `priorReceiptOrder?`, `identity` (`clear` / `ambiguous`), `attemptCount`, `run` (`inRun`, `runId`, `policyVersion`, `mappingVersion`), `reference` (snapshot), `observed?` (Revalidation only), `now` |
+| `PreconditionResult` | `check`, `expected`, `observed`, `passed`, `evidenceId?` |
+| `Admission` | `admissible`, `label` (`human` / `automatic`), `reason?` |
 | `Approval` | `approvalId`, `proposalId`, `decidedBy`, `decidedAt`, `deadline`, `immutableProposalRef` |
 | `Execution` | `executionId`, `caseId`, `proposalId`, `idempotencyKey`, `leaseOwner`, `leaseGeneration`, `state` |
 | `Receipt` | `receiptId`, `orderId`, `outcome`, `receivedAt`, `raw` |
@@ -82,10 +89,15 @@ ListCases(cursor?) -> Result<[CaseSummary]>
 ### Validator
 
 ```
-Validate(proposal: Proposal) -> ValidatorVerdict
+Validate(input: ValidationInput) -> ValidatorVerdict
+Revalidate(input: ValidationInput) -> ValidatorVerdict + [PreconditionResult]
+Admit(actor, run) -> Admission
 ```
 
-Deterministic and origin-blind. Minimal rule set in this slice.
+Deterministic, origin-blind, no I/O: every input arrives in `ValidationInput`, including `now` and
+the reference-data snapshot. Reason codes come from the closed list in
+`specs/004-validation-and-reference-data/contracts/reason-codes.md`; the input shape and the Evidence
+convention are in `specs/004-validation-and-reference-data/contracts/validation-input.md`.
 
 ### Proposer
 
@@ -137,7 +149,7 @@ a live provider:
 |------|-----------|
 | `FakeCaseCommands` | in-memory command handling with version checks |
 | `FakeCaseQueries` | in-memory reads |
-| `FakeValidator` | configurable verdict |
+| `FakeValidator` | configurable `ValidatorVerdict` (default `accepted`, `requiresApproval = true`, reasons `[ACTION_IN_CATALOG]`), `PreconditionResult[]` and `Admission` |
 | `FakeProposer` | configurable proposal or provider-unavailable result |
 | `FakeTools` | returns a canned Evidence |
 | `FakePartnerClient` | returns a canned Receipt |
