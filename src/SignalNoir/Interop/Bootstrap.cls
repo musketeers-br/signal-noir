@@ -7,7 +7,6 @@ Class SignalNoir.Interop.Bootstrap Extends %RegisteredObject
 /// register the web applications.
 /// OnStart never throws and never logs the API key: the key is only passed
 /// to the platform calls that need it.
-
 /// Configuration name of the AI Hub provider configuration
 Parameter CONFIGNAME = "SignalNoir";
 
@@ -58,6 +57,9 @@ ClassMethod OnStart() As SignalNoir.Core.Result
 		Set interopStatus = ##class(SignalNoir.Interop.Bootstrap).EnsureInterop()
 		Set ^SignalNoir.Provider("webApplications") = webStatus
 		Set ^SignalNoir.Provider("interop") = interopStatus
+		; 003 FR-027: an investigation interrupted by the restart goes to review
+		Set recovered = ##class(SignalNoir.Application.CaseService).Default().RecoverInterrupted()
+		Set ^SignalNoir.Provider("recoveredCases") = $Select(recovered.ok: recovered.ref, 1: "failed: " _ recovered.message)
 		Set result = ##class(SignalNoir.Core.Result).OkRef("bootstrap")
 	}
 	Catch ex {
@@ -156,7 +158,8 @@ ClassMethod EnsureWebApplications() As %String
 		Set $NAMESPACE = "%SYS"
 		Kill props
 		Set props("DispatchClass") = "SignalNoir.Api.Dispatch"
-		Set props("Type") = 18
+		; 2 = CSP/REST application (18 is refused on 2026.2: MAXVAL 9)
+		Set props("Type") = 2
 		Set props("NameSpace") = previousNamespace
 		Set props("Name") = "Signal Noir API"
 		Set props("AutheEnabled") = 64

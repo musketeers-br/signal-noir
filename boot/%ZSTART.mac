@@ -1,4 +1,4 @@
-ROUTINE %ZSTART [ Type=MAC ]
+ROUTINE %ZSTART
 	; Signal Noir startup hook (feature 001, AD-27).
 	; Installed in the %SYS namespace by the build (see iris.script).
 	; SYSTEM^%ZSTART runs at instance start; it must never crash the instance,

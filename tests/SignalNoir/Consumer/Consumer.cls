@@ -6,7 +6,6 @@ Class SignalNoir.Consumer.Consumer Extends %RegisteredObject
 /// SignalNoir.Core.Result) and the test doubles (SignalNoir.Tests.Fakes.*).
 /// It never references SignalNoir.Application, SignalNoir.Api,
 /// SignalNoir.Interop or SignalNoir.Proposers: that is the consumer guarantee.
-
 Property Commands As SignalNoir.Core.Port.CaseCommands;
 
 Property Queries As SignalNoir.Core.Port.CaseQueries;
@@ -42,7 +41,7 @@ Method RunOnce(orderId As %String) As %DynamicObject
 {
 	Set out = ##class(%DynamicObject).%New()
 
-	; CaseCommands: accept opens a Case
+	; CaseCommands: accept stores the Order; the first Exception opens the Case
 	Set order = ##class(SignalNoir.Core.Dto.Order).%New()
 	Set order.orderId = orderId
 	Set order.snapshot = ##class(%DynamicObject).%New()
@@ -51,9 +50,15 @@ Method RunOnce(orderId As %String) As %DynamicObject
 	Set order.synthetic = 1
 	Set accepted = ..Commands.AcceptOrder(order)
 	Do out.%Set("accepted", accepted.ok)
-	Set caseId = accepted.ref
-	Do out.%Set("caseId", caseId)
 	If 'accepted.ok Return out
+	Set exception = ##class(SignalNoir.Core.Dto.CaseException).%New()
+	Set exception.kind = "timeout"
+	Set exception.observedAt = ..Clock.NowUtc()
+	Set opened = ..Commands.RecordException(orderId, exception)
+	Do out.%Set("opened", opened.ok)
+	Set caseId = opened.ref
+	Do out.%Set("caseId", caseId)
+	If 'opened.ok Return out
 
 	; CaseCommands: an attachment advances the timeline without bumping caseVersion
 	Set event = ##class(SignalNoir.Core.Dto.TimelineEvent).%New()

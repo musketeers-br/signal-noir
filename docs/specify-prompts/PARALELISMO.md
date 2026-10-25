@@ -80,7 +80,7 @@ Mudanças neles são aplicadas em lote no gate de integração.
 |---|---|---|---|---|
 | 001 runtime-skeleton-and-seams | concluída | José | 0 | |
 | 002 scenario-simulator | spec/plan/tasks prontos | Henrique | 1 | `.claude/worktrees/002-scenario-simulator` |
-| 003 order-case-lifecycle | reservada | Henry | 1 | |
+| 003 order-case-lifecycle | implementada (aguardando gate G1) | Henry | 1 | branch `003-order-case-lifecycle` |
 | 004 validation-and-reference-data | reservada | Henrique | 2 | |
 | 005 operator-console | reservada | Henry | 3 | |
 | 006 investigation-and-proposal | reservada | Henry | 2 | |

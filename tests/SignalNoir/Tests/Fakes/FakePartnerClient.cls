@@ -2,7 +2,6 @@ Class SignalNoir.Tests.Fakes.FakePartnerClient Extends SignalNoir.Core.Port.Part
 {
 
 /// Returns a canned Receipt (seam contract). It never calls a partner.
-
 Property Receipt As SignalNoir.Core.Dto.Receipt;
 
 Property LastIdempotencyKey As %String;

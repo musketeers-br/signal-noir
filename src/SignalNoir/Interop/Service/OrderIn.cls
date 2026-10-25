@@ -1,43 +1,55 @@
 Class SignalNoir.Interop.Service.OrderIn Extends %RegisteredObject
 {
 
-/// The Business Service that receives one synthetic Order (AD-6, D6).
-/// It owns no state: it validates nothing of its own and calls the single
-/// command path (CaseService), which persists the Order and opens the Case.
-/// The class stays portable: it never references Ensemble classes.
-
-ClassMethod ProcessOrder(order As SignalNoir.Core.Dto.Order) As SignalNoir.Core.Result
+/// The Business Service entry for synthetic Orders (AD-6, AD-25).
+/// It owns no state and no rule: the shape check and the equivalence key are
+/// the core's, the writes are CaseService's. The class stays portable: it
+/// never references Ensemble classes.
+/// Accepts one raw Origin Order (JSON) with the feed envelope's transaction
+/// id and run id. A malformed payload is refused with VALIDATION_FAILED and
+/// recorded. Result.ref is the orderId.
+ClassMethod Accept(json As %String, transactionId As %String = "", runId As %String = "") As SignalNoir.Core.Result
 {
-	If '$IsObject(order) Return ##class(SignalNoir.Core.Result).Error("VALIDATION_FAILED", "order is required")
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Return svc.ProcessOrder(order)
-}
-
-ClassMethod ProcessOrderJson(json As %String) As SignalNoir.Core.Result
-{
-	If json = "" Return ##class(SignalNoir.Core.Result).Error("VALIDATION_FAILED", "empty order payload")
+	Set order = ##class(SignalNoir.Core.Dto.Order).%New()
+	Set order.transactionId = transactionId
+	Set order.runId = runId
+	Set order.synthetic = 1
 	Set snapshot = ""
 	Try {
-		Set snapshot = ##class(%DynamicObject).%FromJSON(json)
+		Set snapshot = ##class(%DynamicAbstractObject).%FromJSON(json)
 	}
-	Catch ex {
-		Return ##class(SignalNoir.Core.Result).Error("VALIDATION_FAILED", "malformed order payload")
+	Catch {
+		Set snapshot = ""
 	}
-	If '$IsObject(snapshot) Return ##class(SignalNoir.Core.Result).Error("VALIDATION_FAILED", "malformed order payload")
-	Set order = ##class(SignalNoir.Core.Dto.Order).%New()
-	Set order.orderId = snapshot.orderId
-	Set order.equivalenceKey = snapshot.equivalenceKey
-	Set order.receivedAt = snapshot.receivedAt
 	Set order.snapshot = snapshot
-	Set order.synthetic = 1
-	Return ##class(SignalNoir.Interop.Service.OrderIn).ProcessOrder(order)
+	Return svc.AcceptOrder(order)
 }
 
-/// The intake entry point used by the production consumer and by the tests:
-/// accepts the Order and returns the caseId.
-ClassMethod Accept(json As %String) As SignalNoir.Core.Result
+/// Reports a delivery attempt that did not end with a valid Receipt
+/// (FR-009). body may be JSON text or plain text. Result.ref is the caseId.
+ClassMethod ReportException(orderId As %String, kind As %String, httpStatus As %String = "", body As %String = "", observedAt As %String = "", attemptId As %String = "") As SignalNoir.Core.Result
 {
-	Return ##class(SignalNoir.Interop.Service.OrderIn).ProcessOrderJson(json)
+	Set exception = ##class(SignalNoir.Core.Dto.CaseException).%New()
+	Set exception.kind = kind
+	Set exception.httpStatus = httpStatus
+	Set exception.observedAt = observedAt
+	Set exception.attemptId = attemptId
+	If body '= "" {
+		Set parsed = ""
+		Try {
+			Set parsed = ##class(%DynamicAbstractObject).%FromJSON(body)
+		}
+		Catch {
+			Set parsed = ""
+		}
+		If $IsObject(parsed) {
+			Set exception.body = parsed
+		} Else {
+			Set exception.bodyText = body
+		}
+	}
+	Return ##class(SignalNoir.Application.CaseService).Default().ProcessException(orderId, exception)
 }
 
 }

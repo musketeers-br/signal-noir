@@ -3,7 +3,6 @@ Class SignalNoir.Tests.Fakes.FixedClock Extends SignalNoir.Core.Port.Clock
 
 /// Test double for the Clock port: returns a fixed instant so timestamps
 /// are comparable. Usable with no live provider.
-
 Property Value As %String;
 
 Method %OnNew() As %Status

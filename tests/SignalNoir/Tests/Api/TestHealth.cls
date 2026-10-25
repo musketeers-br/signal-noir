@@ -4,7 +4,6 @@ Class SignalNoir.Tests.Api.TestHealth Extends %UnitTest.TestCase
 /// T020 - GET /health payload matches the frozen contract.
 /// liveness=alive always; status=ready with key, degraded without; missing key never yields 5xx.
 /// The container has no SN_AI_API_KEY, so the expected path is degraded.
-
 Method TestHealthPayloadShape()
 {
 	Set payload = ##class(SignalNoir.Api.Health).Payload()
@@ -26,7 +25,6 @@ Method TestHealthPayloadShape()
 }
 
 /// The Health endpoint never throws (never 5xx for missing key).
-
 Method TestHealthNeverThrows()
 {
 	Set r = ##class(SignalNoir.Api.Health).Payload()

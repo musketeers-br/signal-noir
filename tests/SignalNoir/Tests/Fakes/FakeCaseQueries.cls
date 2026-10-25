@@ -3,7 +3,6 @@ Class SignalNoir.Tests.Fakes.FakeCaseQueries Extends SignalNoir.Core.Port.CaseQu
 
 /// In-memory reads (seam contract). Usable with no live provider and no
 /// database.
-
 Property cases As %ListOfObjects;
 
 Property events As %ListOfObjects;
@@ -24,17 +23,27 @@ Method GetCase(caseId As %String) As SignalNoir.Core.Result
 	Return ##class(SignalNoir.Core.Result).Error("NOT_FOUND", "case not found: " _ caseId)
 }
 
-Method GetTimeline(caseId As %String, sinceSeq As %Integer = 0) As SignalNoir.Core.Result
+Method GetTimeline(caseId As %String, sinceSeq As %Integer = 0, limit As %Integer = 200) As SignalNoir.Core.Result
 {
 	Set list = ##class(%ListOfObjects).%New()
+	Set last = sinceSeq
+	Set hasMore = 0
 	For i = 1 : 1 : ..events.Count() {
 		Set event = ..events.GetAt(i)
-		If event.seq > sinceSeq Do list.Insert(event)
+		If event.seq '> sinceSeq Continue
+		If list.Count() >= limit {
+			Set hasMore = 1
+			Quit
+		}
+		Do list.Insert(event)
+		Set last = event.seq
 	}
-	Return ##class(SignalNoir.Core.Result).OkList(list)
+	Set r = ##class(SignalNoir.Core.Result).OkList(list)
+	Set r.details = {"hasMore": (hasMore = 1), "nextSinceSeq": (last)}
+	Return r
 }
 
-Method ListCases(cursor As %String = "") As SignalNoir.Core.Result
+Method ListCases(cursor As %String = "", direction As %String = "older", limit As %Integer = 50, filters As %DynamicObject = "") As SignalNoir.Core.Result
 {
 	Set list = ##class(%ListOfObjects).%New()
 	For i = 1 : 1 : ..cases.Count() {

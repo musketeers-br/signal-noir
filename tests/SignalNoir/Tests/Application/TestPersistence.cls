@@ -3,13 +3,12 @@ Class SignalNoir.Tests.Application.TestPersistence Extends %UnitTest.TestCase
 
 /// T008 - persistence and optimistic concurrency through the real
 /// CaseService in namespace IRISAPP.
-
 Method TestStaleSaveRejectedByVersionProperty()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set order = ..MakeOrder("T008-stale-" _ $JOB)
-	Set r = svc.AcceptOrder(order)
-	Do $$$AssertTrue(r.ok, "order accepted")
+	Set order = ..MakeOrder(##class(SignalNoir.Tests.Support).Uid("T008-stale"))
+	Set r = ..Open(svc, order.orderId)
+	Do $$$AssertTrue(r.ok, "order accepted and its first Exception opened the Case")
 	If 'r.ok Return
 	Set caseId = r.ref
 
@@ -37,9 +36,9 @@ Method TestStaleSaveRejectedByVersionProperty()
 Method TestStaleTransitionRejected()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set order = ..MakeOrder("T008-cas-" _ $JOB)
-	Set r = svc.AcceptOrder(order)
-	Do $$$AssertTrue(r.ok, "order accepted")
+	Set order = ..MakeOrder(##class(SignalNoir.Tests.Support).Uid("T008-cas"))
+	Set r = ..Open(svc, order.orderId)
+	Do $$$AssertTrue(r.ok, "order accepted and its first Exception opened the Case")
 	If 'r.ok Return
 	Set caseId = r.ref
 	Set cur = svc.GetCase(caseId)
@@ -59,19 +58,19 @@ Method TestStaleTransitionRejected()
 Method TestAtMostOneNonTerminalCasePerOrderId()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set orderId = "T008-dup-" _ $JOB
-	Set r1 = svc.AcceptOrder(..MakeOrder(orderId))
-	Do $$$AssertTrue(r1.ok, "first acceptance succeeds")
-	Set r2 = svc.AcceptOrder(..MakeOrder(orderId))
-	Do $$$AssertTrue(r2.ok = 0, "second acceptance into a non-terminal Case is refused")
-	Do $$$AssertEquals(r2.code, "INVALID_TRANSITION", "conflict uses the closed vocabulary")
+	Set orderId = ##class(SignalNoir.Tests.Support).Uid("T008-dup")
+	Set r1 = ..Open(svc, orderId)
+	Do $$$AssertTrue(r1.ok, "first Exception opens the Case")
+	Set r2 = svc.RecordException(orderId, ##class(SignalNoir.Tests.Support).Exception())
+	Do $$$AssertTrue(r2.ok, "second Exception is recorded")
+	Do $$$AssertEquals(r2.ref, r1.ref, "it joins the non-terminal Case instead of opening another")
 }
 
 Method TestFreshOpenIdAfterReconnectReturnsSameCaseAndTimeline()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set orderId = "T008-reconnect-" _ $JOB
-	Set r = svc.AcceptOrder(..MakeOrder(orderId))
+	Set orderId = ##class(SignalNoir.Tests.Support).Uid("T008-reconnect")
+	Set r = ..Open(svc, orderId)
 	Do $$$AssertTrue(r.ok, "order accepted")
 	If 'r.ok Return
 	Set caseId = r.ref
@@ -95,6 +94,15 @@ Method TestFreshOpenIdAfterReconnectReturnsSameCaseAndTimeline()
 	Do $$$AssertEquals(..TimelineJson(tl2.list), beforeJson, "timeline identical after reconnect")
 }
 
+/// 003: an Order becomes a Case on its first Exception. Accepts a valid
+/// Origin Order and records a timeout; Result.ref is the caseId.
+ClassMethod Open(svc As SignalNoir.Application.CaseService, orderId As %String) As SignalNoir.Core.Result
+{
+	Set a = svc.AcceptOrder(##class(SignalNoir.Tests.Support).Order(orderId))
+	If 'a.ok Return a
+	Return svc.RecordException(orderId, ##class(SignalNoir.Tests.Support).Exception())
+}
+
 /// A minimal synthetic Order
 ClassMethod MakeOrder(orderId As %String) As SignalNoir.Core.Dto.Order
 {
@@ -116,7 +124,7 @@ ClassMethod MakeOrder(orderId As %String) As SignalNoir.Core.Dto.Order
 ClassMethod MakeEvent() As SignalNoir.Core.Dto.TimelineEvent
 {
 	Set event = ##class(SignalNoir.Core.Dto.TimelineEvent).%New()
-	Set event.type = "CaseTransition"
+	Set event.type = "StateChanged"
 	Set event.actor = "system"
 	Set event.refId = ""
 	Set event.payload = ##class(%DynamicObject).%New()

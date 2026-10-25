@@ -4,7 +4,6 @@ Class SignalNoir.Tests.Interop.TestBootstrap Extends %UnitTest.TestCase
 /// T019 - Bootstrap never throws, records provider info and materializes when possible.
 /// The container has no SN_AI_API_KEY, so the default path is degraded.
 /// The test also exercises Materialize() directly with a key to cover the configured path.
-
 Method TestBootstrapNeverThrowsAndRecordsProvider()
 {
 	Set r = ##class(SignalNoir.Interop.Bootstrap).OnStart()
@@ -28,11 +27,19 @@ Method TestBootstrapNeverThrowsAndRecordsProvider()
 
 /// Materialize with a key exercises the configstore/provider paths directly (env-independent).
 /// The container may not have %Wallet/%ConfigStore fully working; the test records whichever path is taken.
-
 Method TestMaterializeWithKeyExercisesPaths()
 {
 	Set outcome = ##class(SignalNoir.Interop.Bootstrap).Materialize("openai", "gpt-4o", "test-key")
 	Do $$$AssertTrue(($Get(outcome) = "configstore") || ($Get(outcome) = "provider") || ($Get(outcome) = "none"), "materialized path is one of known")
+}
+
+/// 003 T038 - start-up runs the interrupted-investigation recovery
+Method TestOnStartRunsRecovery()
+{
+	Set r = ##class(SignalNoir.Interop.Bootstrap).OnStart()
+	Do $$$AssertTrue(r.ok, "bootstrap ok")
+	Set recovered = $Get(^SignalNoir.Provider("recoveredCases"))
+	Do $$$AssertTrue(recovered ? 1.N, "recovery ran and reported a count: " _ recovered)
 }
 
 }

@@ -3,7 +3,6 @@ Class SignalNoir.Tests.Fakes.FakeTools Extends SignalNoir.Core.Port.Tools
 
 /// Returns a canned Evidence (seam contract). Read-only by contract: this
 /// fake never calls a partner and never mutates anything.
-
 Property Evidence As SignalNoir.Core.Dto.Evidence;
 
 Property LastToolName As %String;

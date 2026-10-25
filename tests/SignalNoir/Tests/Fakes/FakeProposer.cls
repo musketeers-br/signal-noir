@@ -3,7 +3,6 @@ Class SignalNoir.Tests.Fakes.FakeProposer Extends SignalNoir.Core.Port.Proposer
 
 /// Configurable proposal or provider-unavailable result (seam contract).
 /// Usable with no live provider.
-
 Property Available As %Boolean;
 
 Property Proposal As SignalNoir.Core.Dto.Proposal;

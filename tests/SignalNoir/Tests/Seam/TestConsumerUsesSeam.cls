@@ -5,7 +5,6 @@ Class SignalNoir.Tests.Seam.TestConsumerUsesSeam Extends %UnitTest.TestCase
 /// tests/SignalNoir/Consumer/Consumer.cls uses every port through its fake and
 /// compiles with no reference to feature implementation classes
 /// (SignalNoir.Application, SignalNoir.Api, SignalNoir.Interop, SignalNoir.Proposers).
-
 Method TestConsumerUsesEveryPortThroughFakes()
 {
 	Set consumer = ##class(SignalNoir.Consumer.Consumer).%New()
@@ -14,6 +13,7 @@ Method TestConsumerUsesEveryPortThroughFakes()
 
 	; CaseCommands
 	Do $$$AssertEquals(out.accepted, 1, "CaseCommands.AcceptOrder through the fake")
+	Do $$$AssertEquals(out.opened, 1, "CaseCommands.RecordException opens the Case through the fake")
 	Do $$$AssertTrue(out.caseId '= "", "caseId from the seam")
 	Do $$$AssertEquals(out.appended, 1, "CaseCommands.Append through the fake")
 	Do $$$AssertTrue(+out.appendSeq >= 1, "append returned a monotonic seq")
@@ -50,7 +50,6 @@ Method TestConsumerUsesEveryPortThroughFakes()
 /// fakes. If it referenced SignalNoir.Application, SignalNoir.Api,
 /// SignalNoir.Interop or SignalNoir.Proposers, this suite could not compile the
 /// class at all. This method asserts the declared port types directly.
-
 Method TestConsumerDeclaresOnlySeamPortTypes()
 {
 	Set def = ##class(%Dictionary.ClassDefinition).%OpenId("SignalNoir.Consumer.Consumer")
