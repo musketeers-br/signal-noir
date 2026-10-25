@@ -82,7 +82,7 @@ Mudanças neles são aplicadas em lote no gate de integração.
 | 002 scenario-simulator | spec/plan/tasks prontos | Henrique | 1 | `.claude/worktrees/002-scenario-simulator` |
 | 003 order-case-lifecycle | implementada (aguardando gate G1) | Henry | 1 | branch `003-order-case-lifecycle` |
 | 004 validation-and-reference-data | reservada | Henrique | 2 | |
-| 005 operator-console | reservada | Henry | 3 | |
+| 005 operator-console | implementada (aguardando gate G2; decisão/resolução testadas contra fixtures até 007/009) | Henry | 3 | branch `005-operator-console` |
 | 006 investigation-and-proposal | implementada (aguardando gate G2; AI Hub ao vivo pendente, T060) | Henry | 2 | branch `006-investigation-and-proposal` |
 | 007 approval-and-outbox | reservada | Henrique | 3 | |
 | 008 execution-and-recovery | reservada | Henrique | 4 | |

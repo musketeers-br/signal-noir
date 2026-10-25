@@ -42,4 +42,24 @@ Method TestOnStartRunsRecovery()
 	Do $$$AssertTrue(recovered ? 1.N, "recovery ran and reported a count: " _ recovered)
 }
 
+/// 005 T027 - the API, the static console and the entry redirect are registered
+Method TestConsoleApplicationsRegistered()
+{
+	Set r = ##class(SignalNoir.Interop.Bootstrap).OnStart()
+	Do $$$AssertEquals($Get(^SignalNoir.Provider("webApplications")), "registered", "web applications registered")
+	Set ns = $NAMESPACE
+	Set $NAMESPACE = "%SYS"
+	Set api = ##class(Security.Applications).Exists("/signalnoir/api/v1")
+	Set ui = ##class(Security.Applications).Get("/signalnoir/ui", .uiProps)
+	Set entry = ##class(Security.Applications).Get("/signalnoir", .entryProps)
+	Set $NAMESPACE = ns
+	Do $$$AssertTrue(api, "API application")
+	Do $$$AssertTrue($$$ISOK(ui), "console application")
+	Do $$$AssertEquals($Get(uiProps("ServeFiles")), 1, "console serves files")
+	Do $$$AssertEquals($Get(uiProps("Path")), ##class(SignalNoir.Interop.Bootstrap).UiPath(), "console path")
+	Do $$$AssertTrue($$$ISOK(entry), "entry application")
+	Do $$$AssertEquals($Get(entryProps("DispatchClass")), "SignalNoir.Api.Console", "entry redirects")
+	Do $$$AssertEquals(##class(SignalNoir.Api.Console).Target(), "ui/index.html#/cases", "redirect target")
+}
+
 }
