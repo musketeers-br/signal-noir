@@ -8,8 +8,9 @@ companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/archit
 after: []
 refined: false
 risk: high
-owner: "José (revisão conjunta dos três)"
-window: "29/10–02/11"
+specs: [specs/008-execution-and-recovery]
+owner: "Henrique (008). Sem revisão conjunta com o José: ele saiu para outro projeto"
+window: "G3 (008; sem spec ainda, só prompt em docs/specify-prompts/)"
 ---
 
 # Execução, Revalidação e Reconciliação (B09)

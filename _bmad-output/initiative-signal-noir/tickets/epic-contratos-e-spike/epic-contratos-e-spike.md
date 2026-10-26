@@ -8,7 +8,8 @@ companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/archit
 after: []
 refined: true
 risk: medium
-owner: "Henry (B01), José (B02), Henrique (B03)"
+specs: [docs/seams.md, contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml]
+owner: "Henry (B01); B02 sem dono ativo (José saiu da implementação em 24/10); Henrique (B03)"
 window: "até 25/10"
 ---
 

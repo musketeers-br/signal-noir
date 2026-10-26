@@ -8,8 +8,9 @@ companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/archit
 after: []
 refined: false
 risk: medium
-owner: "Henry (cenário), José (Validador)"
-window: "após B09 e B10"
+specs: [specs/011-prior-receipt-p9]
+owner: "Dono da iniciativa, que assumiu as specs do José (ele saiu para outro projeto). Condicional; sem dono do cenário no board"
+window: "G4, condicional (só após 008 e 009 aceitas e contrato de P9 resolvido)"
 ---
 
 # P9: entrega prévia sob outro identificador (condicionado)

@@ -8,8 +8,9 @@ companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/archit
 after: []
 refined: false
 risk: high
-owner: "José"
-window: "27–31/10 (primeira fatia de B08 até 29/10)"
+specs: [specs/003-order-case-lifecycle, specs/004-validation-and-reference-data, specs/006-investigation-and-proposal, specs/007-approval-and-outbox]
+owner: "Henry (003, 006); Henrique (004, 007)"
+window: "G1–G2 (003 e 004 em G1; 006 e 007 em G2)"
 ---
 
 # Estado, Aprovação, outbox, propositor e Validador (B06, B08)

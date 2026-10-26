@@ -8,8 +8,9 @@ companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/archit
 after: []
 refined: false
 risk: medium
-owner: "Henrique (José no comando de resolução; Henry no conteúdo e na rubrica)"
-window: "27/10–02/11"
+specs: [specs/005-operator-console, specs/009-review-dossier-and-resolution]
+owner: "Henry (005 console e 009 Dossiê, com a rubrica); Henrique revisa a interface (sem spec de revisão no board)"
+window: "G2–G3 (005 em G2; 009 em G3)"
 ---
 
 # Interface operacional integrada e Dossiê de Revisão (B07, B10)

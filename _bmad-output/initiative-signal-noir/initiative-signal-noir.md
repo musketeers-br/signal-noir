@@ -2,9 +2,9 @@
 type: initiative
 title: 'Signal Noir: AI Exception Resolution for Interoperability'
 parent: none
-updated: 2026-10-20
+updated: 2026-10-25
 sources: [_bmad-output/initiative-signal-noir/prd-signal-noir/prd-signal-noir.md, _bmad-output/initiative-signal-noir/prd-signal-noir/addendum.md, _bmad-output/initiative-signal-noir/reconcile-fontes-2026-10-20.md, _bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md]
-companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md, _bmad-output/initiative-signal-noir/ux-signal-noir/DESIGN.md, _bmad-output/initiative-signal-noir/ux-signal-noir/EXPERIENCE.md, contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, _bmad-output/initiative-signal-noir/tickets/epic-prototipo-solucao/epic-prototipo-solucao.md]
+companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/architecture-signal-noir.md, _bmad-output/initiative-signal-noir/ux-signal-noir/DESIGN.md, _bmad-output/initiative-signal-noir/ux-signal-noir/EXPERIENCE.md, contracts/openapi-signalnoir.yaml, contracts/openapi-sim.yaml, _bmad-output/initiative-signal-noir/tickets/epic-prototipo-solucao/epic-prototipo-solucao.md, specs/, docs/specify-prompts/PARALELISMO.md]
 ---
 
 # Signal Noir: AI Exception Resolution for Interoperability
@@ -138,11 +138,15 @@ O vocabulário segue o Glossário do PRD (§3). Os itens B01–B14 são o backlo
 - Todos os dados são sintéticos. Não há decisão clínica nem edição livre de payload.
 - As datas internas estão em BRT. O prazo do edital (08/11, 23:59 EST) equivale a 09/11, 01:59 BRT. A meta interna é 07/11, e 08/11 fica como margem.
 - A arquitetura vigente é `architecture-signal-noir.md` (AD-1 a AD-28), com contratos HTTP primeiro (AD-16).
-- Capacidade: se Henry não puder implementar o simulador HTTP, o escopo é reduzido ou redistribuído explicitamente antes de 26/10. O trabalho não é transferido em silêncio para José.
-- Responsáveis por frente:
-  - **Henry:** produto, simulador, fixtures, teste reservado, benchmark, documentação e submissão;
-  - **José:** AI Hub, ObjectScript, Production, persistência, Aprovação, Execução e recuperação;
-  - **Henrique:** interface, Evidências, Aprovação, Dossiê, protótipo, revisão do avaliador e instalação cruzada.
+- Fonte de verdade da execução: `specs/` (speckit) e o board de `docs/specify-prompts/PARALELISMO.md`. Os épicos e os tickets deste arquivo seguem esse board. Divergência de escopo ou de contrato vira `contract-change` na spec, nunca ajuste silencioso aqui.
+- Gates de integração (PARALELISMO): G0 = 001; G1 = 002, 003, 004; G2 = 005, 006, 007; G3 = 008, 009; G4 = 010, 011 (condicional), 012. Os gates não têm datas no board; as datas dos marcos abaixo continuam sendo a meta do concurso.
+- Capacidade: resolvida pelo board. O simulador HTTP é da Henrique (spec 002), e o Caso, o Agente, a console e o Dossiê são do Henry (specs 003, 006, 005, 009). José saiu da implementação em 24/10 e volta só na onda 5, para a revisão do baseline e do avaliador (010) e para a 011 condicional.
+- Responsáveis por frente (board):
+  - **Henrique:** protótipo, contratos (B03), Simulador (002), Validador (004), Aprovação e outbox (007), Execução e recuperação (008), runner e scoring do benchmark (010) e integração dos gates;
+  - **Henry:** Caso e Pedido (003), Agente e Investigação (006), console (005), Dossiê (009), baseline de regras (010), pacote e README (012), e o conteúdo e a rubrica do Dossiê;
+  - **José:** saiu para outro projeto. Suas specs passam para o dono da iniciativa: 001 (concluída, com T045 aberta), a revisão do baseline e do avaliador do 010 no primeiro dia da onda 5, a 011 condicional, e a verificação com iris-agentic-dev (V1–V6 da 002 e V1–V3 da 004). O B02 (spike do build 154) segue sem dono (ver Notes).
+- Verificação ao vivo: a constituição exige iris-agentic-dev para qualquer interação com o IRIS, inclusive `%UnitTest`. Ele é o que registra V1–V6 da 002 e V1–V3 da 004, e bloqueia o gate `/speckit-implement` dessas specs. Cada pessoa configura o próprio `.iris-agentic-dev.toml`, que o git ignora por guardar credenciais.
+- Ordem de ondas (mensagem da Henrique): onda 1 = 002 e 003; 2 = 004 e 006 (com fake do Validador); 3 = 007 e 005; 4 = 008 e 009 + baseline de regras; 5 = 010 (runner, scoring, variantes reservadas), 012 e revisão do baseline e do avaliador → 011, se der tempo. O baseline e o scoring precisam estar prontos no começo da onda 5, então sobem para a onda 4.
 - Cada marco tem uma prova e um corte:
 
 | Data | Prova | Se falhar |
@@ -198,11 +202,18 @@ O vocabulário segue o Glossário do PRD (§3). Os itens B01–B14 são o backlo
 - Decision (20/10, Henrique): o protótipo é responsabilidade de Henrique, com revisão de Henry (domínio) e José (contratos).
 - Decision (20/10, Henrique): o texto do protótipo e da interface final fica em inglês.
 - Open question: o núcleo P5/P8b + P13 atende ao objetivo do produto e da competição? (revisão Henry + José)
-- Open question: Henry tem capacidade para implementar o simulador e o benchmark? Decidir antes de 26/10.
+- Resolved (board, 25/10): o simulador HTTP é da Henrique (002), e o benchmark é dividido entre Henrique (runner e scoring), Henry (baseline) e José (revisão). Ver Constraints.
+- Open question: o spike do build 154 (B02) não tem dono ativo, porque o José saiu da implementação em 24/10. Decidir antes de 26/10 quem prova o build 154 e o fallback.
+- Open question: o calendário fala em código só a partir de 26/10 (PARALELISMO, regra 7), mas há commits de implementação de 003, 005, 006 e 009 em 25/10 (horário local), e a spec 009 diz "Implemented (2026-10-26)". Confirmar a data de referência e se esse trabalho entra no repositório como está.
+- Open question: a tarefa T045 da spec 001 (aprovação de `contract-change` 001 por um segundo membro) segue aberta. Ela bloqueia o fechamento do G0.
+- Open question: specs 004, 007, 008, 010, 011 e 012 não têm pasta em `specs/`, só o prompt em `docs/specify-prompts/`. Os épicos 4, 6, 7, 8 e 9 seguem sem spec e não podem ser planejados até lá. A spec 002 só tem `spec.md`, sem plan nem tasks, apesar de o board dizer "spec/plan/tasks prontos".
+- Open question: o protótipo (épico 1) não tem spec no speckit. Ele segue como material de preparação, e a revisão de 24/10 não aparece registrada.
 - Open question: o contrato do Recibo e da identidade do efeito (`businessEffectKey`) está claro? Isso exige atualizar o AD-21 e `openapi-sim.yaml`.
 - Open question: o time aceita que P9 seja condicionado e possa terminar em revisão?
-- Open question: o spike do build 154 tem dono, prova esperada e fallback? (José; Q-A a Q-F da arquitetura)
-- Open question: há disponibilidade para a revisão conjunta de Execução e retomada?
+- Open question: o spike do build 154 tem dono, prova esperada e fallback? (era o José, que saiu da implementação; ver a questão acima; Q-A a Q-F da arquitetura)
+- Open question: a revisão conjunta de Execução e retomada (antes previa José) agora é só da Henrique (008), porque o José está fora da implementação até a onda 5. Decidir se a revisão sai do time ou se o José volta antes.
 - Open question: os marcos de corte e a inscrição em 07/11 são viáveis?
 - Open question: Q-1 (PRD). Material de preparação no repositório, inclusive o protótipo, é aceito pelo edital? Se não for, o protótipo sai do repositório antes de 26/10. Responsável: Henry, no Discord.
 - Open question: Q-3, Q-4, Q-5, Q-9, Q-11 e Q-13 do PRD continuam abertas, com os responsáveis já registrados.
+- Open question (iris-agentic-dev, 25/10): a mensagem diz que a ferramenta não está no PATH e que `.iris-agentic-dev.toml` não existe nesta máquina. Aqui, o binário está em `/opt/homebrew/bin/iris-agentic-dev` e o `.iris-agentic-dev.toml` existe. Confirmar em qual máquina o gate foi testado. A forma de instalação para cada integrante continua sem registro: perguntar ao José antes de ele sair, com o comando de instalação do skill pack. Prazo: V1–V6 da 002 e V1–V3 da 004 antes de 26/10.
+- Open question (PR #9, 25/10): a 002 foi mergeada em master só com a spec (021cd3f). Henry precisa ser avisado de que a 002 não está aceita. Plan, tasks e remediações (d95597f, 0240332, 3dc57ef) não estão nesta clone; subir a branch 002-scenario-simulator e revisar antes do G1.

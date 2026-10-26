@@ -8,8 +8,9 @@ companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/archit
 after: []
 refined: false
 risk: medium
-owner: "Henrique (B13), Henry (B14)"
-window: "05–07/11"
+specs: [specs/012-packaging-and-cross-install]
+owner: "Henry (012 e README); Henrique (instalação cruzada em máquina limpa)"
+window: "G4 (012; validação final depois de todas as specs)"
 ---
 
 # Instalação cruzada, documentação, vídeo e inscrição (B13–B14)

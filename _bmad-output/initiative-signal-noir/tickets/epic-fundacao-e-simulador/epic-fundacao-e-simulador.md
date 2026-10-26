@@ -8,8 +8,10 @@ companions: [_bmad-output/initiative-signal-noir/architecture-signal-noir/archit
 after: []
 refined: false
 risk: medium
-owner: "José (B04), Henry (B05)"
-window: "26–28/10"
+specs: [specs/001-runtime-skeleton-and-seams, specs/002-scenario-simulator, specs/003-order-case-lifecycle]
+owner: "Henrique (002 Simulador; dono da verificação V1–V6); Henry (fatia persistida, 003); 001 concluída, com T045 aberta, passou de José para o dono da iniciativa"
+window: "G0–G1 (001 concluída; 002 e 003 em G1)"
+risk_notes: "002 foi mergeada em master (PR #9, 8d23edf) só com a spec (021cd3f), contra a regra de merge por gate. Plan, tasks e remediações (d95597f, 0240332, 3dc57ef) não estão nesta clone; a branch remota 002-scenario-simulator é a única referência. Não tratar 002 como aceita."
 ---
 
 # Ambiente, primeira fatia persistida e simulador HTTP (B04–B05)

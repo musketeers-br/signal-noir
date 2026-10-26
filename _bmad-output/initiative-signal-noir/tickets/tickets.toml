@@ -1,6 +1,10 @@
 # Signal Noir epics in build order (format: .agents/skills/bmad-agent-po/assets/tickets-template.toml).
 # Table order is build order. `id` is permanent, never reused.
 # Owners and windows live in each epic file; dependencies live only here.
+# Reconciled with specs/ (speckit, source of truth) on 2026-10-25. Spec numbers below are the
+# folders in specs/ and the board in docs/specify-prompts/PARALELISMO.md. Epics with no spec
+# folder yet are marked "sem spec" and their prompt is in docs/specify-prompts/.
+# Dependencies below follow each spec's prerequisites in PARALELISMO.md.
 
 [[epic]]
 id = 1
@@ -8,6 +12,7 @@ slug = "epic-prototipo-solucao"
 title = "Protótipo navegável da solução (HTML, CSS, JS)"
 description = "Henry e José revisaram, antes de 26/10, um protótipo descartável que mostra a console do Operador final, e os aprendizados viraram decisões do B03."
 covers = ["R36", "R37", "R38", "R39"]
+# specs: nenhuma (material de preparação fora do speckit)
 
 [[epic]]
 id = 2
@@ -16,6 +21,7 @@ title = "Contratos de domínio, spike do AI Hub 154 e contrato da UX (B01–B03)
 description = "As três frentes começam em 26/10 contra contratos estáveis, com o risco do build 154 conhecido."
 covers = ["R9", "R10", "R12", "R16", "R17", "R24", "R32", "R33", "R34", "R37", "R41"]
 after = [{ epic = 1, needs = "só a entrada 5 (B03): os aprendizados do protótipo revisado" }]
+# specs: contratos em contracts/ e docs/seams.md (seams v1, 001). Nenhuma spec própria; o spike B02 não tem registro de execução.
 
 [[epic]]
 id = 3
@@ -24,6 +30,7 @@ title = "Ambiente, primeira fatia persistida e simulador HTTP (B04–B05)"
 description = "Um Pedido sintético abre um Caso persistido, o AI Hub produz uma Proposta ligada a ele e o Simulador HTTP materializa o Parceiro e a Origem."
 covers = ["R5", "R7", "R8", "R11", "R25", "R40", "R47", "R48"]
 after = [{ epic = 2, needs = "contratos de domínio e do Simulador (B01) e o resultado do spike do build 154 (B02)" }]
+# specs: 001-runtime-skeleton-and-seams (G0, concluída; T045 aberta), 002-scenario-simulator (G1; só spec.md)
 
 [[epic]]
 id = 4
@@ -32,6 +39,7 @@ title = "Estado, Aprovação, outbox, propositor e Validador (B06, B08)"
 description = "O cenário P5/P8b produz uma Proposta validada e aprovável, com garantias de concorrência e outbox."
 covers = ["R1", "R8", "R11", "R12", "R13", "R14", "R15", "R16", "R18", "R19", "R20", "R21", "R22", "R23", "R28"]
 after = [{ epic = 3, needs = "Caso persistido, bootstrap e Simulador para as Ferramentas" }]
+# specs: 003-order-case-lifecycle (G1), 004-validation-and-reference-data (G1; sem spec), 006-investigation-and-proposal (G2), 007-approval-and-outbox (G2; sem spec)
 
 [[epic]]
 id = 5
@@ -40,10 +48,10 @@ title = "Interface operacional integrada e Dossiê de Revisão (B07, B10)"
 description = "Em 29/10 um Caso P5/P8b real aparece na interface da falha ao resultado, e o Dossiê é útil mesmo com o LLM falhando."
 covers = ["R2", "R30", "R31", "R32", "R33", "R34", "R35"]
 after = [
-  { epic = 2, needs = "contrato HTTP, fixtures e especificação de telas (B03)" },
-  { epic = 3, needs = "a primeira fatia persistida servindo a API real (B04)" },
-  { epic = 4, needs = "comandos do Caso e endpoint de decisão (B06, ao menos a interface mínima) e Propostas reais (B08) para o Dossiê" },
+  { epic = 2, needs = "contrato HTTP, fixtures e especificação de telas (B03); a console 005 começa com contratos e fixtures" },
+  { epic = 4, needs = "Propostas reais e Caso (003, 006) e o Validador (004) para o Dossiê 009" },
 ]
+# specs: 005-operator-console (G2), 009-review-dossier-and-resolution (G3; implementada, verificada no build 154)
 
 [[epic]]
 id = 6
@@ -52,9 +60,9 @@ title = "Execução, Revalidação e Reconciliação (B09)"
 description = "Em 02/11 Aprovação, Revalidação e Reconciliação estão comprovadas, incluindo P3, sem efeito duplicado."
 covers = ["R3", "R24", "R25", "R26", "R27", "R28", "R29"]
 after = [
-  { epic = 3, needs = "Simulador com deduplicação por chave e payload e perda de resposta (B05)" },
-  { epic = 4, needs = "comandos transacionais, outbox e a primeira fatia do Validador (B06, B08)" },
+  { epic = 3, needs = "001 e 002 (Simulador com deduplicação por chave e payload e perda de resposta); 008 usa fake de Approval/Execution" },
 ]
+# specs: 008-execution-and-recovery (G3; sem spec)
 
 [[epic]]
 id = 7
@@ -63,9 +71,10 @@ title = "P9: entrega prévia sob outro identificador (condicionado)"
 description = "Se entrar, o Agente descobre uma entrega prévia e o Validador confirma a Chave de Equivalência antes de encerrar sem Execução."
 covers = ["R4"]
 after = [
-  { epic = 5, needs = "Dossiê aceito (B10), para o candidato não confirmado" },
-  { epic = 6, needs = "Execução e Reconciliação aceitas (B09)" },
+  { epic = 5, needs = "009 aceita (Dossiê, B10), para o candidato não confirmado" },
+  { epic = 6, needs = "008 aceita (Execução e Reconciliação, B09)" },
 ]
+# specs: 011-prior-receipt-p9 (G4, condicional; sem spec, só prompt)
 
 [[epic]]
 id = 8
@@ -74,10 +83,11 @@ title = "Baseline, executor e Execução de Referência (B11–B12)"
 description = "Em 05/11 há um relatório versionado com dados brutos, honesto sobre ganho, empate ou perda."
 covers = ["R6", "R42", "R43", "R44", "R45", "R46"]
 after = [
-  { epic = 4, needs = "propositor e Validador comuns (B08)" },
-  { epic = 5, needs = "Dossiê para os casos de revisão (B10)" },
-  { epic = 6, needs = "garantias de execução para a suíte de plataforma (B09)" },
+  { epic = 4, needs = "004 e 006 (propositor e Validador comuns, B08)" },
+  { epic = 5, needs = "009 (Dossiê para os casos de revisão, B10)" },
+  { epic = 6, needs = "007 e 008 (garantias de execução para a suíte de plataforma, B09)" },
 ]
+# specs: 010-benchmark-and-reference-run (G4; sem spec, só prompt). Baseline de regras na onda 4; revisão do José na onda 5.
 
 [[epic]]
 id = 9
@@ -85,4 +95,5 @@ slug = "epic-entrega"
 title = "Instalação cruzada, documentação, vídeo e inscrição (B13–B14)"
 description = "Em 07/11 a versão submetível foi instalada por outro integrante só pelo README e está inscrita no concurso."
 covers = ["R47", "R48", "R49", "R50"]
-after = [{ epic = 8, needs = "relatório da Execução de Referência (B12)" }]
+after = [{ epic = 8, needs = "relatório da Execução de Referência (B12); a 012 pode começar com 001, mas a validação final depende de todas" }]
+# specs: 012-packaging-and-cross-install (G4; sem spec, só prompt)
