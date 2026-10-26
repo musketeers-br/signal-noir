@@ -41,6 +41,42 @@ Method TestAcceptedMappingIsApprovedByTheSameOperator()
 	Do $$$AssertEquals(r.obj.state, "Approved", "ack state")
 }
 
+/// The Operator's note becomes operator.note Evidence that the Proposal
+/// cites, even when the Dossier lists no Evidence
+Method TestNoteIsRecordedAsEvidenceWithoutDossierEvidence()
+{
+	Set svc = ##class(SignalNoir.Application.CaseService).Default()
+	Set caseId = ..ReviewCase(svc, "res-note")
+	Set c = svc.GetCase(caseId).obj
+	Do $$$AssertEquals(c.dossier.relevantEvidenceIds.%Size(), 0, "Dossier lists no Evidence")
+	Set before = c.evidence.Count()
+	Set r = svc.ResolveReview(caseId, {"kind": "action", "operator": "Carla", "expectedCaseVersion": (c.caseVersion), "action": "RETRY", "note": "partner confirmed by phone"})
+	Do $$$AssertTrue(r.ok, "accepted: " _ r.message)
+	Set c = svc.GetCase(caseId).obj
+	Do $$$AssertEquals(c.evidence.Count(), before + 1, "one new Evidence")
+	Set ev = c.evidence.GetAt(c.evidence.Count())
+	Do $$$AssertEquals(ev.source, "operator.note", "source")
+	Do $$$AssertEquals(ev.calledBy, "operator:Carla", "by the Operator")
+	Do $$$AssertEquals(ev.result.text, "partner confirmed by phone", "the note, by value")
+	Set p = c.proposals.GetAt(c.proposals.Count())
+	Do $$$AssertEquals(p.diagnosis.claims.%Size(), 1, "one claim")
+	Do $$$AssertEquals(p.diagnosis.claims.%Get(0).evidenceIds.%Get(0), ev.evidenceId, "the claim cites the note")
+}
+
+Method TestBlockedResolutionRecordsNoNote()
+{
+	Set svc = ##class(SignalNoir.Application.CaseService).Default()
+	Set fake = ##class(SignalNoir.Tests.Fakes.FakeValidator).%New()
+	Set fake.Verdict = "invalid"
+	Set svc.Validator = fake
+	Set caseId = ..ReviewCase(svc, "res-note-blk")
+	Set c = svc.GetCase(caseId).obj
+	Set before = c.evidence.Count()
+	Set r = svc.ResolveReview(caseId, {"kind": "action", "operator": "Carla", "expectedCaseVersion": (c.caseVersion), "action": "RETRY", "note": "try again"})
+	Do $$$AssertNotTrue(r.ok, "blocked")
+	Do $$$AssertEquals(svc.GetCase(caseId).obj.evidence.Count(), before, "only the verdict is recorded")
+}
+
 Method TestHoldGoesToExecutingWithoutApproval()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()

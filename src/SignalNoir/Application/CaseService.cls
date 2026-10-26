@@ -845,7 +845,11 @@ Method ResolveReview(caseId As %String, request As %DynamicObject) As SignalNoir
 		} Else {
 			Set dossier = ..LatestDossier(caseId)
 			Set ids = $Select($IsObject(dossier.relevantEvidenceIds): dossier.relevantEvidenceIds, 1: [])
-			Set proposal = ##class(SignalNoir.Core.OperatorProposal).Build(request.action, request.params, operatorName, ids, request.note)
+			; the note becomes operator.note Evidence (contract); its id is reserved
+			; so the Proposal can cite it, and it is saved only if accepted
+			Set note = ##class(SignalNoir.Core.Canon).Trim(request.note)
+			Set noteId = $Select(note '= "": ..Ids.New("evid_"), 1: "")
+			Set proposal = ##class(SignalNoir.Core.OperatorProposal).Build(request.action, request.params, operatorName, ids, note, noteId)
 			Set verdict = ##class(SignalNoir.Application.ResolutionValidator).Verdict(..Validator, proposal, now)
 			Do ..AppendEvent(rec, "ValidatorVerdict", actor, caseId, {"proposalAuthor": (actor), "action": (proposal.action), "verdict": (verdict.verdict), "reasons": (verdict.reasons), "requiresApproval": (verdict.requiresApproval)}, now)
 			If verdict.verdict '= "accepted" {
@@ -854,6 +858,12 @@ Method ResolveReview(caseId As %String, request As %DynamicObject) As SignalNoir
 				Set result = ##class(SignalNoir.Core.Result).OkRef("")
 				Set result.details = {"blocked": 1, "verdict": (verdict), "caseVersion": (rec.caseVersion), "lastEventSeq": (rec.lastEventSeq), "serverTime": (now)}
 				Quit
+			}
+			If noteId '= "" {
+				Set ev = ##class(SignalNoir.Core.Dto.Evidence).%New()
+				Set ev.source = "operator.note", ev.calledBy = actor, ev.observedAt = now, ev.durationMs = 0
+				Set ev.result = {"text": (note)}
+				Do ..SaveEvidence(rec, "", ev, ##class(SignalNoir.Core.Suspicion).Scan(ev.result), now, noteId)
 			}
 			Set proposalId = ..Ids.New("prop_")
 			If rec.currentProposalId '= "" {
@@ -1061,10 +1071,11 @@ Method FinishRequest(commandId As %String) [ Private ]
 
 /// Saves one Evidence row and its Timeline events inside the caller's
 /// transaction (record first, then return: 006 FR-009)
-Method SaveEvidence(rec As SignalNoir.Application.Model.CaseRecord, investigationId As %String, ev As SignalNoir.Core.Dto.Evidence, found As %ListOfDataTypes, now As %String) [ Private ]
+/// evidenceId: an id reserved earlier (a Proposal already cites it); "" for a new one
+Method SaveEvidence(rec As SignalNoir.Application.Model.CaseRecord, investigationId As %String, ev As SignalNoir.Core.Dto.Evidence, found As %ListOfDataTypes, now As %String, evidenceId As %String = "") [ Private ]
 {
 	Set row = ##class(SignalNoir.Application.Model.EvidenceRecord).%New()
-	Set row.evidenceId = ..Ids.New("evid_")
+	Set row.evidenceId = $Select(evidenceId '= "": evidenceId, 1: ..Ids.New("evid_"))
 	Set row.caseId = rec.caseId
 	Set row.investigationId = investigationId
 	Set row.source = ev.source

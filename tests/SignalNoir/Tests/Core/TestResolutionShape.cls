@@ -27,6 +27,17 @@ Method TestNoFreePayload()
 	Do $$$AssertEquals(..Reasons({"kind": "cancel", "operator": "Carla", "expectedCaseVersion": 3, "reason": "x", "action": "RETRY"}), "unknown_field:action;", "cancel takes no action")
 }
 
+/// Params and text fields must be JSON strings, as the contract types them;
+/// a number or boolean is not coerced into text
+Method TestTextFieldsMustBeStrings()
+{
+	Do $$$AssertEquals(..Reasons({"kind": "action", "operator": "Carla", "expectedCaseVersion": 3, "action": "APPLY_APPROVED_MAPPING", "params": {"mappingId": 123, "mappingVersion": 456}}), "params.mappingId:not_text;params.mappingVersion:not_text;", "numeric params refused")
+	Do $$$AssertEquals(..Reasons({"kind": "action", "operator": "Carla", "expectedCaseVersion": 3, "action": "HOLD", "params": {"reason": true}}), "params.reason:not_text;", "boolean param refused")
+	Do $$$AssertEquals(..Reasons({"kind": "action", "operator": "Carla", "expectedCaseVersion": 3, "action": "RETRY", "note": 7}), "note:not_text;", "numeric note refused")
+	Do $$$AssertEquals(..Reasons({"kind": "action", "operator": 42, "expectedCaseVersion": 3, "action": "RETRY"}), "operator:invalid;", "numeric operator refused")
+	Do $$$AssertEquals(..Reasons({"kind": "cancel", "operator": "Carla", "expectedCaseVersion": 3, "reason": 1}), "reason:missing;", "numeric cancel reason refused")
+}
+
 Method TestFields()
 {
 	Do $$$AssertEquals(..Reasons({"kind": "edit", "operator": "Carla", "expectedCaseVersion": 3}), "kind:invalid;", "kind")

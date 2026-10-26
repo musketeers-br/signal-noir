@@ -23,15 +23,16 @@ ClassMethod Check(request) As %ListOfDataTypes
 		If '$ListFind(allowed, key) Do r.Insert("unknown_field:" _ key)
 	}
 	Set name = request.%Get("operator")
-	If $IsObject(name) || (##class(SignalNoir.Core.Canon).Trim(name) = "") {
+	Set nameType = request.%GetTypeOf("operator")
+	If (nameType = "unassigned") || (nameType = "null") || ((nameType = "string") && (##class(SignalNoir.Core.Canon).Trim(name) = "")) {
 		Do r.Insert("operator:missing")
-	} ElseIf (name [ ":") || ($Length(name) > 64) {
+	} ElseIf (nameType '= "string") || (name [ ":") || ($Length(name) > 64) {
 		Do r.Insert("operator:invalid")
 	}
 	If (request.%GetTypeOf("expectedCaseVersion") '= "number") || (request.expectedCaseVersion '? 1.N) Do r.Insert("expectedCaseVersion:invalid")
 	If kind = "cancel" {
 		Set reason = request.%Get("reason")
-		If $IsObject(reason) || (##class(SignalNoir.Core.Canon).Trim(reason) = "") Do r.Insert("reason:missing")
+		If (request.%GetTypeOf("reason") '= "string") || (##class(SignalNoir.Core.Canon).Trim(reason) = "") Do r.Insert("reason:missing")
 		Return r
 	}
 	Set action = request.%Get("action")
@@ -51,12 +52,13 @@ ClassMethod Check(request) As %ListOfDataTypes
 	While it.%GetNext(.key, .value) {
 		If '$ListFind(names, key) {
 			Do r.Insert("params." _ key _ ":not_allowed")
-		} ElseIf $IsObject(value) {
+		} ElseIf params.%GetTypeOf(key) '= "string" {
 			Do r.Insert("params." _ key _ ":not_text")
 		}
 	}
-	Set note = request.%Get("note")
-	If $IsObject(note) Do r.Insert("note:not_text")
+	; text fields are JSON strings (contract); a number or boolean is not coerced
+	Set noteType = request.%GetTypeOf("note")
+	If (noteType '= "unassigned") && (noteType '= "null") && (noteType '= "string") Do r.Insert("note:not_text")
 	Return r
 }
 

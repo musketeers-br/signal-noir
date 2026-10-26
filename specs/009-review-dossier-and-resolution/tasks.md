@@ -73,6 +73,11 @@ patient records were collected.
 - [X] T025 Analysis follow-ups: `TestDossier.TestEachReviewEntryRecordsAFreshDossier` (C1); plan.md
   (I1), `contracts/coordination-004-007.md` (I2) and data-model.md (I3) brought in line with the
   routing, `Core.Identity`, `verdictJson` and build 154
+- [X] T026 Review fixes (PR): `Core.ResolutionShape` requires JSON strings for params, note,
+  operator and cancel reason; the Operator's note is saved as `operator.note` Evidence (only when
+  the resolution is accepted) and the Proposal cites it even with an empty Dossier
+  (`TestResolutionShape.TestTextFieldsMustBeStrings`, `TestResolution.TestNoteIsRecordedAsEvidence…`,
+  `TestResolution.TestBlockedResolutionRecordsNoNote`)
 
 ## Dependencies
 
