@@ -48,9 +48,9 @@ instance through iris-agentic-dev.
 
 ## Phase 7: Polish
 
-- [ ] T017 Full run (ObjectScript suite, ui tests, validate_live, fixtures); record in research.md
-- [ ] T018 Browser check: resolve a review from the console against the real API
-- [ ] T019 Update `docs/specify-prompts/PARALELISMO.md` row 009
+- [X] T017 Full run (ObjectScript suite, ui tests, validate_live, fixtures); record in research.md
+- [X] T018 Browser check: resolve a review from the console against the real API
+- [X] T019 Update `docs/specify-prompts/PARALELISMO.md` row 009
 
 ## Dependencies
 

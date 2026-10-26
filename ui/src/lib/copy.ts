@@ -23,8 +23,8 @@ const STATES: Record<CaseState, StateCopy> = {
 		banner: 'Waiting for your approval. Nothing is sent until you approve this exact version.',
 		action: 'approve'
 	},
-	Approved: { label: 'Approved', glyph: '✓', tone: 'fact', banner: 'Approved. Preconditions are re-checked right before sending.' },
-	Rejected: { label: 'Denied', glyph: '✕', tone: 'attention', banner: 'Denied. One more investigation runs with your reason as evidence.' },
+	Approved: { label: 'Approved', glyph: '✓', tone: 'fact', banner: 'Preconditions are re-checked right before sending.' },
+	Rejected: { label: 'Denied', glyph: '✕', tone: 'attention', banner: 'One more investigation runs with your reason as evidence.' },
 	Executing: { label: 'Executing', glyph: '▶', tone: 'fact', banner: 'Sending to the partner with an idempotency key.' },
 	Held: {
 		label: 'On hold',
@@ -33,10 +33,10 @@ const STATES: Record<CaseState, StateCopy> = {
 		banner: 'A precondition failed before sending, so nothing was sent. The case is re-investigated when the condition clears, and any new action needs a new approval.'
 	},
 	ReviewRequired: { label: 'Review required', glyph: '⚑', tone: 'attention', banner: 'Automation stopped. The dossier explains why and what you can do.', action: 'dossier' },
-	Resolved: { label: 'Resolved', glyph: '✔', tone: 'success', banner: 'Resolved. The partner receipt confirms delivery.' },
+	Resolved: { label: 'Resolved', glyph: '✔', tone: 'success', banner: 'The partner receipt confirms delivery.' },
 	ResolvedByPriorReceipt: { label: 'Already delivered', glyph: '⧉', tone: 'success', banner: 'The validator confirmed an earlier receipt. Nothing was resent.' },
-	Cancelled: { label: 'Cancelled', glyph: '⊘', tone: 'muted', banner: 'Cancelled. No effect was sent.' },
-	Failed: { label: 'Failed', glyph: '✖', tone: 'danger', banner: 'Failed. No further automatic action follows.' }
+	Cancelled: { label: 'Cancelled', glyph: '⊘', tone: 'muted', banner: 'No effect was sent.' },
+	Failed: { label: 'Failed', glyph: '✖', tone: 'danger', banner: 'No further automatic action follows.' }
 };
 
 const OUTCOME_UNKNOWN: StateCopy = {

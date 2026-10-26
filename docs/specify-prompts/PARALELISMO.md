@@ -86,7 +86,7 @@ Mudanças neles são aplicadas em lote no gate de integração.
 | 006 investigation-and-proposal | implementada (aguardando gate G2; AI Hub ao vivo pendente, T060) | Henry | 2 | branch `006-investigation-and-proposal` |
 | 007 approval-and-outbox | reservada | Henrique | 3 | |
 | 008 execution-and-recovery | reservada | Henrique | 4 | |
-| 009 review-dossier-and-resolution | reservada | Henry | 4 | |
+| 009 review-dossier-and-resolution | implementada (aguardando gate G3; Validador v1 até a 004, Aprovação compartilhada com a 007) | Henry | 4 | branch `009-review-dossier-and-resolution` |
 | 010 benchmark-and-reference-run | reservada | Henrique | 5 | |
 | 011 prior-receipt-p9 | condicional | José | 5 | |
 | 012 packaging-and-cross-install | reservada | Henry | 5 | |

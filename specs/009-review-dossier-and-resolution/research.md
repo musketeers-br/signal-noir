@@ -74,3 +74,13 @@ replays and expiry over the same record (see `contracts/coordination-004-007.md`
 | Browser | real Dossier renders in the console; the form refused submission without a declared name (the name typed in the browser check did not reach the field). Cancel via the console not completed — T017/T018/T019 open |
 | Fixes found | SQL reserved word `at` broke the approvals query; 001 bug: `ValidatorVerdict.failedPreconditions` declared as an object dropped the Validator's codes (now `%List`) |
 | Process | Dispatch changes were written before `TestResolutionApi` |
+
+## Verification on AI Hub build 154 (2026-10-26, `dev/aihub`, Community ARM64)
+
+| Check | Result |
+|---|---|
+| Platform | `IRIS for UNIX (Ubuntu Server LTS for ARM64 Containers) 2026.3.0AI (Build 154U)`, `%AI.Agent` present, Community license with Interoperability |
+| ObjectScript suite (T017) | 135 pass, 1 fail (pre-existing 001 `Api.TestHealth`). Note: one `iris-agentic-dev compile` pass left `Core.CaseMachine` uncompiled without reporting an error; a direct load compiled it |
+| Live contract | `validate_live.py`: all responses conform; fixtures 25/25; console 45/45 |
+| Console (T018) | a `ReviewRequired` case cancelled from the dossier form in the browser: banner "Cancelled", toast, form gone, dossier moved down; Timeline has `StateChanged` and `OperatorResolution` by `operator:Henry` with the reason. The earlier failed attempt was the browser automation not focusing the name field, not a console bug |
+| Copy fix | state banners no longer repeat the chip label ("Cancelled. Cancelled.") |
