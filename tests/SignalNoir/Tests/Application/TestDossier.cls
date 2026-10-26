@@ -93,4 +93,78 @@ Method TestDossierCommitsWithTheTransition()
 	Do $$$AssertEquals(..Latest(svc, caseId).reason, "review_requested", "Dossier with the transition")
 }
 
+/// 009 US1 #3 end to end: recorded patient records collide; the Rules
+/// proposer asks for review, the Validator routes the Case to review, and the
+/// Dossier lists the colliding records with their divergent fields
+Method TestAmbiguousIdentityEndToEnd()
+{
+	Set S = "SignalNoir.Tests.Support"
+	Set svc = ##class(SignalNoir.Application.CaseService).Default()
+	Set caseId = $ClassMethod(S, "InvestigatingCase", svc, "dos-ident", "rules", .cmd, "SERUM")
+	Set order = ##class(SignalNoir.Application.Model.OrderRecord).%OpenId(##class(SignalNoir.Application.Model.CaseRecord).%OpenId(caseId).orderId)
+	Set patient = {}.%FromJSON(order.snapshotJson).patient
+	Set other = {"patientId": "SYN-PAT-0311", "name": (patient.name), "birthDate": "1981-03-04"}
+	Set ^SignalNoir.TestScript(caseId, "source", "tool.receipts_and_orders_by_patient") = {"items": [{"receiptId": "rcp_7", "orderId": "ORD-OTHER", "orderSnapshot": {"patient": (other)}}]}.%ToJSON()
+	Set r = $ClassMethod(S, "Investigate", cmd, "SignalNoir.Proposers.Rules")
+	Set c = svc.GetCase(caseId).obj
+	Do $$$AssertEquals(c.proposals.GetAt(1).action, "REQUEST_REVIEW", "Rules asks for review on ambiguous identity")
+	Do $$$AssertEquals(c.state, "ReviewRequired", "routed to review")
+	Do $$$AssertEquals(c.dossier.reason, "ambiguous_identity", "identity reason")
+	Do $$$AssertEquals(c.dossier.collidingRecords.%Size(), 2, "the order's record and the other record")
+	Set found = 0
+	For i = 0 : 1 : c.dossier.collidingRecords.%Size() - 1 {
+		Set rec = c.dossier.collidingRecords.%Get(i)
+		If rec.recordRef = "SYN-PAT-0311" Set found = (rec.divergentFields.%ToJSON() [ "patientId") && (rec.divergentFields.%ToJSON() [ "birthDate")
+	}
+	Do $$$AssertTrue(found, "divergent fields marked")
+	Do ..AssertNothingInvented($this, svc, caseId)
+	Do $ClassMethod(S, "ClearScript", caseId)
+}
+
+/// 009 US1 #4 end to end: a Proposal points to a prior Receipt whose
+/// equivalence key does not match; the review Dossier lists it with the
+/// mismatched fields
+Method TestUnconfirmedPriorReceiptEndToEnd()
+{
+	Set S = "SignalNoir.Tests.Support"
+	Set svc = ##class(SignalNoir.Application.CaseService).Default()
+	Set caseId = $ClassMethod(S, "InvestigatingCase", svc, "dos-prior", "agent", .cmd, "SERUM")
+	Set order = {}.%FromJSON(##class(SignalNoir.Application.Model.OrderRecord).%OpenId(##class(SignalNoir.Application.Model.CaseRecord).%OpenId(caseId).orderId).snapshotJson)
+	Set prior = order.%FromJSON(order.%ToJSON())
+	Set prior.specimen.specimenId = "SP-OTHER"
+	Set ^SignalNoir.TestScript(caseId, "source", "tool.receipts_and_orders_by_patient") = {"items": [{"receiptId": "rcp_9", "orderId": "ORD-PRIOR", "orderSnapshot": (prior)}]}.%ToJSON()
+	Do $ClassMethod(S, "Script", caseId, "answer", "{""diagnosis"":{""summary"":""A prior receipt may cover this order"",""claims"":[{""text"":""A receipt exists for the same patient"",""evidenceIds"":[""@ev:tool.receipts_and_orders_by_patient""]}],""hypotheses"":[]},""action"":""REQUEST_REVIEW"",""params"":{""reason"":""prior receipt unconfirmed""},""confidence"":""LOW"",""preconditions"":[],""priorReceiptCandidate"":{""receiptId"":""rcp_9"",""orderId"":""ORD-PRIOR""}}")
+	Do $ClassMethod(S, "Investigate", cmd)
+	Set c = svc.GetCase(caseId).obj
+	Do $$$AssertEquals(c.state, "ReviewRequired", "routed to review")
+	Do $$$AssertEquals(c.dossier.unconfirmedCandidates.%Size(), 1, "candidate listed")
+	Do $$$AssertEquals(c.dossier.unconfirmedCandidates.%Get(0).mismatchedFields.%ToJSON(), "[""specimenId""]", "mismatched field")
+	Do $ClassMethod(S, "ClearScript", caseId)
+}
+
+/// 009: a Proposal the Validator blocks ends in review with the reason
+/// codes, and the Dossier says validator_blocked
+Method TestValidatorBlockedRoutesToReview()
+{
+	Set S = "SignalNoir.Tests.Support"
+	Set svc = ##class(SignalNoir.Application.CaseService).Default()
+	Set fake = ##class(SignalNoir.Tests.Fakes.FakeValidator).%New()
+	Set fake.Verdict = "invalid"
+	Set fake.FailedPreconditions = $ListBuild("MAPPING_CONDITION_MISMATCH")
+	Set svc.Validator = fake
+	Set caseId = $ClassMethod(S, "InvestigatingCase", svc, "dos-block", "agent", .cmd, "SERUM")
+	Set started = svc.StartInvestigation(cmd, "SignalNoir.Tests.Fakes.ScriptedProposer", "SignalNoir.Tests.Fakes.ScriptedSource")
+	Set ids = ##class(%ListOfDataTypes).%New()
+	Do ids.Insert(started.details.evidenceIds.%Get(0))
+	Set answer = {}.%FromJSON($Replace($ClassMethod(S, "P8bAnswer"), """@ev:tool.mapping_catalog""", """" _ ids.GetAt(1) _ """"))
+	Set answer = {}.%FromJSON($Replace(answer.%ToJSON(), """@ev:system.exception""", """" _ ids.GetAt(1) _ """"))
+	Set p = ##class(SignalNoir.Core.ProposalShape).Convert(answer, ids, "agent", {"policy": "p", "mapping": "m"}, {}).obj
+	Set r = svc.CompleteInvestigation(cmd, p)
+	Do $$$AssertTrue(r.ok, "proposal recorded: " _ r.message)
+	Set c = svc.GetCase(caseId).obj
+	Do $$$AssertEquals(c.state, "ReviewRequired", "blocked -> review")
+	Do $$$AssertTrue(c.reviewReason [ "MAPPING_CONDITION_MISMATCH", "reason names the codes: " _ c.reviewReason)
+	Do $$$AssertEquals(c.dossier.reason, "validator_blocked", "Dossier reason")
+}
+
 }

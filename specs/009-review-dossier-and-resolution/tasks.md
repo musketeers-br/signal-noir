@@ -52,6 +52,25 @@ instance through iris-agentic-dev.
 - [X] T018 Browser check: resolve a review from the console against the real API
 - [X] T019 Update `docs/specify-prompts/PARALELISMO.md` row 009
 
+## Phase 8: Closing the runtime gaps (2026-10-26)
+
+Found after T019: every task was checked, but at runtime no Case reached `ReviewRequired` with an
+identity or prior-receipt Dossier, because nothing routed a Proposal by the Validator and no
+patient records were collected.
+
+- [X] T020 [P] Failing tests first: `Core.TestToolCatalog` (base package of 6 with receipts),
+  `Core.TestDossierBuilder` (identity overrides a generic review; `Core.Identity` is the one rule),
+  `Application.TestDossier` (identity end to end, unconfirmed prior receipt end to end, Validator
+  blocked → `validator_blocked`), `Application.TestInvestigation` (routing to `ReviewRequired` and
+  `PendingApproval`, verdict recorded); adjusted 006 tests for 6 base calls
+- [X] T021 `src/SignalNoir/Core/Identity.cls` (collision rule moved out of `DossierBuilder`);
+  `ambiguous_identity` text and next step in `Core.DossierReason`
+- [X] T022 `Core.ToolCatalog` base package + `tool.receipts_and_orders_by_patient`; `Proposers.Rules`
+  identity rule, no extra Tool call
+- [X] T023 `CaseService.CompleteInvestigation` + `RouteProposal`: verdict through
+  `ResolutionValidator`, `ValidatorVerdict` event, routing by verdict (FR-014)
+- [X] T024 Specs 006/009 updated; full suite, live contract and analysis recorded in research.md
+
 ## Dependencies
 
 Foundational → US1 → US2 → US3 → US4 → Polish. `CaseService.cls` tasks are sequential.

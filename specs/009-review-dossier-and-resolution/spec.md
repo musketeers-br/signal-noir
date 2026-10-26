@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-25
 
-**Status**: Draft
+**Status**: Implemented (2026-10-26; verified on AI Hub build 154)
 
 **Input**: User description: "the Review Dossier and operator resolution." (full description:
 `docs/specify-prompts/009-review-dossier-and-resolution.txt`)
@@ -188,6 +188,17 @@ the resolution form.
 - **FR-013**: The Case detail MUST carry the latest Dossier and the Approvals; the resolution and
   reference operations MUST answer as `contracts/openapi-signalnoir.yaml` defines.
 
+**Reaching review**
+
+- **FR-014**: A Proposal from an Investigation MUST pass the same Validator as an operator
+  resolution, in the same unit as its recording. A blocked Proposal or a `REQUEST_REVIEW` MUST move
+  the Case to `ReviewRequired` (and so produce its Dossier); an accepted Action goes to
+  `PendingApproval`, or to `Executing` when it needs no approval.
+- **FR-015**: Recorded synthetic patient records that share the Order's patient name with a different
+  identity MUST be treated as ambiguous identity by one core rule, used by Rules Mode (which then asks
+  for review) and by the Dossier (reason `ambiguous_identity`, colliding records, divergent fields).
+  The base Evidence package MUST include recent receipts and orders by patient so these records exist.
+
 ### Key Entities
 
 - **Review Dossier**: reason, reason text, creation time, partial diagnosis, hypotheses, relevant
@@ -223,3 +234,5 @@ the resolution form.
   returns an empty list with `mappingVersion` "unloaded", and the Validator path decides.
 - Ambiguous identity is detected only from recorded Evidence that carries synthetic patient records
   (recent receipts and orders by patient); nothing is inferred beyond what those records show.
+- Prior-receipt confirmation is feature 011 / the Validator's (004); this feature lists a candidate
+  the current Proposal points to and shows which equivalence fields do not match.

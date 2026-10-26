@@ -39,7 +39,7 @@ ClassMethod CitedIds(d As %DynamicObject) As %List
 Method TestReasonMapping()
 {
 	Set R = "SignalNoir.Core.DossierReason"
-	For pair = "provider unavailable: AI Hub is not available>provider_unavailable", "invalid proposer response>invalid_agent_response", "investigation budget exceeded: time>budget_exceeded", "investigation interrupted>investigation_interrupted", "second rejection>second_denial", "validator blocked: X>validator_blocked", "moved by test>review_requested" {
+	For pair = "provider unavailable: AI Hub is not available>provider_unavailable", "invalid proposer response>invalid_agent_response", "investigation budget exceeded: time>budget_exceeded", "investigation interrupted>investigation_interrupted", "second rejection>second_denial", "validator blocked: X>validator_blocked", "review requested: business error>review_requested", "moved by test>review_requested" {
 		Do $$$AssertEquals($ClassMethod(R, "From", $Piece(pair, ">", 1)), $Piece(pair, ">", 2), $Piece(pair, ">", 1))
 	}
 	Do $$$AssertTrue($ClassMethod(R, "Text", "provider_unavailable", "provider unavailable: X") [ "provider unavailable: X", "text quotes the recorded reason")
@@ -89,7 +89,8 @@ Method TestIdentityCollision()
 		{"receiptId": "rcp_2", "orderId": "ORD-9", "orderSnapshot": {"patient": {"patientId": "SYN-PAT-0311", "name": "ana souza", "birthDate": "1981-03-04"}}}
 	]}
 	Set evs = ..List(..Ev("evid_1", "system.exception"), ..Ev("evid_7", "tool.receipts_and_orders_by_patient", "fact", receipts))
-	Set d = ##class(SignalNoir.Core.DossierBuilder).Build("moved by test", evs, "", ..Order(), "2026-10-25T10:00:00Z")
+	Set d = ##class(SignalNoir.Core.DossierBuilder).Build("review requested: ambiguous identity", evs, "", ..Order(), "2026-10-25T10:00:00Z")
+	Do $$$AssertEquals(d.reason, "ambiguous_identity", "a generic review over colliding records is an identity case")
 	Do $$$AssertEquals(d.collidingRecords.%Size(), 2, "two colliding records")
 	Set r = d.collidingRecords.%Get(1)
 	Do $$$AssertEquals(r.recordRef, "SYN-PAT-0311", "record ref")
@@ -98,6 +99,10 @@ Method TestIdentityCollision()
 	Do $$$AssertTrue(r.divergentFields.%ToJSON() [ "birthDate", "birthDate diverges")
 	Do $$$AssertTrue('(r.divergentFields.%ToJSON() [ "name"), "name matches (normalized)")
 	Do $$$AssertTrue(d.unknowns.%ToJSON() [ "which of the records", "identity is an unknown")
+	; a specific cause is kept even when records collide
+	Do $$$AssertEquals(##class(SignalNoir.Core.DossierBuilder).Build("provider unavailable: x", evs, "", ..Order(), "2026-10-25T10:00:00Z").reason, "provider_unavailable", "specific cause kept")
+	; the same rule decides for the Rules proposer
+	Do $$$AssertEquals(##class(SignalNoir.Core.Identity).Collisions(evs, ..Order()).%Size(), 2, "one identity rule in the core")
 }
 
 Method TestUnconfirmedPriorReceipt()

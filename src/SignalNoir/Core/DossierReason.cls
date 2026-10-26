@@ -26,6 +26,7 @@ ClassMethod Text(reason As %String, reviewReason As %String) As %String
 		"investigation_interrupted": "The investigation was interrupted by a restart before it finished.",
 		"second_denial": "The proposal was denied twice; the system does not try a third time on its own.",
 		"validator_blocked": "The validator blocked the proposal.",
+		"ambiguous_identity": "More than one synthetic patient record matches this order. The system never acts automatically on ambiguous identity.",
 		: "Automation stopped and asked for a human decision.")
 	Return why _ " Recorded reason: " _ reviewReason _ "."
 }
@@ -39,6 +40,7 @@ ClassMethod NextStep(reason As %String) As %String
 		"investigation_interrupted": "Read the evidence collected before the restart and choose a catalog action, or cancel the case.",
 		"second_denial": "Decide with the denial reasons in view: choose a different catalog action, or cancel the case.",
 		"validator_blocked": "Check the validator's reason codes, then choose another catalog action or cancel the case.",
+		"ambiguous_identity": "Confirm the patient with the origin unit, then choose a catalog action or cancel the case.",
 		: "Choose a catalog action below, or cancel the case.")
 }
 

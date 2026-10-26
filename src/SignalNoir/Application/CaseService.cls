@@ -670,6 +670,16 @@ Method CompleteInvestigation(investigationId As %String, proposal As SignalNoir.
 			Set result = moved
 			Quit
 		}
+		; every Proposal passes the single Validator, whatever its origin (Constitution III)
+		Set verdict = ##class(SignalNoir.Application.ResolutionValidator).Verdict(..Validator, proposal, now)
+		Set pr.verdictJson = verdict.%ToJSON()
+		$$$ThrowOnError(pr.%Save())
+		Do ..AppendEvent(rec, "ValidatorVerdict", "system", proposalId, {"proposalId": (proposalId), "action": (proposal.action), "verdict": (verdict.verdict), "reasons": (verdict.reasons), "requiresApproval": (verdict.requiresApproval)}, now)
+		Set moved = ..RouteProposal(rec, proposal, verdict, now)
+		If 'moved.ok {
+			Set result = moved
+			Quit
+		}
 		$$$ThrowOnError(rec.%Save())
 		Set inv.status = "proposed"
 		Set inv.closedAt = now
@@ -985,6 +995,25 @@ ClassMethod Plus(iso As %String, seconds As %Integer) As %String [ Private ]
 	Set day = day + (secs \ 86400), secs = secs # 86400
 	Set frac = $Piece($Piece(iso, ".", 2), "Z", 1)
 	Return $ZDate(day, 3) _ "T" _ $ZTime(secs, 1) _ $Select(frac '= "": "." _ frac, 1: "") _ "Z"
+}
+
+/// Routes a Case in DecisionProposed by the Validator's verdict (feature 009,
+/// replacing 006 R8's deferral): blocked -> ReviewRequired with the codes;
+/// REQUEST_REVIEW -> ReviewRequired; Approval required -> PendingApproval;
+/// otherwise (HOLD) -> Executing with an Execute request.
+Method RouteProposal(rec As SignalNoir.Application.Model.CaseRecord, proposal As SignalNoir.Core.Dto.Proposal, verdict As %DynamicObject, now As %String) As SignalNoir.Core.Result [ Private ]
+{
+	If verdict.verdict '= "accepted" {
+		Set codes = ""
+		For i = 0 : 1 : verdict.reasons.%Size() - 1 Set codes = codes _ $Select(i = 0: "", 1: ", ") _ verdict.reasons.%Get(i)
+		Return ..ApplyTransition(rec, "ReviewRequired", "system", {"reason": ("validator blocked: " _ codes)}, "", now)
+	}
+	If proposal.action = "REQUEST_REVIEW" {
+		Set why = $Select($IsObject(proposal.params) && (proposal.params.reason '= ""): proposal.params.reason, 1: "no safe action")
+		Return ..ApplyTransition(rec, "ReviewRequired", "system", {"reason": ("review requested: " _ why)}, "", now)
+	}
+	If verdict.requiresApproval Return ..ApplyTransition(rec, "PendingApproval", "system", {"reason": "validator accepted; approval required", "proposalId": (rec.currentProposalId)}, "", now)
+	Return ..ApplyTransition(rec, "Executing", "system", {"reason": "validator accepted; no approval required", "proposalId": (rec.currentProposalId)}, "", now)
 }
 
 Method CloseLocked(inv As SignalNoir.Application.Model.InvestigationRecord, reason As %String, meta As %DynamicObject, now As %String) As SignalNoir.Core.Result [ Private ]

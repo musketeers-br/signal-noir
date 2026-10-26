@@ -6,8 +6,10 @@ Class SignalNoir.Core.ToolCatalog Extends %RegisteredObject
 Parameter READTOOLS = "tool.partner_failure_history,tool.policies,tool.partner_health,tool.mapping_catalog,tool.receipts_and_orders_by_patient,tool.origin_order_status,tool.order_timeline";
 
 /// The base Evidence package every Investigation collects before the
-/// proposer runs (AD-9), in this order
-Parameter BASEPACKAGE = "tool.partner_health,tool.partner_failure_history,tool.origin_order_status,tool.mapping_catalog,tool.policies";
+/// proposer runs (AD-9), in this order. It spends the whole budget: recent
+/// receipts and orders by patient are needed for identity and prior-receipt
+/// review (feature 009).
+Parameter BASEPACKAGE = "tool.partner_health,tool.partner_failure_history,tool.origin_order_status,tool.mapping_catalog,tool.policies,tool.receipts_and_orders_by_patient";
 
 ClassMethod ReadTools() As %List
 {

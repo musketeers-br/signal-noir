@@ -98,9 +98,10 @@ On 2026-10-25 Henry asked for the full cycle of feature 006, including implement
 
 ## R8 — Validator hand-off
 
-- **Decision**: this feature ends at `DecisionProposed`. Calling the Validator and routing to
-  `PendingApproval`/`ReviewRequired` belongs to the Validator integration (004 seam v2, not in this
-  branch) and 007's command flow. No mode-dependent routing exists after the port.
+- **Superseded by 009 (2026-10-26)**: `CompleteInvestigation` now calls the single Validator through
+  `Application.ResolutionValidator` and routes by its verdict in the same transaction (see spec
+  FR-016). Without it no Case reached `ReviewRequired` with an identity Dossier at runtime. When 004
+  lands, only the adapter changes. No mode-dependent routing exists after the port.
 
 ## R9 — Scenario instance id
 

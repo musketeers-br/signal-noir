@@ -14,11 +14,11 @@ Method TestRealAdapterWithoutAiHubOrKey()
 	Set c = svc.GetCase(caseId).obj
 	If ##class(SignalNoir.Proposers.AiHubRuntime).Configured() {
 		Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(cmd)
-		Do $$$AssertTrue((c.state = "DecisionProposed") || (c.reviewReason = "invalid proposer response"), "a Proposal or an honest review: " _ c.state _ " " _ c.reviewReason)
+		Do $$$AssertTrue((c.proposals.Count() > 0) || (c.reviewReason = "invalid proposer response"), "a Proposal or an honest review: " _ c.state _ " " _ c.reviewReason)
 		Do $$$AssertTrue(inv.provider '= "", "provider recorded")
 		Do $$$AssertTrue(inv.model '= "", "model recorded")
 		Do $$$AssertTrue(inv.tokensIn > 0, "tokens recorded")
-		Do $$$AssertEquals(inv.toolCalls, 5, "same base package")
+		Do $$$AssertEquals(inv.toolCalls, 6, "same base package")
 		Return
 	}
 	Do $$$AssertEquals(c.state, "ReviewRequired", "review")
@@ -26,7 +26,7 @@ Method TestRealAdapterWithoutAiHubOrKey()
 	Do $$$AssertTrue(c.evidence.Count() >= 6, "base Evidence kept")
 	Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(cmd)
 	Do $$$AssertEquals(inv.status, "review", "outcome")
-	Do $$$AssertEquals(inv.toolCalls, 5, "tool calls")
+	Do $$$AssertEquals(inv.toolCalls, 6, "tool calls")
 	Do $$$AssertTrue(inv.durationMs '= "", "duration")
 	Do $$$AssertEquals(##class(SignalNoir.Proposers.Factory).Ready("agent"), ##class(SignalNoir.Proposers.AiHubRuntime).Configured(), "readiness follows the adapter")
 }

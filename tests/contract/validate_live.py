@@ -69,11 +69,12 @@ def main() -> int:
             failures += 1
         check("timeline", f"/cases/{case_id}/timeline?sinceSeq=0&limit=2", 200, "TimelinePage")
         check("timeline tail", f"/cases/{case_id}/timeline?sinceSeq={detail['lastEventSeq']}", 200, "TimelinePage")
-    proposed = check("with proposals", "/cases?state=DecisionProposed&limit=2", 200, "CaseListPage")
-    for item in proposed["items"]:
+    proposed = check("with proposals", "/cases?state=PendingApproval&limit=50", 200, "CaseListPage")
+    # cases walked to PendingApproval by backend tests have no proposal; use real ones
+    for item in [i for i in proposed["items"] if i.get("currentProposal")][:2]:
         detail = check("detail+proposal", f"/cases/{item['caseId']}", 200, "CaseDetail")
         if not detail.get("proposals") or not detail.get("evidence"):
-            print("FAIL     DecisionProposed detail without proposals/evidence")
+            print("FAIL     PendingApproval detail without proposals/evidence")
             failures += 1
     # feature 009: review dossier, resolution answers and reference data
     review = check("in review", "/cases?state=ReviewRequired&limit=3", 200, "CaseListPage")

@@ -36,7 +36,7 @@ scoring are other features.
 
 A Case in `Investigating` has a pending investigation request. The Investigation starts, gathers the
 base Evidence package through the read-only Tools (partner health, partner failure history, Order
-status at the Origin, the mapping catalog, the policies) and records the Exceptions already on the
+status at the Origin, the mapping catalog, the policies, recent receipts and orders by patient) and records the Exceptions already on the
 Case as Evidence. It gives that Evidence to the proposer of the Case's mode. The proposer answers
 with a Diagnosis, an Action with parameters, a confidence and preconditions. The answer becomes an
 immutable Proposal whose every claim points to recorded Evidence, and the Case moves to
@@ -212,7 +212,8 @@ and with a malformed answer; read each Case's state and reason.
   reason naming the limit, keeping the Evidence already recorded.
 - **FR-004**: An Investigation MUST record the Case's Exceptions as Evidence and collect the base
   Evidence package (partner health, partner failure history, Order status at the Origin, mapping
-  catalog, policies) through the Tools entry point before invoking the proposer.
+  catalog, policies, recent receipts and orders by patient) through the Tools entry point before
+  invoking the proposer.
 - **FR-005**: Once closed, an Investigation MUST NOT be changed by a later answer; the late answer
   MUST be recorded as discarded.
 - **FR-006**: Every Investigation MUST record mode, provider, model, prompt version, policy version,
@@ -252,7 +253,9 @@ and with a malformed answer; read each Case's state and reason.
   current per Case, and a new one supersedes the previous one.
 - **FR-016**: Recording a Proposal and moving the Case to `DecisionProposed` MUST happen together,
   with the proposer's mode as actor, and only if the Investigation is still open and the Case still
-  at the version the Investigation started from.
+  at the version the Investigation started from. In the same unit the Proposal passes the single
+  Validator and the Case is routed by its verdict (feature 009): blocked or `REQUEST_REVIEW` →
+  `ReviewRequired`; accepted and needing Approval → `PendingApproval`; otherwise → `Executing`.
 - **FR-017**: The Agent proposer MUST call the AI Hub Agent inside the Investigation with a new
   session per Investigation and only reading Tools. When the Agent cannot call Tools in the running
   build, it MUST receive the pre-collected Evidence in a single call; the AI Hub call still happens.
@@ -298,8 +301,9 @@ and with a malformed answer; read each Case's state and reason.
   `Investigating`; feature 007 owns dispatching it. This feature provides the handler that runs it.
 - Confidence is `HIGH`, `MEDIUM`, `LOW`; the contract enum was changed from the Portuguese
   `ALTA/MEDIA/BAIXA` to match (contract change 006, "always English in code").
-- The base package uses 5 of the 6 Tool calls; the proposer may use the remaining one. The Order
-  timeline is available as a Tool for proposers that need it.
+- The base package uses all 6 Tool calls (revised by 009: recent receipts and orders by patient are
+  needed for identity and prior-receipt review). A proposer asking for more is refused by the
+  budget. The Order timeline remains available as a Tool.
 - Policies and the mapping catalog are reference data owned by feature 004. Until it is integrated,
   those Tools report the absence of information, which is honest and keeps the budget identical.
 - Rules Mode here is the minimal deterministic proposer needed to prove the shared path; the
