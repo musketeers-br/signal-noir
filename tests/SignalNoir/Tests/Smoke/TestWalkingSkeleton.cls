@@ -48,6 +48,11 @@ Method TestWalkingSkeleton()
 	Do $$$AssertTrue(pr.ok, "provider path: failure recorded")
 	Set pg = svc2.GetCase(pr.ref)
 	Do $$$AssertTrue(pg.ok, "provider path: case readable")
+	If ##class(SignalNoir.Proposers.AiHubRuntime).Configured() {
+		; with a provider the case is routed to an investigation instead
+		Do $$$AssertEquals(pg.obj.state, "Investigating", "provider configured: state Investigating")
+		Return
+	}
 	Do $$$AssertEquals(pg.obj.state, "ReviewRequired", "provider path: state ReviewRequired")
 	Do $$$AssertTrue(pg.obj.reviewReason '= "", "provider path: review reason recorded")
 }

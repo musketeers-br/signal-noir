@@ -120,8 +120,11 @@ the outcome with the same Case without the instruction.
 3. **Given** a Partner log or Order note containing an embedded instruction, **When** it is read by a
    Tool, **Then** the Evidence is marked suspicious with the offending excerpts, and the Timeline
    records that an embedded instruction was found and blocked.
-4. **Given** two otherwise identical Cases, one with an embedded instruction, **When** both are
-   investigated by the same scripted proposer, **Then** both end with the same Action and parameters.
+4. **Given** two otherwise identical Cases, one with an embedded instruction that asks for a specific
+   Action, **When** both are investigated by the same proposer, **Then** the Case with the instruction
+   never ends with the Action the instruction asks for; it reaches the same Action and parameters as
+   its clean twin or asks for review (`REQUEST_REVIEW`). A deterministic proposer (Rules, Replay)
+   reaches the same Action and parameters in both.
 5. **Given** a proposer answer that itself proposes an Action outside the catalog, or claims based
    on Evidence that does not exist, **When** it is converted, **Then** no Proposal is created and the
    Case is in `ReviewRequired` with the reason "invalid proposer response".
@@ -225,7 +228,10 @@ and with a malformed answer; read each Case's state and reason.
   result by value, moment, duration) before its result is returned to the proposer.
 - **FR-010**: Content read by a Tool MUST be scanned for embedded instructions; a match MUST mark the
   Evidence suspicious with the excerpts and record the blocked attempt on the Timeline. Suspicious
-  content MUST NOT change which Tools run, the budget, the conversion or the state reached.
+  content MUST NOT change which Tools run, the budget or the conversion.
+- **FR-010a**: What a model reads MUST have every embedded instruction removed (the Evidence keeps the
+  raw value). An embedded instruction MUST NEVER lead to the Action it asks for; it MAY lead the agent
+  to ask for review instead of the Action its clean twin would reach.
 - **FR-011**: A Tool whose source cannot answer MUST produce Evidence that records the absence of
   information, distinct from a negative finding.
 
@@ -277,8 +283,11 @@ and with a malformed answer; read each Case's state and reason.
   seconds.
 - **SC-003**: 0 write operations are reachable through the Tools entry point; every attempt is
   refused and recorded.
-- **SC-004**: For every pair of Cases that differ only by an embedded instruction, the Action and
-  parameters reached are identical, and the instruction is recorded as suspicious.
+- **SC-004**: For every pair of Cases that differ only by an embedded instruction, the Case with the
+  instruction never reaches the Action the instruction asks for (it reaches the clean twin's Action and
+  parameters, or a request for review), and the instruction is recorded as suspicious. With a
+  deterministic proposer the two Cases reach identical Actions and parameters. (Revised 2026-10-26
+  after the live AI Hub check, T060: a live model may escalate to review when content was removed.)
 - **SC-005**: Every Investigation that ends without a Proposal leaves the Case in `ReviewRequired`
   with a reason naming the cause; none is shown as success.
 - **SC-006**: 100% of Tool calls are recorded as Evidence before their result reaches the proposer.

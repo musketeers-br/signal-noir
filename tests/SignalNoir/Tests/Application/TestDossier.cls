@@ -18,6 +18,10 @@ ClassMethod AssertNothingInvented(test, svc, caseId)
 
 Method TestProviderUnavailableAtOpen()
 {
+	If ##class(SignalNoir.Proposers.AiHubRuntime).Configured() {
+		Do $$$LogMessage("skipped: an AI provider is configured on this instance, so a new case is not routed to review at open")
+		Return
+	}
 	; with no provider, a new agent-mode Case goes straight to ReviewRequired (001/006)
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
 	Set orderId = ##class(SignalNoir.Tests.Support).Uid("dos-prov")

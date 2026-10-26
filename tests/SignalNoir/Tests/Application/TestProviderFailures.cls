@@ -2,13 +2,25 @@ Class SignalNoir.Tests.Application.TestProviderFailures Extends %UnitTest.TestCa
 {
 
 /// 006 T034 - US5: provider problems end in review, with the reason
+/// Without AI Hub or key: review naming the provider. With them (build 154 +
+/// .env, task T060): the real Agent call ends in a Proposal or an honest
+/// review, with provider, model and tokens recorded.
 Method TestRealAdapterWithoutAiHubOrKey()
 {
 	Set S = "SignalNoir.Tests.Support"
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set caseId = $ClassMethod(S, "InvestigatingCase", svc, "noai", "agent", .cmd)
+	Set caseId = $ClassMethod(S, "InvestigatingCase", svc, "noai", "agent", .cmd, "SERUM")
 	Set r = $ClassMethod(S, "Investigate", cmd, "SignalNoir.Proposers.Agent")
 	Set c = svc.GetCase(caseId).obj
+	If ##class(SignalNoir.Proposers.AiHubRuntime).Configured() {
+		Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(cmd)
+		Do $$$AssertTrue((c.state = "DecisionProposed") || (c.reviewReason = "invalid proposer response"), "a Proposal or an honest review: " _ c.state _ " " _ c.reviewReason)
+		Do $$$AssertTrue(inv.provider '= "", "provider recorded")
+		Do $$$AssertTrue(inv.model '= "", "model recorded")
+		Do $$$AssertTrue(inv.tokensIn > 0, "tokens recorded")
+		Do $$$AssertEquals(inv.toolCalls, 5, "same base package")
+		Return
+	}
 	Do $$$AssertEquals(c.state, "ReviewRequired", "review")
 	Do $$$AssertEquals($Extract(c.reviewReason, 1, 21), "provider unavailable:", "reason names the provider problem: " _ c.reviewReason)
 	Do $$$AssertTrue(c.evidence.Count() >= 6, "base Evidence kept")
