@@ -70,6 +70,9 @@ patient records were collected.
 - [X] T023 `CaseService.CompleteInvestigation` + `RouteProposal`: verdict through
   `ResolutionValidator`, `ValidatorVerdict` event, routing by verdict (FR-014)
 - [X] T024 Specs 006/009 updated; full suite, live contract and analysis recorded in research.md
+- [X] T025 Analysis follow-ups: `TestDossier.TestEachReviewEntryRecordsAFreshDossier` (C1); plan.md
+  (I1), `contracts/coordination-004-007.md` (I2) and data-model.md (I3) brought in line with the
+  routing, `Core.Identity`, `verdictJson` and build 154
 
 ## Dependencies
 

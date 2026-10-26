@@ -93,6 +93,23 @@ Method TestDossierCommitsWithTheTransition()
 	Do $$$AssertEquals(..Latest(svc, caseId).reason, "review_requested", "Dossier with the transition")
 }
 
+/// 009 FR-001: each entry into ReviewRequired records its own Dossier; the
+/// earlier one is kept and the detail shows the latest
+Method TestEachReviewEntryRecordsAFreshDossier()
+{
+	Set S = "SignalNoir.Tests.Support"
+	Set svc = ##class(SignalNoir.Application.CaseService).Default()
+	Set caseId = $ClassMethod(S, "OpenCase", svc, $ClassMethod(S, "Uid", "dos-twice"))
+	Do $$$AssertTrue(svc.MarkReviewRequired(caseId, svc.GetCase(caseId).obj.caseVersion, "system", "moved by test").ok, "first entry")
+	Do $$$AssertEquals(..Latest(svc, caseId).reason, "review_requested", "first Dossier")
+	Do $$$AssertTrue(svc.Transition(caseId, svc.GetCase(caseId).obj.caseVersion, "Investigating", "system", $ClassMethod(S, "Ev", "reinvestigate")).ok, "back to investigation")
+	Do $$$AssertTrue(svc.MarkReviewRequired(caseId, svc.GetCase(caseId).obj.caseVersion, "system", "investigation interrupted").ok, "second entry")
+	Do $$$AssertEquals($ClassMethod(S, "Count", "SELECT COUNT(*) FROM SignalNoir_Application_Model.DossierRecord WHERE caseId = ?", caseId), 2, "one Dossier per entry")
+	Do $$$AssertEquals(..Latest(svc, caseId).reason, "investigation_interrupted", "detail shows the latest")
+	Set types = $ClassMethod(S, "Types", svc, caseId)
+	Do $$$AssertEquals($Length(types, "DossierCreated") - 1, 2, "two DossierCreated events")
+}
+
 /// 009 US1 #3 end to end: recorded patient records collide; the Rules
 /// proposer asks for review, the Validator routes the Case to review, and the
 /// Dossier lists the colliding records with their divergent fields

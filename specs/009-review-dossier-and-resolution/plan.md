@@ -21,11 +21,18 @@ for HOLD) with an `Execute` follow-up, all in one transaction. The API adds `POS
 `GET /reference/action-catalog`, `GET /reference/mappings`, and the detail's `dossier` and
 `approvals`.
 
+The same adapter now also routes every proposer's Proposal: `CompleteInvestigation` records the
+verdict (`ProposalRecord.verdictJson` and a `ValidatorVerdict` event) and `RouteProposal` moves
+`DecisionProposed` to `ReviewRequired` (blocked, or `REQUEST_REVIEW`), `PendingApproval` or
+`Executing`. Identity collisions live in a pure `Core.Identity`, shared by the Dossier builder
+(reason `ambiguous_identity`) and the Rules proposer (asks for review); the base Evidence package
+includes `tool.receipts_and_orders_by_patient`, so it uses the whole six-call budget.
+
 ## Technical Context
 
-**Language/Version**: ObjectScript (dev instance IRIS 2026.2 build 221; see 006 R0).
+**Language/Version**: ObjectScript (verified on IRIS 2026.3 AI Hub build 154, `dev/aihub`; see 006 R0).
 
-**Primary Dependencies**: existing `CaseService`, `Core.Validator` (seam v1), `%DynamicObject`.
+**Primary Dependencies**: existing `CaseService`, `Core.Validator` (seam v1), AI Hub (`%AI.*`) for the live agent, `%DynamicObject`.
 
 **Storage**: new `DossierRecord` and `ApprovalRecord` in `SignalNoir.Application.Model`.
 
@@ -47,8 +54,8 @@ extended to the resolution and reference operations.
   action catalog are pure core classes; the Application only gathers rows and persists.
 - [x] **II. Closed Catalog** — the resolution accepts only catalog Actions and their allowed
   parameters; `REQUEST_REVIEW` and any extra field are refused; no payload editing.
-- [x] **III. One Validator** — the Operator's Proposal goes through the single Validator (one
-  adapter, the same class 006's routing will use at integration); no relaxed path.
+- [x] **III. One Validator** — the Operator's Proposal and every proposer's Proposal go through
+  the single Validator (one adapter, `Application.ResolutionValidator`); no relaxed path.
 - [x] **IV. Human Authority** — the Approval binds the exact Operator Proposal, with a deadline; the
   approver is the declared Operator.
 - [x] **V. Case as Source of Truth** — Dossier with its transition; resolution writes Proposal,
@@ -67,11 +74,13 @@ extended to the resolution and reference operations.
 ```text
 specs/009-review-dossier-and-resolution/  plan.md research.md data-model.md quickstart.md tasks.md
                                           contracts/coordination-004-007.md  checklists/
-src/SignalNoir/Core/  DossierReason.cls  DossierBuilder.cls  ActionCatalog.cls  ResolutionShape.cls  OperatorProposal.cls
+src/SignalNoir/Core/  DossierReason.cls  DossierBuilder.cls  Identity.cls  ActionCatalog.cls  ResolutionShape.cls  OperatorProposal.cls
+src/SignalNoir/Core/  ToolCatalog.cls  CaseMachine.cls  Suspicion.cls   # base package of 6, no expression methods, Neutralize
+src/SignalNoir/Proposers/  Rules.cls  Agent.cls  AiHubRuntime.cls      # identity rule; neutralized input; temperature 0, usage
 src/SignalNoir/Core/Dto/Case.cls               # + dossier, approvals
 src/SignalNoir/Application/ResolutionValidator.cls
-src/SignalNoir/Application/CaseService.cls     # dossier on ReviewRequired, ResolveReview, reads
-src/SignalNoir/Application/Model/  DossierRecord.cls  ApprovalRecord.cls
+src/SignalNoir/Application/CaseService.cls     # dossier on ReviewRequired, RouteProposal, ResolveReview, reads
+src/SignalNoir/Application/Model/  DossierRecord.cls  ApprovalRecord.cls  ProposalRecord.cls (+ verdictJson)
 src/SignalNoir/Api/Dispatch.cls                # resolution, reference, detail dossier/approvals
 tests/SignalNoir/Tests/Core/  TestDossierBuilder  TestResolutionShape  TestActionCatalog
 tests/SignalNoir/Tests/Application/  TestDossier  TestResolution
@@ -84,3 +93,4 @@ tests/SignalNoir/Tests/Api/  TestResolutionApi
 |-----------|------------|--------------------------------------|
 | `ApprovalRecord` created here, before 007 | The contract's `resolveReview` records the Operator's own Approval in the same command | Leaving the Case in `PendingApproval` contradicts the contract; a 007 port with a fake would leave the runtime without an implementation. Coordination recorded in `contracts/coordination-004-007.md` |
 | Validator adapter over the seam-v1 Validator | 004's v2 is not merged; the resolution must use the single Validator now | Writing a v2 `ValidationInput` here would write 004's files |
+| Proposal routing done here, not at G2 | Without it a blocked or `REQUEST_REVIEW` Proposal never reached review, so US1 #3/#4 could not happen end to end | Waiting for G2 would leave the Dossier unreachable from a real investigation |
