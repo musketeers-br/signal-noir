@@ -67,7 +67,7 @@ contracts/contract-change-006-investigation-seam.md, quickstart)
 ## Phase 5: User Story 3 — Read-only Tools, recorded first, untrusted content cannot steer (P1)
 
 - [X] T024 [P] [US3] `tests/SignalNoir/Tests/Core/TestSuspicion.cls`: EN/PT phrases found with excerpts; nested arrays/objects scanned; clean text → none; case-insensitive
-- [X] T025 [P] [US3] `tests/SignalNoir/Tests/Application/TestToolGateway.cls`: write-like names refused, nothing charged, `write_attempt_blocked` recorded; Evidence exists before `Invoke` returns (source double asserts the Case has no Evidence for its own call yet, gateway result id exists in the store); absence result → `kind=absence`; suspicious Partner log → Evidence suspicious + `embedded_instruction_blocked`; twin Cases with/without injection in Order notes and Partner log → same Action and params
+- [X] T025 [P] [US3] `tests/SignalNoir/Tests/Application/TestToolGateway.cls`: write-like names refused, nothing charged, `write_attempt_blocked` recorded; Evidence exists before `Invoke` returns (source double asserts the Case has no Evidence for its own call yet, gateway result id exists in the store); absence result → `kind=absence`; suspicious Partner log → Evidence suspicious + `embedded_instruction_blocked`; twin Cases with/without injection in Order notes and Partner log → same Action and params with the deterministic proposer; with the live agent (when configured) the poisoned twin never reaches the instructed Action (SC-004 as revised after T060)
 - [X] T026 [P] [US3] Add to `TestInvestigation.cls`: answer with Action outside catalog / claims citing unknown Evidence → `ReviewRequired` "invalid proposer response"
 - [X] T027 [US3] Create `src/SignalNoir/Core/Suspicion.cls`; wire the scan into `ToolGateway` and into the Order snapshot Evidence
 - [X] T028 [US3] Compile and run US3 green
@@ -106,7 +106,7 @@ contracts/contract-change-006-investigation-seam.md, quickstart)
 - [X] T041 [P] Secret audit: grep `src/SignalNoir` for the key variable; confirm it is read only inside `AiHubRuntime` at call time
 - [X] T042 Full run: all suites, `validate_live.py`, `contracts/tools/validate_fixtures.py`; record in research.md
 - [X] T043 Update `docs/specify-prompts/PARALELISMO.md` board row 006
-- [ ] T060 **(open until G2)** On build 154 with a real key: run the Agent proposer through `AiHubRuntime` on a P5 Case, confirm the `%AI.*` calls, token fields and timeout behavior, and record them in research.md
+- [X] T060 **(done 2026-10-26, build 154 ARM64 Community + OpenAI gpt-4o-mini; see research T060)** On build 154 with a real key: run the Agent proposer through `AiHubRuntime` on a P5 Case, confirm the `%AI.*` calls, token fields and timeout behavior, and record them in research.md
 
 ---
 

@@ -6,9 +6,9 @@ Class SignalNoir.Core.CaseMachine Extends %RegisteredObject
 /// "from>to" = "actors;followUp". "operator" stands for any operator:<name>.
 /// The rows marked (exception) are the system reinvestigation on a new
 /// Exception of the same Order (FR-012).
-ClassMethod Table() As %String [ CodeMode = expression, Private ]
+ClassMethod Table() As %List [ Private ]
 {
-$ListBuild(
+	Return $ListBuild(
 		">Open", "system;",
 		"Open>Investigating", "system;Investigate",
 		"Open>ReviewRequired", "system;",

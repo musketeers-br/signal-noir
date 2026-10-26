@@ -13,7 +13,11 @@ Method TestP5ProducesEvidenceLinkedProposal()
 	Do $$$AssertTrue(r.ok, "ran")
 	Do $$$AssertEquals(r.details.status, "proposed", "proposed: " _ r.details.reason)
 	Set c = svc.GetCase(caseId).obj
-	Do $$$AssertEquals(c.state, "DecisionProposed", "DecisionProposed")
+	; REQUEST_REVIEW, accepted by the Validator, routes the Case to review with a Dossier (009)
+	Do $$$AssertEquals(c.state, "ReviewRequired", "a request for review ends in ReviewRequired")
+	Do $$$AssertTrue(c.reviewReason [ "review requested", "reason: " _ c.reviewReason)
+	Do $$$AssertEquals(c.dossier.reason, "review_requested", "Dossier recorded")
+	Do $$$AssertTrue($ClassMethod(S, "Types", svc, caseId) [ "ProposalCreated;StateChanged;ValidatorVerdict;StateChanged;", "Proposal, DecisionProposed, the verdict, then the routing")
 	Do $$$AssertEquals(c.proposals.Count(), 1, "one Proposal")
 	Set p = c.proposals.GetAt(1)
 	Do $$$AssertEquals($Extract(p.proposalId, 1, 5), "prop_", "own proposalId")
@@ -31,18 +35,18 @@ Method TestP5ProducesEvidenceLinkedProposal()
 		For j = 0 : 1 : cited.%Size() - 1 Do $$$AssertTrue($Data(ids(cited.%Get(j))), "cited Evidence is on the Case")
 	}
 	Do $$$AssertEquals(p.diagnosis.hypotheses.%Get(0).reason, "health is UP", "discarded hypothesis keeps its reason")
-	; Exceptions are system Evidence; the base package is 5 Tool calls before the Proposal
+	; Exceptions are system Evidence; the base package is 6 Tool calls before the Proposal
 	Set sources = ""
 	For i = 1 : 1 : c.evidence.Count() Set sources = sources _ c.evidence.GetAt(i).source _ ","
 	Do $$$AssertTrue(sources [ "system.exception", "Exception recorded as Evidence")
 	Set types = $ClassMethod(S, "Types", svc, caseId)
-	Do $$$AssertTrue(types [ "ToolCalled;ToolCalled;ToolCalled;ToolCalled;ToolCalled;", "five base Tool calls")
+	Do $$$AssertTrue(types [ "ToolCalled;ToolCalled;ToolCalled;ToolCalled;ToolCalled;ToolCalled;", "six base Tool calls")
 	Do $$$AssertTrue($Find(types, "ProposalCreated;StateChanged;") > $Find(types, "ToolCalled;"), "Tool calls before the Proposal, then the state change")
 	; versions and metrics
 	Do $$$AssertEquals(p.versions.policy, "pol-2026.10.1", "policy version from the Evidence")
 	Do $$$AssertEquals(p.versions.mapping, "2026.10.1", "mapping version from the Evidence")
 	Do $$$AssertEquals(p.versions.model, "scripted-1", "model")
-	Do $$$AssertEquals(p.metrics.toolCalls, 5, "toolCalls")
+	Do $$$AssertEquals(p.metrics.toolCalls, 6, "toolCalls")
 	Do $$$AssertEquals(p.metrics.tokensIn, 120, "tokens")
 	Set inv = ##class(SignalNoir.Application.Model.InvestigationRecord).%OpenId(cmd)
 	Do $$$AssertEquals(inv.status, "proposed", "investigation proposed")
@@ -50,7 +54,7 @@ Method TestP5ProducesEvidenceLinkedProposal()
 	Do $$$AssertEquals(inv.provider, "scripted", "provider")
 	Do $$$AssertEquals(inv.promptVersion, "script-v1", "prompt version")
 	Do $$$AssertTrue(inv.durationMs '= "", "duration")
-	Do $$$AssertEquals(inv.toolCalls, 5, "tool calls")
+	Do $$$AssertEquals(inv.toolCalls, 6, "tool calls")
 	Do $$$AssertEquals(##class(SignalNoir.Application.Model.OutboxRecord).%OpenId(cmd).status, "done", "request done")
 	Do $ClassMethod(S, "ClearScript", caseId)
 }
@@ -68,6 +72,9 @@ Method TestP8bKeepsTheChosenMapping()
 	Do $$$AssertEquals(p.params.mappingId, "map_glicj_soro", "mappingId")
 	Do $$$AssertEquals(p.params.mappingVersion, "2026.10.1", "mappingVersion")
 	Do $$$AssertEquals(p.confidence, "HIGH", "confidence")
+	; an accepted Action that needs approval waits for the Operator (009 routing)
+	Do $$$AssertEquals(svc.GetCase(caseId).obj.state, "PendingApproval", "PendingApproval")
+	Do $$$AssertEquals(##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(p.proposalId).verdictJson [ "accepted", 1, "verdict recorded with the Proposal")
 	Do $ClassMethod(S, "ClearScript", caseId)
 }
 

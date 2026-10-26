@@ -42,4 +42,33 @@ ClassMethod Walk(value, out As %ListOfDataTypes, depth As %Integer) [ Private ]
 	}
 }
 
+/// A copy of value for a model's input in which every string that holds an
+/// embedded instruction is replaced as a whole by a marker. The recorded
+/// Evidence keeps the raw value; only what the model reads is neutralized
+/// (006 T060: a live model followed an instruction left in a partner log).
+ClassMethod Neutralize(value, depth As %Integer = 0)
+{
+	If depth > 20 Return value
+	If $IsObject(value) {
+		If 'value.%IsA("%DynamicAbstractObject") Return value
+		Set copy = $Select(value.%IsA("%DynamicArray"): [], 1: {})
+		Set it = value.%GetIterator()
+		While it.%GetNext(.key, .item, .type) {
+			If $IsObject(item) {
+				Set item = ..Neutralize(item, depth + 1)
+			} ElseIf (type = "string") && (..Scan(item).Count() > 0) {
+				Set item = "[embedded instruction removed]"
+			}
+			If copy.%IsA("%DynamicArray") {
+				Do copy.%Push(item, $Select($IsObject(item): "", type = "string": "string", 1: type))
+			} Else {
+				Do copy.%Set(key, item, $Select($IsObject(item): "", type = "string": "string", 1: type))
+			}
+		}
+		Return copy
+	}
+	If ..Scan(value).Count() > 0 Return "[embedded instruction removed]"
+	Return value
+}
+
 }

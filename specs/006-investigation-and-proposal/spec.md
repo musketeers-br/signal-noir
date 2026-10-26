@@ -36,7 +36,7 @@ scoring are other features.
 
 A Case in `Investigating` has a pending investigation request. The Investigation starts, gathers the
 base Evidence package through the read-only Tools (partner health, partner failure history, Order
-status at the Origin, the mapping catalog, the policies) and records the Exceptions already on the
+status at the Origin, the mapping catalog, the policies, recent receipts and orders by patient) and records the Exceptions already on the
 Case as Evidence. It gives that Evidence to the proposer of the Case's mode. The proposer answers
 with a Diagnosis, an Action with parameters, a confidence and preconditions. The answer becomes an
 immutable Proposal whose every claim points to recorded Evidence, and the Case moves to
@@ -120,8 +120,11 @@ the outcome with the same Case without the instruction.
 3. **Given** a Partner log or Order note containing an embedded instruction, **When** it is read by a
    Tool, **Then** the Evidence is marked suspicious with the offending excerpts, and the Timeline
    records that an embedded instruction was found and blocked.
-4. **Given** two otherwise identical Cases, one with an embedded instruction, **When** both are
-   investigated by the same scripted proposer, **Then** both end with the same Action and parameters.
+4. **Given** two otherwise identical Cases, one with an embedded instruction that asks for a specific
+   Action, **When** both are investigated by the same proposer, **Then** the Case with the instruction
+   never ends with the Action the instruction asks for; it reaches the same Action and parameters as
+   its clean twin or asks for review (`REQUEST_REVIEW`). A deterministic proposer (Rules, Replay)
+   reaches the same Action and parameters in both.
 5. **Given** a proposer answer that itself proposes an Action outside the catalog, or claims based
    on Evidence that does not exist, **When** it is converted, **Then** no Proposal is created and the
    Case is in `ReviewRequired` with the reason "invalid proposer response".
@@ -209,7 +212,8 @@ and with a malformed answer; read each Case's state and reason.
   reason naming the limit, keeping the Evidence already recorded.
 - **FR-004**: An Investigation MUST record the Case's Exceptions as Evidence and collect the base
   Evidence package (partner health, partner failure history, Order status at the Origin, mapping
-  catalog, policies) through the Tools entry point before invoking the proposer.
+  catalog, policies, recent receipts and orders by patient) through the Tools entry point before
+  invoking the proposer.
 - **FR-005**: Once closed, an Investigation MUST NOT be changed by a later answer; the late answer
   MUST be recorded as discarded.
 - **FR-006**: Every Investigation MUST record mode, provider, model, prompt version, policy version,
@@ -225,7 +229,10 @@ and with a malformed answer; read each Case's state and reason.
   result by value, moment, duration) before its result is returned to the proposer.
 - **FR-010**: Content read by a Tool MUST be scanned for embedded instructions; a match MUST mark the
   Evidence suspicious with the excerpts and record the blocked attempt on the Timeline. Suspicious
-  content MUST NOT change which Tools run, the budget, the conversion or the state reached.
+  content MUST NOT change which Tools run, the budget or the conversion.
+- **FR-010a**: What a model reads MUST have every embedded instruction removed (the Evidence keeps the
+  raw value). An embedded instruction MUST NEVER lead to the Action it asks for; it MAY lead the agent
+  to ask for review instead of the Action its clean twin would reach.
 - **FR-011**: A Tool whose source cannot answer MUST produce Evidence that records the absence of
   information, distinct from a negative finding.
 
@@ -246,7 +253,9 @@ and with a malformed answer; read each Case's state and reason.
   current per Case, and a new one supersedes the previous one.
 - **FR-016**: Recording a Proposal and moving the Case to `DecisionProposed` MUST happen together,
   with the proposer's mode as actor, and only if the Investigation is still open and the Case still
-  at the version the Investigation started from.
+  at the version the Investigation started from. In the same unit the Proposal passes the single
+  Validator and the Case is routed by its verdict (feature 009): blocked or `REQUEST_REVIEW` →
+  `ReviewRequired`; accepted and needing Approval → `PendingApproval`; otherwise → `Executing`.
 - **FR-017**: The Agent proposer MUST call the AI Hub Agent inside the Investigation with a new
   session per Investigation and only reading Tools. When the Agent cannot call Tools in the running
   build, it MUST receive the pre-collected Evidence in a single call; the AI Hub call still happens.
@@ -277,8 +286,11 @@ and with a malformed answer; read each Case's state and reason.
   seconds.
 - **SC-003**: 0 write operations are reachable through the Tools entry point; every attempt is
   refused and recorded.
-- **SC-004**: For every pair of Cases that differ only by an embedded instruction, the Action and
-  parameters reached are identical, and the instruction is recorded as suspicious.
+- **SC-004**: For every pair of Cases that differ only by an embedded instruction, the Case with the
+  instruction never reaches the Action the instruction asks for (it reaches the clean twin's Action and
+  parameters, or a request for review), and the instruction is recorded as suspicious. With a
+  deterministic proposer the two Cases reach identical Actions and parameters. (Revised 2026-10-26
+  after the live AI Hub check, T060: a live model may escalate to review when content was removed.)
 - **SC-005**: Every Investigation that ends without a Proposal leaves the Case in `ReviewRequired`
   with a reason naming the cause; none is shown as success.
 - **SC-006**: 100% of Tool calls are recorded as Evidence before their result reaches the proposer.
@@ -289,8 +301,9 @@ and with a malformed answer; read each Case's state and reason.
   `Investigating`; feature 007 owns dispatching it. This feature provides the handler that runs it.
 - Confidence is `HIGH`, `MEDIUM`, `LOW`; the contract enum was changed from the Portuguese
   `ALTA/MEDIA/BAIXA` to match (contract change 006, "always English in code").
-- The base package uses 5 of the 6 Tool calls; the proposer may use the remaining one. The Order
-  timeline is available as a Tool for proposers that need it.
+- The base package uses all 6 Tool calls (revised by 009: recent receipts and orders by patient are
+  needed for identity and prior-receipt review). A proposer asking for more is refused by the
+  budget. The Order timeline remains available as a Tool.
 - Policies and the mapping catalog are reference data owned by feature 004. Until it is integrated,
   those Tools report the absence of information, which is honest and keeps the budget identical.
 - Rules Mode here is the minimal deterministic proposer needed to prove the shared path; the

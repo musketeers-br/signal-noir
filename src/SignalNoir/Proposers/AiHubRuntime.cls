@@ -4,8 +4,9 @@ Class SignalNoir.Proposers.AiHubRuntime Extends SignalNoir.Core.Port.AgentRuntim
 /// The AI Hub adapter (build 154): one Agent call in a new session.
 /// Reached only by dynamic dispatch, so the class compiles on an instance
 /// without %AI.* and reports "provider unavailable" there.
-/// NOT VERIFIED LIVE: the dev instance has no AI Hub (006 research R0); the
-/// calls follow the 001 stack research and are verified by task T060.
+/// Verified live on build 154 (006 task T060, 2026-10-26): Provider.Create,
+/// Agent.%New(provider), Model, SystemPrompt, CreateSession, Chat, Content
+/// and Usage behave as used here.
 /// The key is read from the runtime environment at call time and never
 /// stored, logged or echoed.
 /// AI Hub is present and a provider, model and key are configured
@@ -28,6 +29,8 @@ Method Complete(systemPrompt As %String, input As %String, sessionTag As %String
 		Set agent = $ClassMethod("%AI.Agent", "%New", provider)
 		Set $Property(agent, "Model") = model
 		Set $Property(agent, "SystemPrompt") = systemPrompt
+		; the same evidence should lead to the same proposal (006 T060)
+		Set $Property(agent, "Temperature") = 0
 		; a new session for this Investigation only
 		Set session = $Method(agent, "CreateSession")
 		Set response = $Method(agent, "Chat", session, input)
@@ -44,17 +47,18 @@ Method Complete(systemPrompt As %String, input As %String, sessionTag As %String
 	Return result
 }
 
-/// Token usage when the response exposes it (property names unverified)
+/// Token usage from %AI.LLM.Response.Usage (verified on build 154, T060:
+/// prompt_tokens, completion_tokens, total_tokens, cache_read_tokens,
+/// reasoning_tokens)
 Method Usage(response, details As %DynamicObject) [ Private ]
 {
 	Try {
 		Set usage = $Property(response, "Usage")
-		If $IsObject(usage) {
-			Set in = $Select(usage.%IsA("%DynamicObject"): usage.%Get("input_tokens"), 1: "")
-			Set out = $Select(usage.%IsA("%DynamicObject"): usage.%Get("output_tokens"), 1: "")
-			If in '= "" Do details.%Set("tokensIn", +in)
-			If out '= "" Do details.%Set("tokensOut", +out)
-		}
+		If '$IsObject(usage) Quit
+		; %Get: in ObjectScript "_" is the concatenation operator, so usage.prompt_tokens
+		; would not read the key
+		If usage.%Get("prompt_tokens") '= "" Do details.%Set("tokensIn", +usage.%Get("prompt_tokens"))
+		If usage.%Get("completion_tokens") '= "" Do details.%Set("tokensOut", +usage.%Get("completion_tokens"))
 	}
 	Catch {
 	}

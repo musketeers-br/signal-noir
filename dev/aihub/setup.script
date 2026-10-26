@@ -1,0 +1,6 @@
+    zn "%SYS"
+    // dev only: known passwords (SYS) for _SYSTEM and CSPSystem, used by the Web Gateway
+    do ##class(Security.Users).UnExpireUserPasswords("*")
+    // the startup hook (feature 001)
+    do $system.OBJ.Load("/home/irisowner/dev/boot/%ZSTART.mac","ck")
+    halt

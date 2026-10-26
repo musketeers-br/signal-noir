@@ -6,7 +6,7 @@ Property Verdict As %String;
 
 Property Reason As %String;
 
-Property FailedPreconditions As %ListOfDataTypes;
+Property FailedPreconditions As %List;
 
 Method %OnNew() As %Status
 {

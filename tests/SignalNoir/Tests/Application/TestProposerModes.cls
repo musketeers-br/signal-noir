@@ -43,7 +43,8 @@ Method TestSameStructureForEveryMode()
 	Do $$$AssertEquals(pa.versions.provider, "fake-ai-hub", "provider")
 	Do $$$AssertEquals(pa.metrics.tokensIn, 900, "tokens")
 	; Rules consulted the order timeline through the gateway: a recorded Tool call
-	Do $$$AssertTrue(..AllSources(svc, rules) [ "tool.order_timeline", "rules' own Tool call recorded")
+	; the base package spends the budget; every Evidence came through the gateway
+	Do $$$AssertEquals(..AllSources(svc, rules), ..AllSources(svc, agent), "same Evidence for Rules and the Agent")
 	Kill ^SignalNoir.TestScript("agent")
 }
 

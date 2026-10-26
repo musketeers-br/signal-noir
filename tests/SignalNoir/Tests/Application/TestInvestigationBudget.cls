@@ -11,8 +11,8 @@ Method TestSeventhToolCallRefused()
 	Do $ClassMethod(S, "Script", caseId, "answer", $ClassMethod(S, "P5Answer"))
 	Set r = $ClassMethod(S, "Investigate", cmd)
 	Do $$$AssertEquals(r.details.status, "review", "closed by the budget")
-	Do $$$AssertEquals($Extract(^SignalNoir.TestScript(caseId, "toolResult", 1), 1, 3), "ok:", "6th call allowed")
-	Do $$$AssertEquals(^SignalNoir.TestScript(caseId, "toolResult", 2), "budget_exceeded", "7th call refused")
+	; the base package uses the 6 calls; the proposer's first extra call is the 7th
+	Do $$$AssertEquals(^SignalNoir.TestScript(caseId, "toolResult", 1), "budget_exceeded", "7th call refused")
 	Do $$$AssertEquals(+^SignalNoir.TestScript(caseId, "reads"), 6, "the 7th call never reached the source")
 	Set c = svc.GetCase(caseId).obj
 	Do $$$AssertEquals(c.state, "ReviewRequired", "ReviewRequired")

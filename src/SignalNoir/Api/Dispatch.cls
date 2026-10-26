@@ -12,6 +12,9 @@ XData UrlMap [ XMLNamespace = "http://www.intersystems.com/urlmap" ]
 <Route Url="/cases" Method="GET" Call="ListCases"/>
 <Route Url="/cases/:caseid" Method="GET" Call="GetCase"/>
 <Route Url="/cases/:caseid/timeline" Method="GET" Call="GetTimeline"/>
+<Route Url="/cases/:caseid/resolution" Method="POST" Call="Resolve"/>
+<Route Url="/reference/action-catalog" Method="GET" Call="ActionCatalog"/>
+<Route Url="/reference/mappings" Method="GET" Call="Mappings"/>
 </Routes>
 }
 
@@ -70,6 +73,72 @@ ClassMethod GetTimeline(caseid As %String) As %Status
 	Return $$$OK
 }
 
+/// POST /cases/{caseId}/resolution (feature 009, contract resolveReview)
+ClassMethod Resolve(caseid As %String) As %Status
+{
+	Set %response.ContentType = "application/json"
+	Set body = ""
+	Try {
+		Set body = ##class(%DynamicAbstractObject).%FromJSON(%request.Content)
+	}
+	Catch {
+		Set body = ""
+	}
+	Set svc = ##class(SignalNoir.Application.CaseService).Default()
+	Set r = svc.ResolveReview(caseid, body)
+	If 'r.ok {
+		; a validator refusal is 422 with the verdict; a shape refusal is 400
+		If (r.code = "VALIDATION_FAILED") && $IsObject(r.details) && $IsObject(r.details.verdict) {
+			Set %response.Status = "422 Unprocessable Entity"
+			Write ..ErrorPayload(r.code, r.message, r.details).%ToJSON()
+			Return $$$OK
+		}
+		Return ..WriteError(r)
+	}
+	Set %response.Status = "201 Created"
+	Write ..ResolutionPayload(svc, r.details).%ToJSON()
+	Return $$$OK
+}
+
+/// ReviewResolutionResult: kind, proposal, approval, case (CommandAck)
+ClassMethod ResolutionPayload(svc As SignalNoir.Application.CaseService, d As %DynamicObject) As %DynamicObject
+{
+	Set payload = {"kind": (d.kind)}
+	If d.proposalId '= "" {
+		Set p = ..ProposalPayload(svc.ProposalById(d.proposalId))
+		Do p.%Set("validatorVerdict", svc.VerdictOf(d.proposalId))
+		Do payload.%Set("proposal", p)
+	} Else {
+		Do payload.%Set("proposal", "", "null")
+	}
+	If d.approvalId '= "" {
+		Do payload.%Set("approval", svc.ApprovalJson(d.approvalId))
+	} Else {
+		Do payload.%Set("approval", "", "null")
+	}
+	Set ack = {"caseId": (d.caseId), "state": (d.state), "caseVersion": (+d.caseVersion), "lastEventSeq": (+d.lastEventSeq), "serverTime": (d.serverTime)}
+	Do ack.%Set("commandId", d.commandId, $Select(d.commandId = "": "null", 1: "string"))
+	Do payload.%Set("case", ack)
+	Return payload
+}
+
+/// GET /reference/action-catalog: the closed catalog compiled in the core
+ClassMethod ActionCatalog() As %Status
+{
+	Set %response.ContentType = "application/json"
+	Write {"items": (##class(SignalNoir.Core.ActionCatalog).Entries()), "serverTime": (..ServerTime())}.%ToJSON()
+	Return $$$OK
+}
+
+/// GET /reference/mappings: approved mappings are reference data of feature
+/// 004; until it is integrated none is loaded, and the list says so
+ClassMethod Mappings() As %Status
+{
+	Set %response.ContentType = "application/json"
+	Write {"mappingVersion": "unloaded", "items": [], "serverTime": (..ServerTime())}.%ToJSON()
+	Return $$$OK
+}
+
 /// CaseListPage: items, nextCursor, headCursor and serverTime.
 ClassMethod ListPayload(r As SignalNoir.Core.Result) As %DynamicObject
 {
@@ -123,11 +192,16 @@ ClassMethod CasePayload(dto As SignalNoir.Core.Dto.Case) As %DynamicObject
 	}
 	Do payload.%Set("currentProposalId", dto.currentProposalId, $Select(dto.currentProposalId = "": "null", 1: "string"))
 	Do payload.%Set("proposals", proposals)
-	Do payload.%Set("approvals", [])
+	Do payload.%Set("approvals", $Select($IsObject(dto.approvals): dto.approvals, 1: []))
 	Do payload.%Set("denialCount", +dto.denialCount)
 	Do payload.%Set("executions", [])
 	Do payload.%Set("receipt", "", "null")
-	Do payload.%Set("dossier", "", "null")
+	; an unset %DynamicObject property reads as {}: only a recorded Dossier counts
+	If $IsObject(dto.dossier) && (dto.dossier.%Size() > 0) && ##class(SignalNoir.Api.Dispatch).ShowsDossier(dto) {
+		Do payload.%Set("dossier", dto.dossier)
+	} Else {
+		Do payload.%Set("dossier", "", "null")
+	}
 	Do payload.%Set("metrics", $Select($IsObject(dto.metrics): dto.metrics, 1: {}))
 	If dto.reviewReason '= "" Do payload.%Set("reviewReason", dto.reviewReason)
 	If dto.previousCaseId '= "" Do payload.%Set("previousCaseId", dto.previousCaseId)
@@ -228,7 +302,7 @@ ClassMethod EvidencePayload(ev As SignalNoir.Core.Dto.Evidence) As %DynamicObjec
 }
 
 /// Proposal (contract Proposal)
-ClassMethod ProposalPayload(p As SignalNoir.Core.Dto.Proposal) As %DynamicObject [ Private ]
+ClassMethod ProposalPayload(p As SignalNoir.Core.Dto.Proposal) As %DynamicObject
 {
 	Set payload = {"proposalId": (p.proposalId), "author": (p.origin), "createdAt": (p.createdAt)}
 	Do payload.%Set("current", ''p.current, "boolean")
@@ -267,6 +341,14 @@ ClassMethod ExceptionPayload(ex As SignalNoir.Core.Dto.CaseException) As %Dynami
 	Do payload.%Set("attemptId", ex.attemptId, $Select(ex.attemptId = "": "null", 1: "string"))
 	Do payload.%Set("duringExecution", ''ex.duringExecution, "boolean")
 	Return payload
+}
+
+/// The Dossier is part of the detail in review and once the Case is closed
+/// after one (the console keeps it at the bottom, collapsed)
+ClassMethod ShowsDossier(dto As SignalNoir.Core.Dto.Case) As %Boolean
+{
+	If dto.state = "ReviewRequired" Return 1
+	Return ##class(SignalNoir.Core.Vocab).IsTerminal(dto.state)
 }
 
 /// HTTP status of a closed error code (contract responses)

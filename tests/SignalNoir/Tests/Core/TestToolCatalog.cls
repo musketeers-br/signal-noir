@@ -14,7 +14,8 @@ Method TestReadToolsExactly()
 Method TestBasePackage()
 {
 	Set base = ##class(SignalNoir.Core.ToolCatalog).BasePackage()
-	Do $$$AssertEquals($ListLength(base), 5, "five base Tools leave one call for the proposer")
+	Do $$$AssertEquals($ListLength(base), 6, "six base Tools: the whole budget (009: identity and prior receipts need recorded patient records)")
+	Do $$$AssertTrue($ListFind(base, "tool.receipts_and_orders_by_patient"), "recent receipts and orders by patient are in the base package")
 	For i = 1 : 1 : $ListLength(base) {
 		Do $$$AssertTrue(##class(SignalNoir.Core.ToolCatalog).IsReadTool($ListGet(base, i)), "base Tool is a reading Tool")
 	}

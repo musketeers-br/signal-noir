@@ -42,6 +42,10 @@ Property priorReceiptCandidateJson As %String(MAXLEN = 1024);
 
 Property contentHash As %String(MAXLEN = 128);
 
+/// The Validator's verdict on this exact Proposal (contract ValidatorVerdict),
+/// recorded with it; not part of the immutable content
+Property verdictJson As %String(MAXLEN = 4096);
+
 /// The content the hash covers (everything but current/supersededBy)
 Method Content() As %String
 {
@@ -116,6 +120,9 @@ Storage Default
 </Value>
 <Value name="17">
 <Value>contentHash</Value>
+</Value>
+<Value name="18">
+<Value>verdictJson</Value>
 </Value>
 </Data>
 <DataLocation>^SignalNoir70AE.ProposalRecordD</DataLocation>
