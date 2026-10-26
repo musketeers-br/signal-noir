@@ -692,7 +692,7 @@ components:
       enum: [RETRY, APPLY_APPROVED_MAPPING, REQUEST_REVIEW, HOLD]
     Confidence:
       type: string
-      enum: [ALTA, MEDIA, BAIXA]
+      enum: [HIGH, MEDIUM, LOW]
     Scope:
       type: string
       const: single_case

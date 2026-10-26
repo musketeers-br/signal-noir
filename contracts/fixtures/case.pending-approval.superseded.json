@@ -243,7 +243,7 @@
         "mappingVersion": "2026.10.1"
       },
       "scope": "single_case",
-      "confidence": "ALTA",
+      "confidence": "HIGH",
       "preconditions": [
         {
           "check": "MAPPING_VERSION_UNCHANGED",
@@ -326,7 +326,7 @@
         "mappingVersion": "2026.10.2"
       },
       "scope": "single_case",
-      "confidence": "ALTA",
+      "confidence": "HIGH",
       "preconditions": [
         {
           "check": "MAPPING_VERSION_UNCHANGED",

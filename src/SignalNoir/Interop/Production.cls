@@ -8,7 +8,6 @@ Class SignalNoir.Interop.Production Extends %RegisteredObject
 /// same name, the same single item, the same start/stop surface, and the
 /// definition an Interoperability-enabled instance registers as an
 /// Ens.Production. See research.md D6/D2 for the environment constraint.
-
 Parameter NAME = "SignalNoir.Interop.Production";
 
 Parameter SETTINGS = "Default";

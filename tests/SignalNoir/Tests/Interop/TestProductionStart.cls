@@ -5,7 +5,6 @@ Class SignalNoir.Tests.Interop.TestProductionStart Extends %UnitTest.TestCase
 /// The dev container runs a plain IRIS without Interoperability, so the
 /// production is the portable shape documented in research.md D6: same name,
 /// same single Business Service item, same start/stop surface.
-
 Method TestProductionStartsAndStops()
 {
 	Set status = ##class(SignalNoir.Interop.Production).Start()
@@ -51,16 +50,19 @@ Method TestStatusReportsItemsAndWebApplications()
 
 /// The intake path the production feeds: the Business Service hands the Order to
 /// the single command path and the Case appears.
-
 Method TestOrderInServiceRoutesToTheCommandPath()
 {
-	Set orderId = "T031-route-" _ $JOB
-	Set json = "{""orderId"":""" _ orderId _ """,""equivalenceKey"":""P-" _ orderId _ "|glicj|2026-10-23T10:00:00Z|SP-1"",""receivedAt"":""2026-10-23T10:00:00Z""}"
-	Set r = ##class(SignalNoir.Interop.Service.OrderIn).Accept(json)
+	; 003: OrderIn accepts the raw Origin Order, and a reported failed
+	; delivery opens the Case through the single command path
+	Set orderId = ##class(SignalNoir.Tests.Support).Uid("T031-route")
+	Set json = ##class(SignalNoir.Tests.Support).Snapshot(orderId).%ToJSON()
+	Set r = ##class(SignalNoir.Interop.Service.OrderIn).Accept(json, "tx-route")
 	Do $$$AssertTrue(r.ok, "OrderIn accepted the Order")
-	Do $$$AssertTrue(r.ref '= "", "OrderIn returned the caseId")
-	Set g = ##class(SignalNoir.Application.CaseService).Default().GetCase(r.ref)
-	Do $$$AssertTrue(g.ok, "the Case exists after the intake")
+	Do $$$AssertEquals(r.ref, orderId, "OrderIn returned the orderId")
+	Set f = ##class(SignalNoir.Interop.Service.OrderIn).ReportException(orderId, "http_error", 500, "{""error"":""validation""}", "", "att-1")
+	Do $$$AssertTrue(f.ok, "the failed delivery was recorded")
+	Set g = ##class(SignalNoir.Application.CaseService).Default().GetCase(f.ref)
+	Do $$$AssertTrue(g.ok, "the Case exists after the failure")
 	Do $$$AssertEquals(g.obj.orderId, orderId, "the Case carries the orderId")
 }
 

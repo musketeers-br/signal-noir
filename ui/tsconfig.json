@@ -1,0 +1,11 @@
+{
+	"extends": "$app/tsconfig",
+	"include": ["src", "tests", "*"],
+	"exclude": ["src/service-worker"],
+	"compilerOptions": {
+		"strict": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"types": ["$app/types", "vitest/globals", "@testing-library/jest-dom", "vite/client"]
+	}
+}

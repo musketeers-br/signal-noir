@@ -72,7 +72,7 @@ window.SN_FIXTURES = (function () {
             { key: 'catalog', source: 'tool.mapping_catalog', params: { fromCode: 'GLIC-J' }, result: { catalogVersion: '2026.10.1', mappings: [REF.mappings[0], REF.mappings[1]] } }
           ],
           proposal: () => ({
-            action: 'APPLY_APPROVED_MAPPING', params: { mappingId: 'map_glicj_soro', mappingVersion: '2026.10.1' }, confidence: 'ALTA',
+            action: 'APPLY_APPROVED_MAPPING', params: { mappingId: 'map_glicj_soro', mappingVersion: '2026.10.1' }, confidence: 'HIGH',
             diagnosis: {
               summary: 'Discontinued exam code. The HTTP 500 is a business validation error, not an outage. The earlier timeout was transient.',
               claims: [
@@ -319,7 +319,7 @@ window.SN_FIXTURES = (function () {
             { key: 'origin', source: 'tool.origin_order_status', params: { orderId: o.orderId }, result: { status: 'ACTIVE', patientRef: 'SYN-PAT-0107', note: 'Origin record was merged on 2026-10-20 (synthetic).' } }
           ],
           proposal: () => ({
-            action: 'REQUEST_REVIEW', params: { reason: 'ambiguous identity' }, confidence: 'BAIXA',
+            action: 'REQUEST_REVIEW', params: { reason: 'ambiguous identity' }, confidence: 'LOW',
             diagnosis: {
               summary: 'The partner sees two patients matching this order. The origin points to one record, but a recent merge makes that unreliable.',
               claims: [
@@ -372,7 +372,7 @@ window.SN_FIXTURES = (function () {
             { key: 'search', source: 'tool.receipts_and_orders_by_patient', params: { patientId: o.patientId, windowMin: 30 }, result: { orders: [{ orderId: 'ORD-24199', transactionId: 'TX-50199', examCodes: ['LIPID'], specimenId: 'SPC-7851', collectedAt: '2026-10-29T12:31:00Z' }], receipts: [{ receiptId: 'RCP-88120', orderId: 'ORD-24199', receivedAt: '2026-10-29T12:57:00Z' }] } }
           ],
           proposal: () => ({
-            action: 'REQUEST_REVIEW', params: { reason: 'prior receipt candidate; validator confirms equivalence' }, confidence: 'ALTA',
+            action: 'REQUEST_REVIEW', params: { reason: 'prior receipt candidate; validator confirms equivalence' }, confidence: 'HIGH',
             priorReceiptCandidate: { receiptId: 'RCP-88120', orderId: 'ORD-24199' },
             diagnosis: {
               summary: 'The order was already delivered: the origin resent it as ORD-24199 under another transaction ID, and the partner issued receipt RCP-88120 3 minutes earlier.',
@@ -426,7 +426,7 @@ window.SN_FIXTURES = (function () {
 
   function mappingProposal(ids, mappingId, version, code) {
     return {
-      action: 'APPLY_APPROVED_MAPPING', params: { mappingId, mappingVersion: version }, confidence: 'ALTA',
+      action: 'APPLY_APPROVED_MAPPING', params: { mappingId, mappingVersion: version }, confidence: 'HIGH',
       diagnosis: {
         summary: 'Legacy exam code ' + code + '. The catalog has a single unconditional approved mapping for it.',
         claims: [
@@ -451,7 +451,7 @@ window.SN_FIXTURES = (function () {
         { key: 'policy', source: 'tool.policies', params: { topic: 'retry' }, result: { policyId: 'POL-RETRY', version: '2026.10.1', maxAttempts: 5, backoff: 'exponential' } }
       ],
       proposal: () => ({
-        action: 'RETRY', params: {}, confidence: second ? 'ALTA' : 'MEDIA',
+        action: 'RETRY', params: {}, confidence: second ? 'HIGH' : 'MEDIUM',
         diagnosis: {
           summary: second ? 'The partner recovered. The original 503 was a sincere outage, and the retry budget allows another attempt.' : 'A sincere outage. The 503 carries no business error, the partner is back UP, and the retry budget allows another attempt.',
           claims: [

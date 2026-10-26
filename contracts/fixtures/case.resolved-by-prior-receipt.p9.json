@@ -252,7 +252,7 @@
         "reason": "prior receipt candidate; validator confirms equivalence"
       },
       "scope": "single_case",
-      "confidence": "ALTA",
+      "confidence": "HIGH",
       "preconditions": [],
       "priorReceiptCandidate": {
         "receiptId": "RCP-88120",

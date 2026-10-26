@@ -21,7 +21,7 @@
       "currentProposal": {
         "proposalId": "prop_e8a0f4_v1",
         "action": "APPLY_APPROVED_MAPPING",
-        "confidence": "ALTA"
+        "confidence": "HIGH"
       },
       "exceptionCount": 2,
       "lastExceptionSummary": "Timeout after send: outcome unknown",
@@ -48,7 +48,7 @@
       "currentProposal": {
         "proposalId": "prop_7d22e0_v1",
         "action": "RETRY",
-        "confidence": "MEDIA"
+        "confidence": "MEDIUM"
       },
       "exceptionCount": 1,
       "lastExceptionSummary": "Attempt 1 · HTTP 503",
@@ -75,7 +75,7 @@
       "currentProposal": {
         "proposalId": "prop_c4e1a9_v2",
         "action": "REQUEST_REVIEW",
-        "confidence": "MEDIA"
+        "confidence": "MEDIUM"
       },
       "exceptionCount": 1,
       "lastExceptionSummary": "Attempt 1 · HTTP 503",
@@ -102,7 +102,7 @@
       "currentProposal": {
         "proposalId": "prop_51b0e2_v2",
         "action": "APPLY_APPROVED_MAPPING",
-        "confidence": "ALTA"
+        "confidence": "HIGH"
       },
       "exceptionCount": 1,
       "lastExceptionSummary": "Attempt 1 · HTTP 422 unknown code",
@@ -129,7 +129,7 @@
       "currentProposal": {
         "proposalId": "prop_9f3a1c_v1",
         "action": "APPLY_APPROVED_MAPPING",
-        "confidence": "ALTA"
+        "confidence": "HIGH"
       },
       "exceptionCount": 2,
       "lastExceptionSummary": "Attempt 2 · HTTP 500 with a validation body",
@@ -179,7 +179,7 @@
       "currentProposal": {
         "proposalId": "prop_0b6f19_v1",
         "action": "REQUEST_REVIEW",
-        "confidence": "BAIXA"
+        "confidence": "LOW"
       },
       "exceptionCount": 1,
       "lastExceptionSummary": "Attempt 1 · HTTP 422 identity",
@@ -206,7 +206,7 @@
       "currentProposal": {
         "proposalId": "prop_2a90b4_v1",
         "action": "RETRY",
-        "confidence": "MEDIA"
+        "confidence": "MEDIUM"
       },
       "exceptionCount": 1,
       "lastExceptionSummary": "Attempt 1 · HTTP 503",

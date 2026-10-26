@@ -3,12 +3,11 @@ Class SignalNoir.Tests.Application.TestCaseRestart Extends %UnitTest.TestCase
 
 /// T027 - Restart durability: the Case and every timeline row are identical after re-opening.
 /// Simulates a fresh process by killing the service reference and re-opening.
-
 Method TestCaseAndTimelineSurviveReconnect()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set order = ..MakeOrder("T027-restart-" _ $JOB)
-	Set r = svc.AcceptOrder(order)
+	Set order = ##class(SignalNoir.Tests.Support).Order(##class(SignalNoir.Tests.Support).Uid("T027-restart"))
+	Set r = ..Open(svc, order.orderId)
 	Do $$$AssertTrue(r.ok, "order accepted")
 	If 'r.ok Return
 	Set caseId = r.ref
@@ -30,15 +29,23 @@ Method TestCaseAndTimelineSurviveReconnect()
 	Do $$$AssertEquals(after.obj.orderId, order.orderId, "same orderId")
 	Do $$$AssertEquals(after.obj.state, "Open", "same state")
 	Do $$$AssertEquals(after.obj.caseVersion, 1, "same caseVersion")
-	Do $$$AssertEquals(after.obj.lastEventSeq, 2, "same lastEventSeq (OrderAccepted and CaseOpened)")
+	Do $$$AssertEquals(after.obj.lastEventSeq, 2, "same lastEventSeq (CaseOpened and ExceptionRecorded)")
 
 	Set tl2 = svc2.GetTimeline(caseId, 0)
 	Do $$$AssertTrue(tl2.ok, "timeline readable after reconnect")
 	Do $$$AssertEquals(..TimelineJson(tl2.list), beforeJson, "timeline identical after reconnect")
 }
 
-/// A minimal synthetic Order helper.
+/// 003: an Order becomes a Case on its first Exception. Accepts a valid
+/// Origin Order and records a timeout; Result.ref is the caseId.
+ClassMethod Open(svc As SignalNoir.Application.CaseService, orderId As %String) As SignalNoir.Core.Result
+{
+	Set a = svc.AcceptOrder(##class(SignalNoir.Tests.Support).Order(orderId))
+	If 'a.ok Return a
+	Return svc.RecordException(orderId, ##class(SignalNoir.Tests.Support).Exception())
+}
 
+/// A minimal synthetic Order helper.
 ClassMethod MakeOrder(orderId As %String) As SignalNoir.Core.Dto.Order
 {
 	Set order = ##class(SignalNoir.Core.Dto.Order).%New()
@@ -56,7 +63,6 @@ ClassMethod MakeOrder(orderId As %String) As SignalNoir.Core.Dto.Order
 }
 
 /// Serialize timeline to a JSON string for comparison.
-
 ClassMethod TimelineJson(list As %ListOfObjects) As %String
 {
 	Set out = "["

@@ -5,13 +5,12 @@ Class SignalNoir.Tests.Api.TestCasesRead Extends %UnitTest.TestCase
 /// carry the Case with labels.synthetic=true, caseVersion, lastEventSeq and
 /// serverTime, exactly as contracts/openapi-signalnoir.yaml requires.
 /// No HTTP is needed: the dispatch payload builders are called directly.
-
 Method TestListCasesPayloadMatchesContract()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
 	Set r = svc.ListCases("")
 	Do $$$AssertTrue(r.ok, "ListCases ok")
-	Set payload = ##class(SignalNoir.Api.Dispatch).ListPayload(r.list)
+	Set payload = ##class(SignalNoir.Api.Dispatch).ListPayload(r)
 	Do $$$AssertTrue($IsObject(payload), "list payload is an object")
 	Do $$$AssertTrue($IsObject(payload.items), "items array present")
 	Do $$$AssertTrue(payload.serverTime '= "", "serverTime present")
@@ -32,7 +31,7 @@ Method TestListCasesPayloadMatchesContract()
 Method TestCasePayloadMatchesContract()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set r = svc.AcceptOrder(..MakeOrder("T026-get-" _ $JOB))
+	Set r = ##class(SignalNoir.Tests.Application.TestPersistence).Open(svc, ##class(SignalNoir.Tests.Support).Uid("T026-get"))
 	Do $$$AssertTrue(r.ok, "order accepted")
 	If 'r.ok Return
 	Set caseId = r.ref
@@ -46,7 +45,7 @@ Method TestCasePayloadMatchesContract()
 	Do $$$AssertEquals(payload.labels.synthetic, 1, "labels.synthetic is true in this slice")
 	Do $$$AssertEquals(payload.labels.replay, 0, "labels.replay is false in this slice")
 	Do $$$AssertTrue(payload.caseVersion > 0, "caseVersion present")
-	Do $$$AssertTrue(payload.lastEventSeq >= 2, "lastEventSeq covers OrderAccepted and CaseOpened")
+	Do $$$AssertTrue(payload.lastEventSeq >= 2, "lastEventSeq covers CaseOpened and ExceptionRecorded")
 	Do $$$AssertTrue(payload.createdAt '= "", "createdAt present")
 	Do $$$AssertTrue(payload.lastEventAt '= "", "lastEventAt present")
 	Do $$$AssertTrue(payload.serverTime '= "", "serverTime present")

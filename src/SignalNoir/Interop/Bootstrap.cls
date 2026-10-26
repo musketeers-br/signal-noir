@@ -7,7 +7,6 @@ Class SignalNoir.Interop.Bootstrap Extends %RegisteredObject
 /// register the web applications.
 /// OnStart never throws and never logs the API key: the key is only passed
 /// to the platform calls that need it.
-
 /// Configuration name of the AI Hub provider configuration
 Parameter CONFIGNAME = "SignalNoir";
 
@@ -58,6 +57,9 @@ ClassMethod OnStart() As SignalNoir.Core.Result
 		Set interopStatus = ##class(SignalNoir.Interop.Bootstrap).EnsureInterop()
 		Set ^SignalNoir.Provider("webApplications") = webStatus
 		Set ^SignalNoir.Provider("interop") = interopStatus
+		; 003 FR-027: an investigation interrupted by the restart goes to review
+		Set recovered = ##class(SignalNoir.Application.CaseService).Default().RecoverInterrupted()
+		Set ^SignalNoir.Provider("recoveredCases") = $Select(recovered.ok: recovered.ref, 1: "failed: " _ recovered.message)
 		Set result = ##class(SignalNoir.Core.Result).OkRef("bootstrap")
 	}
 	Catch ex {
@@ -151,30 +153,47 @@ ClassMethod EnsureSecret(key As %String) As %Boolean
 ClassMethod EnsureWebApplications() As %String
 {
 	Set status = "unknown"
+	Set ns = $NAMESPACE
+	; everything about the application is computed here: in %SYS the
+	; SignalNoir classes are not visible
+	Set apps = 3
+	; the product API (2 = CSP/REST application; 18 is refused on 2026.2: MAXVAL 9)
+	Set apps(1) = "/signalnoir/api/v1", apps(1, "DispatchClass") = "SignalNoir.Api.Dispatch", apps(1, "Name") = "Signal Noir API"
+	; the operator console: static files (feature 005) and the entry redirect
+	Set apps(2) = "/signalnoir/ui", apps(2, "Path") = ##class(SignalNoir.Interop.Bootstrap).UiPath(), apps(2, "ServeFiles") = 1, apps(2, "Name") = "Signal Noir console"
+	Set apps(3) = "/signalnoir", apps(3, "DispatchClass") = "SignalNoir.Api.Console", apps(3, "Name") = "Signal Noir entry"
 	Try {
-		Set previousNamespace = $NAMESPACE
 		Set $NAMESPACE = "%SYS"
-		Kill props
-		Set props("DispatchClass") = "SignalNoir.Api.Dispatch"
-		Set props("Type") = 18
-		Set props("NameSpace") = previousNamespace
-		Set props("Name") = "Signal Noir API"
-		Set props("AutheEnabled") = 64
-		Set props("MatchRoles") = ":%All"
-		Set sc = ##class(Security.Applications).Delete("/signalnoir/api/v1")
-		Set sc = ##class(Security.Applications).Create("/signalnoir/api/v1", .props)
-		If $$$ISOK(sc) {
-			Set status = "registered"
-		} Else {
-			Set status = "failed"
+		Set ok = 1
+		For i = 1 : 1 : apps {
+			Kill props
+			Merge props = apps(i)
+			Set props("Type") = 2
+			Set props("NameSpace") = ns
+			Set props("AutheEnabled") = 64
+			Set props("MatchRoles") = ":%All"
+			If ##class(Security.Applications).Exists(apps(i)) Do ##class(Security.Applications).Delete(apps(i))
+			Set ok = ok && $$$ISOK(##class(Security.Applications).Create(apps(i), .props))
 		}
-		Set $NAMESPACE = previousNamespace
+		Set status = $Select(ok: "registered", 1: "failed")
 	}
 	Catch ex {
 		Set status = "failed"
 	}
+	Set $NAMESPACE = ns
 	Return status
 }
+
+/// Directory with the built console (ui/build); SN_UI_PATH overrides the
+/// dev-container default
+ClassMethod UiPath() As %String
+{
+	Set path = ##class(SignalNoir.Interop.Bootstrap).Env("SN_UI_PATH")
+	If path = "" Set path = "/home/irisowner/dev/ui/build/"
+	If $Extract(path, *) '= "/" Set path = path _ "/"
+	Return path
+}
+
 
 /// Ensures the namespace has Interop enabled, which the Production needs.
 ClassMethod EnsureInterop() As %String

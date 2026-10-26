@@ -6,7 +6,6 @@ Class SignalNoir.Api.Health Extends %CSP.REST
 /// liveness=alive whenever the process answers, status=ready when the
 /// provider is configured and degraded when it is not. A missing key is a
 /// reported value, never an error: this endpoint never returns 5xx for it.
-
 XData UrlMap [ XMLNamespace = "http://www.intersystems.com/urlmap" ]
 {
 <Routes>

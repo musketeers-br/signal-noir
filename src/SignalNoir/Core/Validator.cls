@@ -5,7 +5,6 @@ Class SignalNoir.Core.Validator Extends SignalNoir.Core.Port.Validator
 /// Declares the five preconditions but evaluates only what this slice needs:
 /// closed-action membership and the mapping-parameter rule of the frozen
 /// contract (APPLY_APPROVED_MAPPING requires mappingId and mappingVersion).
-
 ClassMethod Preconditions() As %ListOfDataTypes
 {
 	Return ##class(SignalNoir.Core.Vocab).Preconditions()

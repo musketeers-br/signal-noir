@@ -3,7 +3,6 @@ Class SignalNoir.Tests.Fakes.SeqIdGenerator Extends SignalNoir.Core.Port.IdGener
 
 /// Test double for the IdGenerator port: deterministic, prefix plus a
 /// counter. Usable with no live provider.
-
 Property counter As %Integer;
 
 Method %OnNew() As %Status

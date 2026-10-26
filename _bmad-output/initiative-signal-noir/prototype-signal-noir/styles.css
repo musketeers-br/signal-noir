@@ -162,9 +162,9 @@ pre.body { border-left: 3px solid var(--warn); }
 .action-name code { font-size: 20px; font-weight: 700; background: none; padding: 0; }
 .prop-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
 .conf { font-size: 13px; padding: 2px 8px; border-radius: 6px; }
-.conf-ALTA { background: var(--ok-bg); color: var(--ok); }
-.conf-MEDIA { background: var(--warn-bg); color: var(--warn); }
-.conf-BAIXA { background: var(--danger-bg); color: var(--danger); }
+.conf-HIGH { background: var(--ok-bg); color: var(--ok); }
+.conf-MEDIUM { background: var(--warn-bg); color: var(--warn); }
+.conf-LOW { background: var(--danger-bg); color: var(--danger); }
 .effect { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; margin: 10px 0; }
 .effect.big { font-size: 16px; }
 .verdict { font-size: 13.5px; }

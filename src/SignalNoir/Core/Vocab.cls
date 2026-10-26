@@ -7,8 +7,9 @@ Parameter STATES = "Open,Investigating,DecisionProposed,PendingApproval,Approved
 /// Closed action catalog (Constitution II)
 Parameter ACTIONS = "RETRY,APPLY_APPROVED_MAPPING,HOLD,REQUEST_REVIEW";
 
-/// Actor vocabulary; operator actors carry the operator:<name> shape
-Parameter ACTORS = "system,sweeper,benchmark,agent";
+/// Actor vocabulary (contract Actor pattern); operator actors carry the
+/// operator:<name> shape
+Parameter ACTORS = "system,agent,rules,replay,benchmark,sweeper";
 
 /// Closed command vocabulary (outbox types)
 Parameter COMMANDS = "Investigate,Execute,Reconcile,Expire,Reassess,Resume";
@@ -20,11 +21,17 @@ Parameter ERRORCODES = "STALE_VERSION,INVALID_TRANSITION,INVALID_ACTOR,VALIDATIO
 /// Precondition checks (declared now, evaluated in later slices)
 Parameter PRECONDITIONS = "PARTNER_HEALTHY_WINDOW,ORDER_ACTIVE_AT_ORIGIN,APPROVAL_VALID,POLICY_VERSION_UNCHANGED,MAPPING_VERSION_UNCHANGED";
 
+/// Closed Exception kinds (contract CaseException.kind)
+Parameter EXCEPTIONKINDS = "timeout,http_error,invalid_receipt,business_rejection,processing_error";
+
+/// Closed Timeline event types (contract TimelineEventType)
+Parameter EVENTTYPES = "CaseOpened,ExceptionRecorded,StateChanged,ToolCalled,EvidenceObsoleted,ProposalCreated,ValidatorVerdict,ApprovalRecorded,ApprovalExpired,ExecutionAuthorized,RevalidationPerformed,AttemptRecorded,ReconciliationPerformed,ReceiptRecorded,ReassessmentPerformed,DossierCreated,OperatorResolution,CommandDiscarded,Annotation";
+
 /// Terminal states (no implicit reopen)
 Parameter TERMINALSTATES = "Resolved,ResolvedByPriorReceipt,Cancelled,Failed";
 
 /// ID prefixes (seam conventions)
-Parameter IDPREFIXES = "case_,prop_,appr_,exec_,evid_,cmd_,run_";
+Parameter IDPREFIXES = "case_,prop_,appr_,exec_,evid_,cmd_,run_,corr_,exc_";
 
 ClassMethod States() As %ListOfDataTypes
 {
@@ -99,6 +106,28 @@ ClassMethod IsActor(actor As %String) As %Boolean
 	If $ListFind($ListFromString(..#ACTORS, ","), actor) > 0 Return 1
 	If $Extract(actor, 1, 9) = "operator:" Return ($Length(actor) > 9)
 	Return 0
+}
+
+ClassMethod ExceptionKinds() As %ListOfDataTypes
+{
+	Return $ListFromString(..#EXCEPTIONKINDS, ",")
+}
+
+ClassMethod EventTypes() As %ListOfDataTypes
+{
+	Return $ListFromString(..#EVENTTYPES, ",")
+}
+
+ClassMethod IsExceptionKind(kind As %String) As %Boolean
+{
+	If kind = "" Return 0
+	Return ($ListFind($ListFromString(..#EXCEPTIONKINDS, ","), kind) > 0)
+}
+
+ClassMethod IsEventType(type As %String) As %Boolean
+{
+	If type = "" Return 0
+	Return ($ListFind($ListFromString(..#EVENTTYPES, ","), type) > 0)
 }
 
 ClassMethod IsTerminal(state As %String) As %Boolean

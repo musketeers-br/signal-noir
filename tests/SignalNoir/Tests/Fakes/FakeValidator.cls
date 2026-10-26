@@ -2,7 +2,6 @@ Class SignalNoir.Tests.Fakes.FakeValidator Extends SignalNoir.Core.Port.Validato
 {
 
 /// Configurable verdict (seam contract). Usable with no live provider.
-
 Property Verdict As %String;
 
 Property Reason As %String;

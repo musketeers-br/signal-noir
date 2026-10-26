@@ -5,7 +5,6 @@ Class SignalNoir.Tests.Seam.TestFakesNotRuntime Extends %UnitTest.TestCase
 /// runtime resource of module signalnoir. module.xml reserves the runtime
 /// SourcesRoot for src/ (Resource SignalNoir.PKG) and loads /tests only in the
 /// test phase, so every fake lives exclusively under SignalNoir.Tests.*.
-
 Method TestFakesExistOnlyInTheTestPackage()
 {
 	Set fakes = $ListBuild(
@@ -40,7 +39,6 @@ Method TestFakesExistOnlyInTheTestPackage()
 
 /// Sanity companion: the genuine seam classes (production code) live under their
 /// own roots and are resolvable, so the fakes are not shadowing them.
-
 Method TestRuntimeClassesStillExist()
 {
 	Do $$$AssertTrue(##class(%Dictionary.ClassDefinition).%ExistsId("SignalNoir.Core.CaseMachine"), "runtime seam class exists")
