@@ -14,3 +14,7 @@ iris-main.log
 __pycache__/
 *.pyc
 .venv/
+
+# InterSystems EAP images and license keys (never commit; the repository is public)
+*-docker.tar.gz
+*.key
