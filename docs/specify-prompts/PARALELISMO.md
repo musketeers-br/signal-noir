@@ -79,9 +79,9 @@ Mudanças neles são aplicadas em lote no gate de integração.
 | Spec | Status | Pessoa | Onda | Worktree |
 |---|---|---|---|---|
 | 001 runtime-skeleton-and-seams | concluída | José | 0 | |
-| 002 scenario-simulator | spec/plan/tasks prontos | Henrique | 1 | `.claude/worktrees/002-scenario-simulator` |
+| 002 scenario-simulator | spec/plan/tasks prontos; implementação bloqueada pelo ambiente (iris-agentic-dev, V1–V6) | Henrique | 1 | branch `002-scenario-simulator` |
 | 003 order-case-lifecycle | implementada (aguardando gate G1) | Henry | 1 | branch `003-order-case-lifecycle` |
-| 004 validation-and-reference-data | reservada | Henrique | 2 | |
+| 004 validation-and-reference-data | spec/plan/tasks prontos, revisados contra o master; aguardando decisões do Henry (`contracts/coordination-004-006-009.md`) e o ambiente (V1) | Henrique | 2 | branch `004-validation-and-reference-data` |
 | 005 operator-console | implementada (aguardando gate G2; decisão/resolução testadas contra fixtures até 007/009) | Henry | 3 | branch `005-operator-console` |
 | 006 investigation-and-proposal | implementada (aguardando gate G2; AI Hub ao vivo pendente, T060) | Henry | 2 | branch `006-investigation-and-proposal` |
 | 007 approval-and-outbox | reservada | Henrique | 3 | |
@@ -98,6 +98,11 @@ Papéis fixos fora do board:
 - **010 independência (Princípio VIII):** casos reservados e gabarito P5/P8b com Henrique; baseline de regras com Henry (escrito na onda 4); revisão do baseline e do avaliador com José. Henry (autor do Agente) não acessa as variantes reservadas até o congelamento. A revisão do José confirma que o baseline não foi enfraquecido e fica registrada no relatório.
 - **012 cross-install:** Henry escreve o README; Henrique instala em máquina limpa.
 - **011:** condicional. O José abre o `contract-change` de P9 na onda 5; sem contrato aprovado, ou sem tempo depois da revisão do 010, a 011 fica fora da submissão. Os dados de P9 já existem no Simulador (002, US7).
+
+Lacunas sem dono (registradas em 2026-10-26):
+
+- **Leitor do feed da Origem.** Ninguém lê `GET /origin/feed` do Simulador para chamar `SignalNoir.Interop.Service.OrderIn.Accept`: a 003 recebe o Pedido já lido e a 002 é só o Simulador. Sem ele o caminho de ponta a ponta do G1 não fecha. Proposta: Henry, dono da entrada da Production. Decidir antes do G1.
+- **Ambiente com iris-agentic-dev na máquina do Henrique.** Kit em `dev/aihub/README.md`; o binário vem de `github.com/intersystems-community/iris-agentic-dev`. Bloqueia a implementação da 002 e da 004.
 
 ## Merge
 
