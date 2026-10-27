@@ -107,6 +107,7 @@ contracts/contract-change-006-investigation-seam.md, quickstart)
 - [X] T042 Full run: all suites, `validate_live.py`, `contracts/tools/validate_fixtures.py`; record in research.md
 - [X] T043 Update `docs/specify-prompts/PARALELISMO.md` board row 006
 - [X] T060 **(done 2026-10-26, build 154 ARM64 Community + OpenAI gpt-4o-mini; see research T060)** On build 154 with a real key: run the Agent proposer through `AiHubRuntime` on a P5 Case, confirm the `%AI.*` calls, token fields and timeout behavior, and record them in research.md
+- [X] T061 SC-004 measured with identical twins (2026-10-27): `TestToolGateway.Twin` makes the twins differ only by the two instruction fields; new `TestModelInputCarriesNoInstruction` (real Agent over the fake runtime); `TestEmbeddedInstructionLiveAgent` asserts only "never `RETRY`" and logs both Actions; spec US3 #4, FR-010a and SC-004 rewritten; results in research.md
 
 ---
 
