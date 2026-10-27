@@ -54,6 +54,8 @@ Method TestCatalog()
 	Set items = ##class(SignalNoir.Core.ActionCatalog).Entries()
 	Do $$$AssertEquals(items.%Size(), 4, "four entries")
 	Do $$$AssertEquals(items.%Get(2).%GetTypeOf("requiresApproval"), "boolean", "boolean flags")
+	Do $$$AssertEquals(items.%Get(0).action _ ":" _ items.%Get(0).requiresApproval, "RETRY:1", "RETRY needs Approval")
+	Do $$$AssertEquals(items.%Get(3).action _ ":" _ items.%Get(3).requiresApproval, "REQUEST_REVIEW:0", "REQUEST_REVIEW does not (009b)")
 }
 
 }

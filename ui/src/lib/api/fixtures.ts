@@ -106,13 +106,17 @@ export class FixtureServer implements Transport {
 			return {
 				status: 200,
 				body: {
-					items: ACTIONS.map((action) => ({
-						action,
-						externalEffect: action === 'RETRY' || action === 'APPLY_APPROVED_MAPPING',
-						requiresApproval: action !== 'HOLD',
-						paramsSchema: action === 'APPLY_APPROVED_MAPPING' ? { required: ['mappingId', 'mappingVersion'] } : {},
-						requiredEvidence: []
-					})),
+					items: ACTIONS.map((action) => {
+						const externalEffect = action === 'RETRY' || action === 'APPLY_APPROVED_MAPPING';
+						// only an Action with an external effect needs Approval (R19, FR-16)
+						return {
+							action,
+							externalEffect,
+							requiresApproval: externalEffect,
+							paramsSchema: action === 'APPLY_APPROVED_MAPPING' ? { required: ['mappingId', 'mappingVersion'] } : {},
+							requiredEvidence: []
+						};
+					}),
 					serverTime: '2026-10-29T13:00:00Z'
 				}
 			};
