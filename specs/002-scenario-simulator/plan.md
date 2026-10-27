@@ -159,11 +159,26 @@ the existing `SignalNoir.PKG` resource, so `module.xml` does not change. Tests f
 ## Dependencies and integration
 
 - **Consumes**: `contracts/openapi-sim.yaml` (frozen). No dependency on any product package.
-- **Consumed by**: 003 (feed polling), 006 (evidence Tools over HTTP), 008 (delivery,
-  Reconciliation, P3 Revalidation reads), 010 (instances, seeds, sets), 011 (P9 data).
+- **Consumed by**: the Origin feed reader (see gap below), 006 (evidence Tools over HTTP — already on
+  `master`, `SignalNoir.Tools.SimulatorSource`), 008 (delivery, Reconciliation, P3 Revalidation
+  reads), 010 (instances, seeds, sets), 011 (P9 data).
+- **What 006 already calls (checked on `master` 2026-10-26)**: `GET /partners/{p}/health`,
+  `GET /partners/{p}/history?scenarioInstanceId&orderId`, `GET /origin/orders/{orderId}` (it also
+  sends `?scenarioInstanceId=`, which the contract does not declare for this path: the Simulator MUST
+  ignore unknown query parameters, never 400 on them), `GET /receipts?patientId&scenarioInstanceId`.
+  Base URL from `SN_SIM_BASE_URL`; with it unset the Tools record absence.
+- **Gap: nobody reads `GET /origin/feed`** (as of `master` 2026-10-26). 003 implemented
+  `SignalNoir.Interop.Service.OrderIn.Accept(json, transactionId, runId, scenarioInstanceId)`, which
+  receives an Order already read; its spec treats the feed reader as a consumer, not as its own
+  work, and no other spec claims it. Without it no Order leaves the Simulator for the Production and
+  the tracer path (Principle IX) is broken. It is product code (`SignalNoir.Interop`, polling
+  `afterSeq`, calling `OrderIn.Accept`), so it does not belong in this feature's write zone. Owner to
+  decide before G1 (proposal: Henry, as the owner of the inbound entry).
 - **Gate G1 integration changes** (applied by the integrator, not in this branch):
   1. `SignalNoir.Interop.Bootstrap.OnStart` calls `##class(SignalNoir.Sim.Setup).EnsureWebApplication()`.
-  2. CI (`.github/workflows/contracts.yml`) runs `tests/sim-contract/validate_sim_captures.py` on
+  2. `SN_SIM_BASE_URL=http://localhost:52773/sim/api/v1` in `.env.example` and the dev kit, so 006's
+     Tools reach this Simulator in the same container.
+  3. CI (`.github/workflows/contracts.yml`) runs `tests/sim-contract/validate_sim_captures.py` on
      committed captures, if the workflow owner agrees.
 - **To confirm at G1**: P3 trigger read count (D12) with 006/008; `SN_PARTNER_TIMEOUT_SECONDS` stays
   the single source of the client timeout (D6) with 008.

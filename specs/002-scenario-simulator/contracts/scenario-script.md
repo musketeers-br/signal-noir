@@ -30,10 +30,18 @@ holder, spec 010).
     "triggers": []
   },
   "partnerRule": {
-    "accepts": [ { "code": "GLI-02", "when": { "specimen.type": "plasma" } } ]
+    "accepts": [ { "code": "GLIC-P", "when": { "specimen.type": ["PLASMA"] } },
+                 { "code": "GLIC-S", "when": { "specimen.type": ["SERUM", "SORO"] } } ]
   }
 }
 ```
+
+The codes are aligned with the product's reference Mappings 2026.10.1
+(`contracts/fixtures/reference.mappings.json`: `GLIC-J` → `GLIC-P` when `specimenType = PLASMA`,
+→ `GLIC-S` when `SERUM`). The Simulator does not own or read those Mappings (AD-26); the variant
+author keeps the Partner's private acceptance rule consistent with them, or the scenario has no
+correct answer. `partnerRule` compares upper-case and trimmed values, so a raw `plasma` or `soro`
+in the Order matches. Revised 2026-10-26 (the first draft used a made-up `GLI-02`).
 
 ## Fields
 
