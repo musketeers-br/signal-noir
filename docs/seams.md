@@ -64,7 +64,7 @@ opening writes `CaseOpened` (`previousCaseId` for a new episode); an Exception w
 | `Proposal` | `proposalId`, `caseId`, `origin` (= contract `author`), `createdAt`, `current`, `supersededBy?`, `diagnosis` (`summary`, `claims[]` with `evidenceIds[]`, `hypotheses[]`, `conflicts[]`), `action`, `params`, `scope`, `confidence` (`HIGH`/`MEDIUM`/`LOW`), `preconditions[]` (`check`, `expected`), `versions` (`policy`, `mapping`, `prompt`, `model`, `provider`), `metrics`, `priorReceiptCandidate?` |
 | `InvestigationContext` | `investigationId`, `case`, `order`, `evidence[]`, `tools` (the read-only gateway), `maxToolCalls`, `budgetMs`, `startedAt` |
 | `ValidatorVerdict` | `verdict` (`accepted` / `blocked` / `review` / `prior_receipt_confirmed`), `reasons` (ordered closed codes), `requiresApproval`, `versions` (`policy`, `mapping`), `at` |
-| `ValidationInput` | `proposal`, `evidence[]`, `order` (snapshot), `priorReceiptOrder?`, `identity` (`clear` / `ambiguous`), `attemptCount`, `run` (`inRun`, `runId`, `policyVersion`, `mappingVersion`), `reference` (snapshot), `observed?` (Revalidation only), `now` |
+| `ValidationInput` | `proposal`, `evidence[]`, `order` (snapshot), `priorReceiptOrder?`, `attemptCount`, `run` (`inRun`, `runId`, `policyVersion`, `mappingVersion`), `reference` (snapshot), `observed?` (Revalidation only), `now` |
 | `PreconditionResult` | `check`, `expected`, `observed`, `passed`, `evidenceId?` |
 | `Admission` | `admissible`, `label` (`human` / `automatic`), `reason?` |
 | `Approval` | `approvalId`, `proposalId`, `decidedBy`, `decidedAt`, `deadline`, `immutableProposalRef` |
@@ -129,7 +129,9 @@ Admit(actor, run) -> Admission
 ```
 
 Deterministic, origin-blind, no I/O: every input arrives in `ValidationInput`, including `now` and
-the reference-data snapshot. Reason codes come from the closed list in
+the reference-data snapshot. Ambiguous identity is not an input: the Validator derives it from
+`evidence` and `order` with `SignalNoir.Core.Identity` (contract change 004, revision 2026-10-26).
+Reason codes come from the closed list in
 `specs/004-validation-and-reference-data/contracts/reason-codes.md`; the input shape and the Evidence
 convention are in `specs/004-validation-and-reference-data/contracts/validation-input.md`.
 
