@@ -1,8 +1,8 @@
 # Validation Input (internal contract of the Validator port v2)
 
-What a caller (006 proposers, 009 resolution, 007 approval, 008 revalidation, 010 benchmark) passes to
-`Validate`, `Revalidate` and `Admit`. Field names follow `contracts/openapi-signalnoir.yaml` where the
-concept exists there.
+What a caller passes to `Validate`, `Revalidate` and `Admit`. Field names follow
+`contracts/openapi-signalnoir.yaml` and the seam DTOs (`docs/seams.md` v4: `Proposal`, `Evidence`,
+`Order`). Revised on 2026-10-26 against `master` (features 003, 006 and 009 merged).
 
 ```json
 {
@@ -13,45 +13,88 @@ concept exists there.
     "action": "APPLY_APPROVED_MAPPING",
     "params": { "mappingId": "map_glicj_plasma", "mappingVersion": "2026.10.1" },
     "scope": "single_case",
-    "confidence": "ALTA",
+    "confidence": "HIGH",
     "preconditions": [
-      { "check": "PARTNER_HEALTHY_WINDOW", "expected": true },
       { "check": "ORDER_ACTIVE_AT_ORIGIN", "expected": true },
-      { "check": "POLICY_VERSION_UNCHANGED", "expected": "2026.10.1" },
       { "check": "MAPPING_VERSION_UNCHANGED", "expected": "2026.10.1" }
     ],
     "versions": { "policy": "2026.10.1", "mapping": "2026.10.1" },
     "priorReceiptCandidate": null
   },
-  "evidence": [ { "evidenceId": "evid_1", "caseId": "case_000123", "source": "tool.policies",
-                  "obsolete": false, "suspicious": false, "facts": { "policy": "substitution" } } ],
+  "evidence": [ "<Evidence DTO as recorded by the Tools gateway>" ],
   "order": { "...": "raw SyntheticOrder snapshot of the Case" },
   "priorReceiptOrder": null,
-  "identity": "clear",
   "attemptCount": 1,
   "run": { "inRun": false, "runId": null, "policyVersion": null, "mappingVersion": null },
-  "reference": "<ReferenceData snapshot for run or in force>",
+  "reference": "<ReferenceData snapshot for the run, or the one in force>",
   "observed": null,
   "now": "2026-10-29T13:02:11Z"
 }
 ```
 
+`identity` is **not** an input (it was in the first draft of seam v2): the Validator derives it from
+`evidence` and `order` with the Core identity rule (`SignalNoir.Core.Identity.Collisions`), the same
+rule the Rules proposer and the Dossier use. A caller that could set it could also clear it, which
+would give that origin a shortcut (Principle III).
+
+## Who builds it
+
+`SignalNoir.Application.ResolutionValidator` is the single place a Proposal reaches the Validator
+(feature 009). It assembles the input from the Case record: `ListEvidence(caseId)`, the Order
+snapshot, `runId`, the attempt count (0 until 008 records Attempts), the reference snapshot from the
+Store (`Store.For(run)`) and `now`. The two call sites are `CaseService.CompleteInvestigation` and
+`CaseService.ResolveReview`.
+
 ## Evidence
 
-Evidence counts toward the minimum only if `caseId` equals the Proposal's, `obsolete = false` and
-`suspicious = false`.
+Evidence is the DTO recorded by the Tools gateway (006): `evidenceId`, `caseId`, `kind`
+(`fact` | `absence`), `source`, `result` (raw, by value), `suspicious`, `obsoletedBy`.
 
-| Required item | `source` | `facts` |
+Evidence counts toward the minimum only if **all** hold: `caseId` equals the Proposal's; `kind =
+fact`; `obsoletedBy` is empty; `suspicious` is false. An `absence` never counts (Principle VII:
+absence of information is not a finding).
+
+| Required item | `source` | The `result` must have |
 |---|---|---|
-| attempt policy | `tool.policies` | `policy = "attempt"` |
-| substitution policy | `tool.policies` | `policy = "substitution"` |
-| maintenance window | `tool.policies` | `policy = "maintenance"` |
-| attempt history | `tool.partner_failure_history` | — |
-| recent partner health | `tool.partner_health` | — |
-| approved Mapping | `tool.mapping_catalog` | `mappingId` = `proposal.params.mappingId` |
-| Order field | `tool.order_timeline` | `field` = Order path of the Mapping condition (e.g. `specimen.type`) |
+| attempt policy | `tool.policies` | `attempt` defined |
+| substitution policy | `tool.policies` | `substitution` defined |
+| maintenance window | `tool.policies` | `maintenanceWindows` defined |
+| attempt history | `tool.partner_failure_history` | (the Simulator's `PartnerHistory`: `window`, `items`) |
+| recent partner health | `tool.partner_health` | (the Simulator's `PartnerHealth`: `status`) |
+| approved Mapping | `tool.mapping_catalog` | `items[]` containing `mappingId` + `mappingVersion` equal to the Proposal's `params` |
+| Order field | — (the Order the Case holds) | the Mapping condition's Order path is present in `order` |
 
-**Owner of the convention**: 004. **Producer**: 006 Tools. To confirm with Henry before 006's plan.
+### Results the 004 serves for its two Tools
+
+Served by `SignalNoir.Tools.LocalSource` from the Store (today it answers "reference data not
+loaded"); the gateway wraps them as Evidence `result`.
+
+`tool.policies`:
+
+```json
+{ "policyVersion": "2026.10.1",
+  "attempt": { "maxAttempts": 3 },
+  "substitution": { "enabled": true },
+  "maintenanceWindows": [],
+  "partnerHealth": { "windowSeconds": 300, "maxErrorRate": 0.2 },
+  "approval": { "deadlineSeconds": 900 } }
+```
+
+`tool.mapping_catalog` (same `items` as `GET /reference/mappings`, plus the synonyms):
+
+```json
+{ "mappingVersion": "2026.10.1",
+  "items": [ { "mappingId": "map_glicj_plasma", "mappingVersion": "2026.10.1", "sourceCode": "GLIC-J",
+               "targetCode": "GLIC-P", "conditions": { "specimenType": "PLASMA" } } ],
+  "synonyms": { "specimenType": { "PLASMA": ["PLASMA"], "SERUM": ["SERUM", "SORO"] } } }
+```
+
+The Rules proposer (`SignalNoir.Proposers.Rules`) reads `result.items` and compares
+`conditions.specimenType` to the Order's `specimen.type` with a plain upper-case equality. With raw
+Orders that use the contract's own example values (`soro`, `plasma`) it would miss a Mapping the
+Validator accepts. It should
+call `Core.Conditions.Matches` with `result.synonyms` instead (see
+[coordination-004-006-009.md](./coordination-004-006-009.md)).
 
 ## Observed values (Revalidate only)
 
@@ -69,7 +112,7 @@ Evidence counts toward the minimum only if `caseId` equals the Proposal's, `obso
 ```
 
 Producer: 008 (Revalidation), gathering them right before the send. Only these values feed the
-precondition step (spec FR-022).
+precondition step (spec FR-022). Recording a Revalidation (`RevalidationPerformed`) is 008's.
 
 ## Admit
 

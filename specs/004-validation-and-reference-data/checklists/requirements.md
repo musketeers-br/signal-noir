@@ -33,10 +33,13 @@
 
 - Enumerations, reason codes and the two `/reference/*` paths appear because they are observable
   vocabulary of the frozen product contract, not implementation choices.
-- "LOW" in the input is mapped to the contract's `BAIXA` (documented assumption).
+- The contract's `Confidence` is `HIGH`/`MEDIUM`/`LOW` since 2026-10-25; `LOW` routes to review.
 - Reason codes are closed by this feature; the set starts from the codes used in
   `contracts/fixtures/` so fixtures and verdicts agree.
 - **Seam divergence**: `docs/seams.md` v1's `ValidatorVerdict` (`valid`/`invalid`) and
   `Validate(proposal)` cannot express FR-013/FR-016. Recorded under Dependencies; the plan must
   produce the seam contract-change before consumers rely on v1.
 - SC-005 ("well under one second") is a user-perceived bound; the plan may set a concrete budget.
+- Revised 2026-10-26 against `master` (003, 005, 006, 009 merged): Evidence handling uses the real
+  Evidence record (`absence` never counts); identity is derived by the Validator; the approval rule
+  follows the catalog; Tools for policies and the Mapping catalog (FR-029) added. No markers added.

@@ -93,9 +93,11 @@ with a wrong version.
 ### User Story 3 - Unsupported, unconfident or identity-ambiguous Proposals go to review (Priority: P1)
 
 A Proposal must carry the minimum Evidence for its Action. If any mandatory Evidence is missing, if
-the confidence is low, or if the Order's identity is ambiguous and the Action would act on the
-Partner, the verdict is `review` with a specific reason, so the Case goes to `ReviewRequired`
-instead of moving toward an effect.
+the confidence is low, or if the Case's Evidence shows an ambiguous identity (another patient record
+that collides with the Order's patient) and the Action would act on the Partner, the verdict is
+`review` with a specific reason, so the Case goes to `ReviewRequired` instead of moving toward an
+effect. Only Evidence that actually answered counts; absence of information never satisfies a
+requirement.
 
 **Why this priority**: This is what turns "the model sounded sure" into "the system has the facts".
 It drives the Dossier path and the "safe review" outcome the Benchmark measures.
@@ -115,14 +117,18 @@ Order whose identity is ambiguous.
    evidence or the Order field that satisfies the Mapping condition, **When** validated, **Then** the
    verdict is `review` with `EVIDENCE_MISSING_POLICY`, `EVIDENCE_MISSING_MAPPING` or
    `EVIDENCE_MISSING_ORDER_FIELD` respectively.
+3a. **Given** a mandatory Evidence item that was requested but is recorded as an absence (the source
+   could not answer), **When** validated, **Then** it counts as missing, exactly as if it had not
+   been requested.
 4. **Given** a `HOLD` Proposal with neither recent partner health nor a policy maintenance window,
    **When** validated, **Then** the verdict is `review` with `EVIDENCE_MISSING_HEALTH_OR_WINDOW`; with
    either one, it is `accepted`.
-5. **Given** a Proposal with confidence `BAIXA` (low), **When** validated, **Then** the verdict is
+5. **Given** a Proposal with confidence `LOW`, **When** validated, **Then** the verdict is
    `review` with `CONFIDENCE_LOW`.
-6. **Given** an Order flagged with ambiguous identity, **When** a `RETRY`, `APPLY_APPROVED_MAPPING`
-   or `HOLD` Proposal is validated, **Then** the verdict is `review` with
-   `IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION`; a `REQUEST_REVIEW` Proposal is still `accepted`.
+6. **Given** a Case whose Evidence shows another patient record with the same name but a different
+   identity, **When** a `RETRY`, `APPLY_APPROVED_MAPPING` or `HOLD` Proposal is validated, **Then**
+   the verdict is `review` with `IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION`, whoever the caller says
+   the identity is; a `REQUEST_REVIEW` Proposal is still `accepted`.
 7. **Given** a `RETRY` Proposal when the attempt policy's maximum attempts has been reached,
    **When** validated, **Then** the verdict is `blocked` with `RETRY_BUDGET_EXHAUSTED`; below the
    maximum, `RETRY_BUDGET_AVAILABLE` is among the reasons.
@@ -217,9 +223,14 @@ the older one; read the catalog and the Mappings through the API.
    Actions with external effect, approval requirement, parameter shape and minimum Evidence.
 4. **Given** the Mappings are requested, optionally filtered by source code, **When** they are read,
    **Then** the Mappings of the version in force are returned with that version.
-5. **Given** a fixture that declares an Action outside the catalog, a condition field the Validator
-   does not know, or a duplicate Mapping id within one version, **When** it is loaded, **Then** the
-   load is refused and the previous version stays in force.
+5. **Given** a fixture with a condition field the Validator does not know, a duplicate Mapping id
+   within one version, an unknown policy key or an out-of-range policy value (for example an error
+   rate above 1 or fewer than one attempt), **When** it is loaded, **Then** the load is refused and
+   the previous version stays in force.
+6. **Given** reference data in force, **When** a proposer reads the policies or the Mapping catalog
+   through the read-only Tools, **Then** it receives that data (Mappings with their conditions and
+   the specimen synonyms; policies with their version); **Given** no reference data is loaded,
+   **Then** the Tools report absence of information.
 
 ---
 
@@ -242,7 +253,7 @@ canonicalization, then one that differs in one key field.
    Approval is required.
 2. **Given** a candidate whose key differs, **When** validated, **Then** the verdict is `review` with
    `EQUIVALENCE_KEY_MISMATCH`.
-3. **Given** an ambiguous identity, **When** a candidate is validated, **Then** the verdict is
+3. **Given** an ambiguous identity in the Case's Evidence, **When** a candidate is validated, **Then** the verdict is
    `review` with `IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION`; there is no confirmation by inference.
 
 ---
@@ -256,8 +267,8 @@ canonicalization, then one that differs in one key field.
 - A Mapping has no conditions: it applies to any Order that contains its source code.
 - A Mapping condition names an Order field that is absent from the Order: the condition does not
   match (`MAPPING_CONDITION_MISMATCH`), and the Order-field Evidence counts as missing.
-- Evidence marked as obsolete or as suspicious (for example containing an embedded instruction) does
-  not count toward the minimum Evidence.
+- Evidence marked as obsolete, as suspicious (for example containing an embedded instruction) or as
+  an absence does not count toward the minimum Evidence.
 - Evidence belonging to another Case is ignored.
 - An Operator's resolution Proposal is validated by exactly the same rules as an Agent's or Rules
   Mode's; the origin never changes the verdict.
@@ -302,19 +313,24 @@ canonicalization, then one that differs in one key field.
 - **FR-007**: A Proposal missing a mandatory Evidence item MUST get verdict `review` with the
   specific reason (`EVIDENCE_MISSING_POLICY`, `EVIDENCE_MISSING_ATTEMPT_HISTORY`,
   `EVIDENCE_MISSING_PARTNER_HEALTH`, `EVIDENCE_MISSING_MAPPING`, `EVIDENCE_MISSING_ORDER_FIELD`,
-  `EVIDENCE_MISSING_HEALTH_OR_WINDOW`). Obsolete, suspicious or other-Case Evidence MUST NOT count.
-- **FR-008**: A Proposal with low confidence (`BAIXA`) MUST get verdict `review` with
-  `CONFIDENCE_LOW`.
-- **FR-009**: When the Order's identity is ambiguous, any Action other than `REQUEST_REVIEW` MUST get
-  verdict `review` with `IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION`.
+  `EVIDENCE_MISSING_HEALTH_OR_WINDOW`). Obsolete, suspicious, absence or other-Case Evidence MUST
+  NOT count. The Order field required by a Mapping condition is satisfied by that field being
+  present in the Order the Case holds.
+- **FR-008**: A Proposal with confidence `LOW` MUST get verdict `review` with `CONFIDENCE_LOW`.
+- **FR-009**: When the Case's Evidence and Order show an ambiguous identity, any Action other than
+  `REQUEST_REVIEW` MUST get verdict `review` with `IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION`. The
+  Validator decides this itself from the Case's Evidence, using the one identity rule of the Core;
+  no caller supplies an identity status.
 - **FR-010**: `RETRY` MUST be `blocked` with `RETRY_BUDGET_EXHAUSTED` when the attempt count has
   reached the attempt policy's maximum.
 
 **Approval policy**
 
-- **FR-011**: Every verdict MUST state `requiresApproval`: true for `RETRY` and
-  `APPLY_APPROVED_MAPPING`, false for `HOLD`, `REQUEST_REVIEW` and `prior_receipt_confirmed`. The
-  approval policy is itself versioned reference data.
+- **FR-011**: Every verdict MUST state `requiresApproval`: true for the Actions with an external
+  effect (`RETRY`, `APPLY_APPROVED_MAPPING`), false for `HOLD`, `REQUEST_REVIEW` and
+  `prior_receipt_confirmed` (PRD FR-16). This rule belongs to the Action catalog, is not
+  configurable, and is the same value the action-catalog endpoint reports. The Approval deadline
+  duration is versioned policy data.
 - **FR-012**: The Validator MUST answer whether an Approval by a given actor is admissible for a Case:
   the actor `benchmark` only when the Case belongs to a BenchmarkRun (labelled `automatic`), refused
   with `ACTOR_BENCHMARK_OUTSIDE_RUN` otherwise; `operator:<name>` always (labelled `human`); any
@@ -339,7 +355,8 @@ canonicalization, then one that differs in one key field.
   validated by the same rules; the origin MUST NOT change the verdict.
 - **FR-018**: Each validation of a Proposal MUST be recorded on its Case: the verdict is attached to
   the Proposal and a verdict event is appended to the timeline, including when the verdict is
-  `blocked`.
+  `blocked`, and the recorded verdict carries the versions it used. Recording already happens on the
+  Case command path; this feature supplies the verdict it records.
 
 **Preconditions**
 
@@ -361,17 +378,23 @@ canonicalization, then one that differs in one key field.
 **Reference data**
 
 - **FR-023**: Policies (attempt, substitution, maintenance window, partner health threshold,
-  approval) and approved Mappings MUST be versioned reference data owned by the application and
-  loaded from versioned fixtures; the Simulator MUST NOT own or serve them.
+  approval deadline) and approved Mappings MUST be versioned reference data owned by the application
+  and loaded from versioned fixtures; the Simulator MUST NOT own or serve them.
 - **FR-024**: Loading a fixture version MUST be refused, keeping the previous version in force, when
-  it declares an Action outside the catalog, an unknown condition field or a duplicate Mapping id.
+  it declares an unknown condition field, a duplicate Mapping id, an unknown policy key or an
+  out-of-range policy value.
 - **FR-025**: A BenchmarkRun MUST be able to pin the policy and Mapping versions, and Cases of that
   run MUST be validated against the pinned versions.
-- **FR-026**: The product API MUST serve the action catalog (`GET /reference/action-catalog`) and the
-  Mappings in force (`GET /reference/mappings`, optional `sourceCode` filter) exactly as
+- **FR-026**: The product API MUST serve the action catalog (`GET /reference/action-catalog`), with
+  the minimum Evidence of each Action filled in, and the Mappings in force
+  (`GET /reference/mappings`, optional `sourceCode` filter, today a placeholder) exactly as
   `contracts/openapi-signalnoir.yaml` defines them.
 - **FR-027**: When no reference data version is in force, every validation MUST be `blocked` with
   `REFERENCE_DATA_UNAVAILABLE`.
+- **FR-029**: The read-only Tools that expose the policies and the Mapping catalog to proposers MUST
+  return the reference data in force, including the specimen synonym list, so that a proposer and the
+  Validator see the same data. Until reference data is loaded they report absence of information,
+  never an invented value.
 
 **Prior receipt**
 
@@ -385,9 +408,9 @@ canonicalization, then one that differs in one key field.
 
 - **Proposal (input)**: Action, parameters, scope, confidence, declared preconditions with expected
   values, versions relied on (policy, Mapping), origin, optional prior Receipt candidate.
-- **Validation Input**: the Proposal plus the Case's Evidence, the Order snapshot and its identity
-  status, the attempt count, the reference data version, the run context (in a BenchmarkRun or not,
-  pinned versions), observed precondition values (for Revalidation) and the current time.
+- **Validation Input**: the Proposal plus the Case's Evidence, the Order snapshot, the attempt count,
+  the reference data snapshot, the run context (in a BenchmarkRun or not, pinned versions), observed
+  precondition values (for Revalidation) and the current time.
 - **Verdict**: verdict value, requires-approval flag, ordered reason codes, versions used, time.
 - **Precondition Result**: check, expected, observed, passed.
 - **Reason Code**: closed code with its English text.
@@ -419,24 +442,32 @@ canonicalization, then one that differs in one key field.
 
 ## Assumptions
 
-- **Confidence vocabulary**: the description's "LOW" is the contract's `BAIXA` (`ALTA`, `MEDIA`,
-  `BAIXA`); only `BAIXA` routes to review.
+- **Confidence vocabulary**: the contract's `Confidence` is `HIGH`, `MEDIUM`, `LOW` (renamed from
+  `ALTA`/`MEDIA`/`BAIXA` on 2026-10-25); only `LOW` routes to review.
 - **Reason codes**: the contract leaves `ValidatorVerdict.reasons` as strings; this feature closes the
   list in the Core vocabulary, starting from the codes already used by the fixtures. The verdict
   carries codes only; the English text is looked up from the vocabulary by whoever shows it (Dossier,
   console, error messages).
 - **"Blocked and recorded"**: the verdict is recorded on the Case (attached to the Proposal, plus a
-  timeline event) by the validation command this feature provides; proposers call that command. No
-  Approval is recorded here.
-- **Ambiguous identity**: the Validation Input carries an identity status established from Evidence
-  (for example conflicting patient records); the Validator does not search for identity itself.
-- **Order-field Evidence**: the Order snapshot field that satisfies the Mapping condition counts as
-  Evidence when the Case has Evidence of the Order (its snapshot or timeline) showing that field.
+  timeline event) by the Case command path that already routes every Proposal through the Validator
+  (features 006 and 009); this feature supplies the verdict and its fields. Recording a Revalidation
+  (`RevalidationPerformed`) belongs to 008. No Approval is recorded here.
+- **Ambiguous identity**: derived by the Validator from the Case's recorded patient Evidence and the
+  Order, with the Core's identity rule that the Rules proposer and the Dossier already use; the
+  Validator does not search for records itself.
+- **Order-field Evidence**: the Order the Case holds is a fact of the Case, so the Order field that
+  satisfies the Mapping condition is "present" when the Order has it; no extra Tool call is needed
+  (the base Investigation package already spends the whole budget).
 - **Specimen synonyms**: the reference data carries a versioned synonym list (PT/EN, case variants)
   for enumerated condition fields, starting with specimen type (`plasma`/`PLASMA`, `soro`/`serum` →
   `SERUM`).
-- **Approval deadline**: its duration is an approval-policy value; Approval itself is recorded by
-  007, which supplies it to `APPROVAL_VALID`.
+- **Approval deadline**: its duration is an approval-policy value (`deadlineSeconds`); Approval
+  itself is recorded by 007, which supplies it to `APPROVAL_VALID`.
+- **State of the product when this feature starts (2026-10-26)**: 003, 005, 006 and 009 are already on
+  `master`. Every Proposal already reaches the Validator through one adapter, which today calls the
+  v1 Validator; the Tools for policies and the Mapping catalog report "reference data not loaded";
+  `GET /reference/mappings` returns an empty placeholder; the Action catalog is compiled in the Core
+  and lists no minimum Evidence. This feature fills those gaps instead of adding parallel pieces.
 - **Reference fixtures**: `contracts/fixtures/reference.mappings.json` is the response example of the
   Mapping endpoint; the application's own versioned fixtures (Policies, Mappings, synonyms) are
   produced by this feature and must be consistent with it.
@@ -449,16 +480,15 @@ canonicalization, then one that differs in one key field.
   `ApprovedMapping`, `Confidence`, `PreconditionCheck`, `Precondition`, `PreconditionResult`,
   `ValidatorVerdict`, `ValidatorVerdictValue`, `ErrorCode` (`VALIDATION_FAILED`, `INVALID_ACTOR`),
   `/reference/action-catalog`, `/reference/mappings`.
-- **Seam contract change required**: `docs/seams.md` v1 defines `ValidatorVerdict` as
-  `valid`/`invalid` with a single reason and `Validate(proposal)` with the Proposal as the only input.
-  This feature needs the contract's verdict shape (`accepted`/`blocked`/`review`/
-  `prior_receipt_confirmed`, `reasons[]`, `requiresApproval`) and a Validation Input carrying every
-  input (FR-013, FR-016). Per the parallelism rules, this is recorded as an explicit seam
-  contract-change in the plan, together with the `FakeValidator` update, before any consumer depends
-  on the v1 shape.
-- 001: the Case command path (to record verdicts) and the canonical equivalence key (`Canon`).
-- Consumers: 005 (catalog, Mappings), 006 and 009 (validation of Proposals), 007 (approval policy and
-  actor admissibility), 008 (precondition evaluation), 010 (pinned versions), 011 (prior receipt).
+- **Seam contract change**: `docs/seams.md` v2 (already on `master`, v4 is current) moved the
+  Validator to the contract's verdict shape and a Validation Input carrying every input (FR-013,
+  FR-016). The code still implements v1 (`valid`/`invalid`); moving it to v2 is the first
+  implementation task of this feature.
+- Already on `master`, used and extended here: the Case command path (verdict recording and routing),
+  the Core identity rule, the Action catalog, the canonical equivalence key, the read-only Tools
+  gateway and its Evidence record.
+- Consumers: 005 (catalog, Mappings), 006 and 009 (Proposals, Tools), 007 (actor admissibility,
+  approval deadline), 008 (precondition evaluation), 010 (pinned versions), 011 (prior receipt).
 
 ## Out of Scope
 

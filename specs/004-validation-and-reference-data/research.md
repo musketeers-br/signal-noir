@@ -1,9 +1,15 @@
 # Phase 0 Research: Validator and Versioned Reference Data
 
-**Date**: 2026-10-24
+**Date**: 2026-10-24, revised 2026-10-26 against `master` (003, 005, 006, 009 merged)
 **Inputs**: [spec.md](./spec.md), `contracts/openapi-signalnoir.yaml` (frozen), `contracts/fixtures/`
-(frozen), `docs/seams.md` v1, the 001 code (`SignalNoir.Core.*`, `SignalNoir.Application.CaseService`,
-`SignalNoir.Api.Dispatch`), architecture AD-9, AD-12, AD-19, AD-25, AD-26.
+(frozen), `docs/seams.md` v4, the code on `master` (`SignalNoir.Core.*`, `SignalNoir.Application.
+CaseService`, `ResolutionValidator`, `ToolGateway`, `SignalNoir.Tools.*`, `SignalNoir.Api.Dispatch`),
+`specs/009-.../contracts/coordination-004-007.md`, architecture AD-9, AD-12, AD-19, AD-25, AD-26.
+
+**Revision summary (2026-10-26)**: confidence is `HIGH/MEDIUM/LOW`; Evidence convention rewritten on
+the real Evidence DTO; no `Core.Catalog`, `ValidationService` or `Api.Reference` (their jobs already
+exist on `master` and are extended); identity derived, not passed; approval rule is the catalog's;
+`tool.policies` and `tool.mapping_catalog` become 004's to serve. Details in D1, D6, D8–D10, D15.
 
 Platform facts verified by 001 through iris-agentic-dev are cited as "001-Vn". New platform claims
 are in **Verification backlog** and MUST be verified with throwaway probes through iris-agentic-dev
@@ -20,6 +26,12 @@ before `/speckit-implement` (iris-agentic-dev was not reachable from the plannin
   `SignalNoir.Core.Dto.ReferenceData` snapshot. The Core does no I/O.
 - **Rationale**: Principles I and III and FR-016: one origin-blind gate, testable exhaustively without
   a database or an instance.
+- **Reuse on `master`**: `SignalNoir.Core.ActionCatalog` already holds the closed catalog (entries,
+  `ExternalEffect`, `RequiresApproval`, `AllowedParams`); this feature extends it and creates no
+  second catalog. `SignalNoir.Core.Identity.Collisions(evidence, order)` already decides ambiguous
+  identity for the Rules proposer and the Dossier; the Validator calls it. `Core.ProposalShape` and
+  `Core.ResolutionShape` already refuse malformed answers before the Validator; the Validator keeps
+  its own catalog/params/scope checks because it must not trust whoever built the Proposal.
 - **Alternatives considered**: reading reference data inside the Validator (I/O in the Core);
   a Validator per origin (forbidden by Principle III).
 
@@ -33,10 +45,10 @@ before `/speckit-implement` (iris-agentic-dev was not reachable from the plannin
     `PreconditionResult[]`) and `Admit(actor, runContext)`.
   - `FakeValidator` becomes configurable on the new shape; its default is `accepted`,
     `requiresApproval = true`, reasons `[ACTION_IN_CATALOG]`.
-- **When**: the document change is applied to `docs/seams.md` on master **now** (contract work is
-  allowed before 2026-10-26), in its own small commit, so that 006 (Henry) plans against v2. The code
-  change of the DTO, port, fake and the 001 seam tests is the first implementation task of this
-  feature.
+- **When**: the document change landed on `master` on 2026-10-24 (v2; v3 and v4 by 003 and 006 since).
+  The code still implements v1 (`valid`/`invalid`), and `ResolutionValidator` accepts both. The code
+  change of the DTO, port, fake and the seam/resolution tests is the first implementation task of
+  this feature. Revision: `identity` leaves `ValidationInput` (derived by the Validator, D1).
 - **Rationale**: v1 (`valid/invalid`, `Validate(proposal)`) cannot carry FR-013/FR-016. Rule 6 of the
   parallelism guide: a divergence becomes a contract change, never a merge-time fix. No consumer
   depends on v1 yet, so the change is cheap today.
@@ -73,8 +85,10 @@ before `/speckit-implement` (iris-agentic-dev was not reachable from the plannin
   has conditions; `RETRY_BUDGET_AVAILABLE` only for `RETRY`. `REQUEST_REVIEW` yields
   `[REVIEW_ALWAYS_ACCEPTED]`, followed by `IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION` as an informational
   code when the identity is ambiguous. `prior_receipt_confirmed` yields `[EQUIVALENCE_KEY_MATCH]`.
-- **Fixture check**: these rules reproduce 13 of the 14 verdicts in `contracts/fixtures/` (checked
-  with a script on 2026-10-24). The exception is `resolution.201.action.json`: an Operator
+- **Fixture check** (corrected 2026-10-26): a script listed the 13 verdicts found in
+  `contracts/fixtures/`; the comparison with these rules was done by reading, not by running a rule
+  engine. Reading, 12 of the 13 agree with the rules above; the executable check is
+  `TestFixtureVerdicts` (task T042). The exception is `resolution.201.action.json`: an Operator
   `APPLY_APPROVED_MAPPING` with the conditional `map_glicj_plasma`, whose reasons are
   `[ACTION_IN_CATALOG, PARAMS_VALID]` — missing `MAPPING_CONDITION_MATCHES` and
   `REQUIRED_EVIDENCE_PRESENT`. Principle III forbids a lighter rule for the Operator, so the fixture
@@ -122,12 +136,20 @@ before `/speckit-implement` (iris-agentic-dev was not reachable from the plannin
   - `maintenanceWindows`: `[]` per partner (`{partnerId, startsAt, endsAt}`), consulted together with
     the window the Partner announces (002 SIM-Q2)
   - `partnerHealth`: `{ "windowSeconds": 300, "maxErrorRate": 0.2 }`
-  - `approval`: `{ "RETRY": true, "APPLY_APPROVED_MAPPING": true, "HOLD": false, "REQUEST_REVIEW":
-    false, "deadlineSeconds": 900 }`
-- **Rationale**: the smallest set that makes every rule in the spec data-driven and versioned (FR-011,
-  FR-021, FR-023). Values are reviewable defaults; changing one is a new version.
-- **Note**: `approval` cannot make `RETRY`/`APPLY_APPROVED_MAPPING` approval-free outside a run: the
-  loader refuses such a version (Principle IV), so the policy is data but the invariant is code.
+  - `approval`: `{ "deadlineSeconds": 900 }`
+- **Rationale**: the smallest set that makes the rules that really vary data-driven and versioned
+  (FR-021, FR-023). Values are reviewable defaults; changing one is a new version.
+- **Revision 2026-10-26**: the first draft also kept a per-Action `approval` map. It is dropped:
+  which Actions need Approval (PRD FR-16: those with an external effect) is a constitutional rule
+  (Principle IV), not tunable data, and `Core.ActionCatalog` already encodes it. Keeping two copies
+  would let them drift. `requiresApproval` = `ActionCatalog.ExternalEffect(action)`; only the
+  Approval deadline is versioned.
+- **Finding for Henry**: `ActionCatalog.RequiresApproval` returns true for `REQUEST_REVIEW`
+  (`RETRY`, `APPLY_APPROVED_MAPPING` and `REQUEST_REVIEW`). That contradicts FR-16 and every fixture
+  (`REVIEW_ALWAYS_ACCEPTED` verdicts carry `requiresApproval: false`). The 009 routing sends
+  `REQUEST_REVIEW` to `ReviewRequired` regardless, so nothing breaks today, but
+  `GET /reference/action-catalog` reports the wrong value. Fixed with `ExternalEffect` (coordination
+  item 3).
 
 ## D7 — Canonical condition matching
 
@@ -136,50 +158,61 @@ before `/speckit-implement` (iris-agentic-dev was not reachable from the plannin
   the Mapping fixture (`"synonyms": {"specimenType": {"PLASMA": ["PLASMA"], "SERUM": ["SERUM", "SORO"]}}`).
   Exam codes compare after trim and upper-case. A condition on an unknown field fails the fixture
   load (FR-024); on an absent Order field it does not match.
-- **Rationale**: FR-005; the Simulator's raw Orders carry `plasma`/`soro` while the fixture carries
-  `PLASMA`/`SERUM`.
+- **Rationale**: FR-005; the contract's own examples of raw Orders use `plasma`/`soro` while the
+  fixture carries `PLASMA`/`SERUM`, and the Simulator's variants (002) may emit either.
 
 ## D8 — Validation Input and Evidence kinds (cross-feature contract)
 
-- **Decision**: [contracts/validation-input.md](./contracts/validation-input.md) fixes what the caller
-  passes. Minimum Evidence is recognised by `Evidence.source` from the contract enum and a small
-  `facts` convention:
+- **Decision** (rewritten 2026-10-26 on the real Evidence DTO of 006):
+  [contracts/validation-input.md](./contracts/validation-input.md) fixes what the caller passes.
+  Minimum Evidence is recognised by `Evidence.source` and by the keys present in `Evidence.result`;
+  there is no `facts` convention and no `obsolete` flag (the DTO has `obsoletedBy`):
 
   | Required item | Recognised Evidence |
   |---|---|
-  | attempt policy | `tool.policies` with `facts.policy = "attempt"` |
-  | substitution policy | `tool.policies` with `facts.policy = "substitution"` |
-  | maintenance window | `tool.policies` with `facts.policy = "maintenance"` |
+  | attempt policy | `tool.policies`, `result.attempt` defined |
+  | substitution policy | `tool.policies`, `result.substitution` defined |
+  | maintenance window | `tool.policies`, `result.maintenanceWindows` defined |
   | attempt history | `tool.partner_failure_history` |
   | recent partner health | `tool.partner_health` |
-  | approved Mapping | `tool.mapping_catalog` with `facts.mappingId` = the Proposal's |
-  | Order field | `tool.order_timeline` (or the Order snapshot evidence) with `facts.field` = the condition's Order path |
+  | approved Mapping | `tool.mapping_catalog`, `result.items[]` has the Proposal's `mappingId` + `mappingVersion` |
+  | Order field | the Order the Case holds has the condition's Order path (no Tool call) |
 
-  Evidence counts only if `caseId` matches, it is not obsolete and `suspicious = false`.
-- **Rationale**: FR-006/FR-007 need a deterministic way to recognise Evidence; the contract fixes
-  `source` but not the payload. The convention is small and owned here.
-- **Open dependency**: 006 (Henry) produces this Evidence; the convention must be confirmed with him
-  before 006's plan. Flagged in the seam contract change.
+  Evidence counts only if `caseId` matches, `kind = fact`, `obsoletedBy` is empty and `suspicious` is
+  false. `kind = absence` never counts (Principle VII).
+- **Rationale**: FR-006/FR-007 need a deterministic way to recognise Evidence. The Tools gateway
+  (006) already records `source`, `kind` and the raw `result`, and the base Investigation package
+  (`tool.partner_health`, `tool.partner_failure_history`, `tool.origin_order_status`,
+  `tool.mapping_catalog`, `tool.policies`, `tool.receipts_and_orders_by_patient`) spends the whole
+  budget of 6 calls, so `tool.order_timeline` is never in a Case: the Order field must come from the
+  Order itself.
+- **No open dependency**: the earlier request to Henry about an Evidence convention is withdrawn.
 
 ## D9 — Recording the verdict
 
-- **Decision**: `SignalNoir.Application.ValidationService.ValidateAndRecord(caseId, input)` calls the
-  Core Validator and appends a `ValidatorVerdict` timeline event through `CaseService.Append`
-  (attachment; does not bump `caseVersion`) with payload `{proposalId, verdict, reasons,
-  requiresApproval, versions}`. The Proposal's `validatorVerdict` in the API is the projection of the
-  latest such event for that `proposalId`; the Proposal record and its projection belong to 006.
-- **Rationale**: FR-018 without 004 owning the Proposal record; `Append` already exists in the seam
-  (`CaseCommands.Append`) and `ValidatorVerdict` is in the contract's `TimelineEventType`.
+- **Decision** (rewritten 2026-10-26): no `ValidationService`. `CaseService.CompleteInvestigation` and
+  `CaseService.ResolveReview` already call `ResolutionValidator.Verdict`, store the verdict on the
+  Proposal (`ProposalRecord.verdictJson`), append a `ValidatorVerdict` event and route the Case
+  (`RouteProposal`). 004 changes that adapter: `InputFor(rec, proposal, now)` builds the Validation
+  Input from the Case record, `Verdict(validator, input)` returns the contract verdict with
+  `versions`, and the event payload gains `versions`. The 009 note says "only the adapter's body
+  changes"; in fact `Verdict(validator, proposal, now)` has no Evidence, Order or run, so both call
+  sites change too (coordination items 1 and 2).
+- **Rationale**: FR-018 is already met by the Case command path; a second recorder would duplicate
+  events. Revalidation is not a `ValidatorVerdict`: it is a `RevalidationPerformed` event recorded
+  by 008, so 004 provides no `RevalidateAndRecord`.
 
 ## D10 — Reference endpoints
 
-- **Decision**: a new `%CSP.REST` class `SignalNoir.Api.Reference` serves `GET /action-catalog` and
-  `GET /mappings`, reached through a forward `<Map Prefix="/reference" Forward="SignalNoir.Api.Reference"/>`
-  in `SignalNoir.Api.Dispatch`. The forward line is a **G1 integration change**; until then tests call
-  `SignalNoir.Api.Reference` payload methods directly and over HTTP through a test-only web
-  application.
-- **Rationale**: keeps 004 out of 001's (and 003's) `Dispatch.cls` during development.
-- **Verification backlog**: V2.
+- **Decision** (rewritten 2026-10-26): no new REST class. `SignalNoir.Api.Dispatch` already routes
+  `/reference/action-catalog` (served from `Core.ActionCatalog.Entries()`) and `/reference/mappings`
+  (a placeholder: `mappingVersion: "unloaded"`, `items: []`). 004 replaces the body of
+  `Dispatch.Mappings()` to serve the Store (with the `sourceCode` filter) and fills
+  `requiredEvidence` in the catalog entries. Both are one-method edits in files owned by earlier
+  features (coordination items 3 and 5).
+- **Rationale**: the routes exist and the console (005) already calls them; a second class and a
+  forward would duplicate the surface. Tests call the Dispatch payload methods, as 009's
+  `TestResolutionApi` does.
 
 ## D11 — Run pinning and actor admissibility
 
@@ -213,6 +246,28 @@ before `/speckit-implement` (iris-agentic-dev was not reachable from the plannin
   test runs 1000 validations and asserts the mean.
 - **Rationale**: SC-005 ("well under one second") turned into a number.
 
+## D15 — Tools that serve reference data
+
+- **Decision**: `SignalNoir.Tools.LocalSource` answers `tool.policies` and `tool.mapping_catalog`
+  from the Store, with the result shapes in [contracts/validation-input.md](./contracts/validation-input.md)
+  (`tool.mapping_catalog` returns the endpoint's `mappingVersion` and `items` plus `synonyms`).
+  With nothing loaded it keeps today's "reference data not loaded" absence. For a Case in a
+  BenchmarkRun, the Tools read the run's pinned versions (`Store.For(run)`), so the proposer sees the
+  data the Validator will use.
+- **Rationale**: `LocalSource` says these two Tools wait for 004, and the Validator's minimum-Evidence
+  rule needs them as facts. Exposing `synonyms` is what lets an Agent or the Rules baseline relate an
+  Order's `soro` to a Mapping's `SERUM`; hiding it would make the Validator accept what the proposer
+  could not have known.
+- **Open point for Henry**: `Rules` compares specimen types with plain upper-case equality
+  (coordination request 1).
+
+## D16 — Existing tests that assume v1
+
+`FakeValidator`, `Consumer`, `TestConsumerUsesSeam` (seam), `TestResolution` and `TestDossier` (set
+`Verdict = "invalid"`) use the v1 vocabulary. The first implementation tasks move them to
+`accepted`/`blocked` (T003, T006). `ResolutionValidator` accepts `valid` and `accepted` today, so the
+suites stay green during the move.
+
 ---
 
 ## Verification backlog (iris-agentic-dev, before `/speckit-implement`)
@@ -220,8 +275,10 @@ before `/speckit-implement` (iris-agentic-dev was not reachable from the plannin
 | # | Claim | Needed by |
 |---|-------|-----------|
 | V1 | `%Dictionary.CompiledXData` (or `##class(%Dictionary.XDataDefinition)`) returns the JSON of a compiled `XData` block on build 154, and listing subclasses of a package works through `%Dictionary.CompiledClass` | D5 |
-| V2 | A `<Map Prefix=… Forward=…>` in a `%CSP.REST` `UrlMap` forwards to another `%CSP.REST` class on build 154 | D10 |
-| V3 | A test-only web application (`/signalnoir/test/reference`) can be created and removed from a `%UnitTest` | D10 |
+
+(The first draft's V2, a `<Map Forward>` in `UrlMap`, and V3, a test-only web application, are
+dropped with the new `Api.Reference` class, D10.) Baseline, not a platform claim: before T001's
+edits, the suites already on `master` pass on the dev container.
 
 ## Verification log
 

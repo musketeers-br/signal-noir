@@ -6,8 +6,16 @@
 `contracts/openapi-signalnoir.yaml`) nor FR-016 of spec 004 (every input as a parameter).
 **Who is affected**: 006, 007, 008, 009, 010 (consumers through the port or `FakeValidator`). None
 consumes v1 yet.
-**When**: document change now (allowed before 2026-10-26); code change (DTO, port, fake, 001 seam
-tests) as the first implementation task of 004.
+**When**: the document change landed on `master` on 2026-10-24 (seam v2; v3 and v4 by 003 and 006
+since). The code still implements v1; the code change (DTO, port, fake, seam tests) is the first
+implementation task of 004.
+
+**Revision 2026-10-26** (after 003, 005, 006, 009 merged): `identity` is removed from
+`ValidationInput`; the Validator derives it from `evidence` and `order` with the Core identity rule.
+The row above is the revised one. `docs/seams.md` and its spec-side copy still list `identity` in the
+`ValidationInput` row; removing it is a documentation-only edit to apply on `master` (separate
+commit, no consumer reads `ValidationInput` yet). `Proposal.confidence` is already `HIGH` / `MEDIUM`
+/ `LOW` in seam v4.
 
 ## Changes to `docs/seams.md`
 
@@ -18,7 +26,7 @@ Replace the `ValidatorVerdict` row and add three rows:
 | DTO | Required fields |
 |-----|-----------------|
 | `ValidatorVerdict` | `verdict` (`accepted` / `blocked` / `review` / `prior_receipt_confirmed`), `reasons` (ordered closed codes), `requiresApproval`, `versions` (`policy`, `mapping`), `at` |
-| `ValidationInput` | `proposal`, `evidence[]`, `order` (snapshot), `identity` (`clear` / `ambiguous`), `attemptCount`, `run` (`inRun`, `runId`, `policyVersion`, `mappingVersion`), `reference` (snapshot), `observed?` (Revalidation only), `now` |
+| `ValidationInput` | `proposal`, `evidence[]`, `order` (snapshot), `priorReceiptOrder?`, `attemptCount`, `run` (`inRun`, `runId`, `policyVersion`, `mappingVersion`), `reference` (snapshot), `observed?` (Revalidation only), `now` |
 | `PreconditionResult` | `check`, `expected`, `observed`, `passed`, `evidenceId?` |
 | `Admission` | `admissible`, `label` (`human` / `automatic`), `reason?` |
 
@@ -66,8 +74,11 @@ the one Validator (Principle III) the same Proposal from any origin yields `[ACT
 PARAMS_VALID, MAPPING_CONDITION_MATCHES, REQUIRED_EVIDENCE_PRESENT]`. Fix the prototype mock so the
 Operator path uses the same reason rules, regenerate the fixtures with
 `tools/export-api-fixtures.js`, and re-run `contracts/tools/validate_fixtures.py`. No hand edit.
+Still divergent on `master` as of 2026-10-26: the 2026-10-25 fixture change only renamed
+`ALTA/MEDIA/BAIXA` to `HIGH/MEDIUM/LOW`.
 
-## To confirm with Henry before 006's plan
+## Items for Henry
 
-The Evidence `source` / `facts` convention the Validator uses to recognise minimum Evidence
-([validation-input.md](./validation-input.md) §Evidence).
+See [coordination-004-006-009.md](./coordination-004-006-009.md): the edits to files merged by
+003/006/009 and the two baseline requests. The Evidence convention is no longer a request: it is
+defined on the real Evidence DTO (006).
