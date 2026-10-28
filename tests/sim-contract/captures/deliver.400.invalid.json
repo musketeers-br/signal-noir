@@ -1,0 +1,8 @@
+{
+  "error":{
+    "code":"INVALID_REQUEST",
+    "message":"idempotencyKey must have 8 to 128 characters",
+    "details":{
+    }
+  }
+}

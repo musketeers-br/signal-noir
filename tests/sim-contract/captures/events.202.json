@@ -1,0 +1,24 @@
+{
+  "scenarioInstanceId":"sci_KKKJIFGTCAI7DOQPZZWZXHJYR4",
+  "family":"P3",
+  "subtype":"P3.partner_fails_again",
+  "variant":"P3-fails-tune-01",
+  "set":"tuning",
+  "seed":111,
+  "runId":null,
+  "repetition":1,
+  "partnerId":"labpartner-a",
+  "timeScale":1,
+  "status":"emitted",
+  "phase":"partner_degraded",
+  "appliedEvents":[
+    {
+      "type":"PARTNER_DEGRADES",
+      "at":"2026-10-28T20:44:08.383Z"
+    }
+  ],
+  "emittedOrderIds":[
+    "ORD-sci_KKKJIFGTCAI7DOQPZZWZXHJYR4-0001"
+  ],
+  "createdAt":"2026-10-28T20:44:08.360Z"
+}

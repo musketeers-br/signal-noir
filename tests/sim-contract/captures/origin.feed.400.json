@@ -1,0 +1,8 @@
+{
+  "error":{
+    "code":"INVALID_REQUEST",
+    "message":"limit must be an integer from 1 to 200",
+    "details":{
+    }
+  }
+}

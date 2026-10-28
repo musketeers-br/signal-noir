@@ -1,0 +1,19 @@
+{
+  "scenarioInstanceId":"sci_K5GCJRGTCAI7DOQPZZWZXHJYR4",
+  "family":"clean",
+  "subtype":"clean.success",
+  "variant":"clean-success-tune-01",
+  "set":"tuning",
+  "seed":42,
+  "runId":"run_test_0001",
+  "repetition":2,
+  "partnerId":"labpartner-a",
+  "timeScale":1,
+  "status":"created",
+  "phase":"initial",
+  "appliedEvents":[
+  ],
+  "emittedOrderIds":[
+  ],
+  "createdAt":"2026-10-28T20:44:16.274Z"
+}
