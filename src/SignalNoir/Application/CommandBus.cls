@@ -49,6 +49,11 @@ Method Deliver(commandId As %String) As SignalNoir.Core.Result
 		Set result = ##class(SignalNoir.Core.Result).Error("", "delivery failed: " _ ex.DisplayString())
 	}
 	Lock -^SignalNoir.CommandLock(commandId)
+	; processing it was a transition: its owner delivers the request it queued (AD-20)
+	If result.ok && $IsObject(result.details) && (result.details.commandId '= "") {
+		Set next = ..Deliver(result.details.commandId)
+		Do result.details.%Set("next", {"commandId": (result.details.commandId), "status": ($Select(next.ok: next.details.status, 1: next.code _ ": " _ next.message))})
+	}
 	Return result
 }
 

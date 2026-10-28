@@ -61,6 +61,8 @@ instance through iris-agentic-dev.
 
 - [X] T022 Full ObjectScript suite, live contract check, contract fixtures, `npm test` / `npm run check` in `ui/`; record results in research.md; `PARALELISMO.md` line for 007 left for the user; spec status → Implemented
 
+- [X] T023 G2 rehearsal fixes: chained delivery in `CommandBus.Deliver` (`TestCommandBus.TestReassessAfterDenials`), `investigations` in `Tasks.Sweeper.Run`, `Supersede` only on approvals; report in `docs/verification/g2-rehearsal-2026-10-28.md`
+
 ## Dependencies
 
 Setup → Foundational → US1 (T005–T009) → US2 → US4 → US3 → US5 → API → Polish. `CaseService.cls`
