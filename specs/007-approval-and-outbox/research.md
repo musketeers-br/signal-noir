@@ -128,3 +128,11 @@ One-off repair of the dev database (iris-agentic-dev refuses `UPDATE`; run by He
 ```sql
 UPDATE SignalNoir_Application_Model.ProposalRecord SET confidence = 'LOW', preconditionsJson = '[]', metricsJson = '{"toolCalls":0}', versionsJson = '{"policy":"fixture","mapping":"fixture","prompt":null,"model":null,"provider":null}' WHERE diagnosisJson = '{"summary":"fixture","claims":[],"hypotheses":[]}' AND (confidence IS NULL OR confidence = '')
 ```
+
+## R10 — Gate G2 rehearsal (2026-10-28)
+
+Report: `docs/verification/g2-rehearsal-2026-10-28.md`. Three defects found in the browser
+walk-through and fixed here: (1) `CommandBus.Deliver` delivers the request its own processing
+queued, so the investigation after a denial starts (AD-20); (2) `Tasks.Sweeper.Run` takes
+`investigations` and tests pass `"none"` (with (1) a test sweep had run a real investigation);
+(3) `Supersede` marks only approvals. Suite 174/174, live contract conform.

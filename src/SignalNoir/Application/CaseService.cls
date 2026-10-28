@@ -1046,7 +1046,7 @@ Method Supersede(rec As SignalNoir.Application.Model.CaseRecord, newProposalId A
 		Set old.supersededBy = newProposalId
 		$$$ThrowOnError(old.%Save())
 	}
-	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT approvalId FROM SignalNoir_Application_Model.ApprovalRecord WHERE proposalId = ? AND status = 'valid'", rec.currentProposalId)
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT approvalId FROM SignalNoir_Application_Model.ApprovalRecord WHERE proposalId = ? AND decision = 'approved' AND status = 'valid'", rec.currentProposalId)
 	While rs.%Next() {
 		Set appr = ##class(SignalNoir.Application.Model.ApprovalRecord).%OpenId(rs.%Get("approvalId"))
 		Set appr.status = "superseded"

@@ -9,9 +9,10 @@ Class SignalNoir.Tasks.Sweeper Extends %RegisteredObject
 Parameter MAXPERRUN = 50;
 
 /// now: "" for the clock; scope: $List of caseIds ("" = all); async: deliver
-/// in background jobs (the scheduled task) or inline (tests).
+/// in background jobs (the scheduled task) or inline (tests); investigations:
+/// "default", or "none" to leave Investigate requests pending (tests).
 /// Returns {redelivered, expired}.
-ClassMethod Run(now As %String = "", scope As %List = "", async As %Boolean = 1, graceSeconds As %Integer = 30) As %DynamicObject
+ClassMethod Run(now As %String = "", scope As %List = "", async As %Boolean = 1, graceSeconds As %Integer = 30, investigations As %String = "default") As %DynamicObject
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
 	If now = "" Set now = svc.Clock.NowUtc()
@@ -19,6 +20,7 @@ ClassMethod Run(now As %String = "", scope As %List = "", async As %Boolean = 1,
 	; 1. requests whose delivery was lost
 	Set redelivered = 0
 	Set bus = ##class(SignalNoir.Application.CommandBus).Default()
+	Set bus.Investigations = investigations
 	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT commandId, caseId, createdAt FROM SignalNoir_Application_Model.OutboxRecord WHERE status = 'pending' ORDER BY createdAt, commandId")
 	While rs.%Next() && (redelivered < ..#MAXPERRUN) {
 		If (scope '= "") && '$ListFind(scope, rs.%Get("caseId")) Continue

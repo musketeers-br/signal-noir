@@ -14,7 +14,7 @@ ClassMethod Svc(now As %String) As SignalNoir.Application.CaseService
 /// The sweeper over this Case only (the dev database keeps other tests' rows)
 ClassMethod Sweep(caseId As %String, now As %String) As %DynamicObject
 {
-	Return ##class(SignalNoir.Tasks.Sweeper).Run(now, $ListBuild(caseId), 0)
+	Return ##class(SignalNoir.Tasks.Sweeper).Run(now, $ListBuild(caseId), 0, 30, "none")
 }
 
 Method TestExpiresAfterDeadline()
@@ -88,9 +88,9 @@ Method TestSweeperRedelivers()
 	Do $ClassMethod(S, "Decide", svc, caseId, "denied", "Carla", "no")
 	Set cmd = ##class(SignalNoir.Tests.Application.TestCommandBus).Last(caseId, "Reassess")
 	; the decision's own delivery was lost; within the grace period the sweeper waits
-	Set out = ##class(SignalNoir.Tasks.Sweeper).Run("2026-10-29T13:00:10Z", $ListBuild(caseId), 0, 30)
+	Set out = ##class(SignalNoir.Tasks.Sweeper).Run("2026-10-29T13:00:10Z", $ListBuild(caseId), 0, 30, "none")
 	Do $$$AssertEquals(out.redelivered, 0, "too recent")
-	Set out = ##class(SignalNoir.Tasks.Sweeper).Run("2026-10-29T13:01:00Z", $ListBuild(caseId), 0, 30)
+	Set out = ##class(SignalNoir.Tasks.Sweeper).Run("2026-10-29T13:01:00Z", $ListBuild(caseId), 0, 30, "none")
 	; the walk's stale Investigate is redelivered (and discarded) along with it
 	Do $$$AssertTrue(out.redelivered >= 1, "redelivered")
 	Do $$$AssertEquals(##class(SignalNoir.Tests.Application.TestCommandBus).Status(cmd), "done", "processed")
