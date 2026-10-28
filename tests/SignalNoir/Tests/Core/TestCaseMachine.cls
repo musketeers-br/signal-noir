@@ -17,7 +17,7 @@ ClassMethod Rows() As %DynamicArray
 		["DecisionProposed", "Executing", "system", "Execute"],
 		["DecisionProposed", "ReviewRequired", "system", ""],
 		["PendingApproval", "Approved", "operator:ana,benchmark", "Execute"],
-		["PendingApproval", "Rejected", "operator:ana,benchmark", ""],
+		["PendingApproval", "Rejected", "operator:ana,benchmark", "Reassess"],
 		["Rejected", "Investigating", "system", "Investigate"],
 		["Rejected", "ReviewRequired", "system", ""],
 		["Approved", "Executing", "system", ""],
