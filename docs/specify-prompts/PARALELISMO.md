@@ -80,18 +80,18 @@ Mudanças neles são aplicadas em lote no gate de integração.
 |---|---|---|---|---|
 | 001 runtime-skeleton-and-seams | concluída | José | 0 | |
 | 002 scenario-simulator | spec/plan/tasks prontos; implementação bloqueada pelo ambiente (iris-agentic-dev, V1–V6) | Henrique | 1 | branch `002-scenario-simulator` |
-| 003 order-case-lifecycle | implementada (aguardando gate G1) | Henry | 1 | branch `003-order-case-lifecycle` |
+| 003 order-case-lifecycle | implementada (aguardando gate G1) | Henry | 1 | no `master` |
 | 004 validation-and-reference-data | spec/plan/tasks prontos, revisados contra o master; aguardando decisões do Henry (`contracts/coordination-004-006-009.md`) e o ambiente (V1) | Henrique | 2 | branch `004-validation-and-reference-data` |
-| 005 operator-console | implementada (aguardando gate G2; decisão/resolução testadas contra fixtures até 007/009) | Henry | 3 | branch `005-operator-console` |
-| 006 investigation-and-proposal | implementada (aguardando gate G2; AI Hub ao vivo pendente, T060) | Henry | 2 | branch `006-investigation-and-proposal` |
-| 007 approval-and-outbox | reservada | Henrique | 3 | |
+| 005 operator-console | implementada (aguardando gate G2; decisão/resolução testadas contra fixtures até 007/009) | Henry | 3 | no `master` |
+| 006 investigation-and-proposal | implementada (aguardando gate G2; AI Hub ao vivo verificado, T060; SC-004 medido com gêmeos idênticos, T061) | Henry | 2 | no `master` |
+| 007 approval-and-outbox | implementada (aguardando gate G2; assumida do Henrique em 28/10; política de Aprovação padrão até a 004, handler do `Execute` na 008, sweeper ligado no Bootstrap no gate) | Henry | 3 | branch `007-approval-and-outbox` |
 | 008 execution-and-recovery | reservada | Henrique | 4 | |
-| 009 review-dossier-and-resolution | implementada (aguardando gate G3; Validador v1 até a 004, Aprovação compartilhada com a 007) | Henry | 4 | branch `009-review-dossier-and-resolution` |
+| 009 review-dossier-and-resolution | implementada (aguardando gate G3; Validador v1 até a 004; correção 009b no `master`) | Henry | 4 | no `master` |
 | 010 benchmark-and-reference-run | reservada | Henrique | 5 | |
 | 011 prior-receipt-p9 | condicional | José | 5 | |
 | 012 packaging-and-cross-install | reservada | Henry | 5 | |
 
-Trilhas: Henrique = Simulador e efeito (002 → 004 → 007 → 008 → 010) e integrador dos gates; Henry = Caso, Agente e console (003 → 006 → 005 → 009 → 012); José = revisão do 010 e 011 condicional, só na onda 5.
+Trilhas (007 passou para o Henry em 28/10): Henrique = Simulador e efeito (002 → 004 → 008 → 010) e integrador dos gates; Henry = Caso, Agente e console (003 → 006 → 005 → 009 → 007 → 012); José = revisão do 010 e 011 condicional, só na onda 5.
 
 Papéis fixos fora do board:
 
