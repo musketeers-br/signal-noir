@@ -1,0 +1,35 @@
+{
+  "items":[
+    {
+      "orderId":"ORD-sci_KW5LWZ6TCAI7DOQPZZWZXHJYR4-0001",
+      "transactionId":"txn_KW5LWZ6TCAI7DOQPZZWZXHJYR4_1",
+      "status":"active",
+      "emittedAt":"2026-10-28T20:44:13.645Z",
+      "order":{
+        "orderId":"ORD-sci_KW5LWZ6TCAI7DOQPZZWZXHJYR4-0001",
+        "partnerId":"labpartner-a",
+        "originUnit":"UNIT-NORTE",
+        "patient":{
+          "patientId":"SYN-PAT-534320",
+          "name":"Davi Exemplo",
+          "birthDate":"1975-04-10",
+          "sex":"M"
+        },
+        "exams":[
+          {
+            "code":"HEMO"
+          }
+        ],
+        "specimen":{
+          "specimenId":"SP-41509",
+          "collectedAt":"2026-10-23T06:32:00-03:00",
+          "type":"whole_blood"
+        },
+        "requestedAt":"2026-10-23T06:37:00-03:00",
+        "notes":"Paciente em jejum.",
+        "synthetic":true
+      }
+    }
+  ],
+  "serverTime":"2026-10-28T20:44:13.650Z"
+}

@@ -1,0 +1,8 @@
+{
+  "error":{
+    "code":"INVALID_REQUEST",
+    "message":"give at least one of idempotencyKey, orderId or patientId",
+    "details":{
+    }
+  }
+}

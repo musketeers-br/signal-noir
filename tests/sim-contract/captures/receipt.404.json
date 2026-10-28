@@ -1,0 +1,8 @@
+{
+  "error":{
+    "code":"NOT_FOUND",
+    "message":"receipt not found: rcp_nope",
+    "details":{
+    }
+  }
+}

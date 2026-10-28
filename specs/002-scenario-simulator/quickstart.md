@@ -31,7 +31,7 @@ Then on the host:
 uv run --with jsonschema --with pyyaml python tests/sim-contract/validate_sim_captures.py
 ```
 
-**Expected**: all suites pass; the validator prints `N valid, 0 invalid` and covers all 12
+**Expected**: all suites pass; the validator prints `N valid, 0 invalid` and covers all 13
 operations (SC-009).
 
 ## 2. Determinism and isolation (Story 1)

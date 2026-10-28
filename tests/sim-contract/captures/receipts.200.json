@@ -1,0 +1,39 @@
+{
+  "items":[
+    {
+      "receiptId":"rcp_K43XLSOTCAI7DOQPZZWZXHJYR4_1",
+      "orderId":"ORD-sci_K43XLSOTCAI7DOQPZZWZXHJYR4-0001",
+      "idempotencyKey":"idk_rcp_K43XLSOTCAI7DOQP",
+      "receivedAt":"2026-10-28T20:44:16.142Z",
+      "partnerId":"labpartner-a",
+      "scenarioInstanceId":"sci_K43XLSOTCAI7DOQPZZWZXHJYR4",
+      "transactionId":"txn-test-1",
+      "orderSnapshot":{
+        "orderId":"ORD-sci_K43XLSOTCAI7DOQPZZWZXHJYR4-0001",
+        "partnerId":"labpartner-a",
+        "originUnit":"UNIT-CENTRO",
+        "patient":{
+          "patientId":"SYN-PAT-258914",
+          "name":"Eva Teste",
+          "birthDate":"1969-06-10",
+          "sex":"M"
+        },
+        "exams":[
+          {
+            "code":"HEMO"
+          }
+        ],
+        "specimen":{
+          "specimenId":"SP-86844",
+          "collectedAt":"2026-10-26T06:43:00-03:00",
+          "type":"whole_blood"
+        },
+        "requestedAt":"2026-10-26T06:48:00-03:00",
+        "notes":"Coleta de rotina.",
+        "synthetic":true
+      },
+      "externalRef":"/sim/api/v1/receipts/rcp_K43XLSOTCAI7DOQPZZWZXHJYR4_1"
+    }
+  ],
+  "serverTime":"2026-10-28T20:44:16.205Z"
+}

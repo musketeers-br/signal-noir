@@ -1,0 +1,39 @@
+{
+  "items":[
+    {
+      "receiptId":"rcp_K4VSK3GTCAI7DOQPZZWZXHJYR4_1",
+      "orderId":"ORD-sci_K4VSK3GTCAI7DOQPZZWZXHJYR4-0002",
+      "idempotencyKey":"idk_prior_K4VSK3GTCAI7DOQPZZWZXHJYR4_2",
+      "receivedAt":"2026-10-28T20:41:16.059Z",
+      "partnerId":"labpartner-a",
+      "scenarioInstanceId":"sci_K4VSK3GTCAI7DOQPZZWZXHJYR4",
+      "transactionId":"txn_K4VSK3GTCAI7DOQPZZWZXHJYR4_2",
+      "orderSnapshot":{
+        "orderId":"ORD-sci_K4VSK3GTCAI7DOQPZZWZXHJYR4-0002",
+        "partnerId":"labpartner-a",
+        "originUnit":"UNIT-NORTE",
+        "patient":{
+          "patientId":"SYN-PAT-423230",
+          "name":"Davi Exemplo",
+          "birthDate":"1997-06-14",
+          "sex":"F"
+        },
+        "exams":[
+          {
+            "code":"GLIC-S"
+          }
+        ],
+        "specimen":{
+          "specimenId":"SP-76211",
+          "collectedAt":"2026-10-24T07:05:00-03:00",
+          "type":"serum"
+        },
+        "requestedAt":"2026-10-24T07:10:00-03:00",
+        "notes":"Routine morning collection.",
+        "synthetic":true
+      },
+      "externalRef":"/sim/api/v1/receipts/rcp_K4VSK3GTCAI7DOQPZZWZXHJYR4_1"
+    }
+  ],
+  "serverTime":"2026-10-28T20:44:16.064Z"
+}

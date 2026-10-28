@@ -1,0 +1,8 @@
+{
+  "error":{
+    "code":"NOT_FOUND",
+    "message":"scenario instance not found: sci_doesnotexist",
+    "details":{
+    }
+  }
+}

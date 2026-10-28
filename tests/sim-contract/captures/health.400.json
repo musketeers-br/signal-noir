@@ -1,0 +1,8 @@
+{
+  "error":{
+    "code":"INVALID_REQUEST",
+    "message":"scenarioInstanceId is required",
+    "details":{
+    }
+  }
+}

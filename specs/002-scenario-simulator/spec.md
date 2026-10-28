@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-23
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Scenario Simulator. It is an external system reached only over HTTP. The contract is contracts/openapi-sim.yaml." (full description: `docs/specify-prompts/002-scenario-simulator.txt`)
 

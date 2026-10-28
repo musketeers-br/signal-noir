@@ -41,8 +41,9 @@ be checked through iris-agentic-dev, with throwaway probes, before `/speckit-imp
 ## D3 — Determinism without a seedable RNG
 
 - **Decision**: All variability is derived in counter mode from a hash:
-  `draw(seed, variant, stream, n) = first 8 bytes of SHA-256(seed | variant | stream | n)` as an
-  unsigned integer. Streams are named (`order`, `wording`, `latency`, `patient`). No call to
+  `draw(seed, variant, stream, n) = first 7 bytes of SHA-256(seed | variant | stream | n)` as an
+  unsigned integer (amended 2026-10-28 after V1: 8-byte integers lose their last digits in
+  ObjectScript; 56 bits are exact). Streams are named (`order`, `wording`, `latency`, `patient`). No call to
   `$RANDOM`, no dependence on wall-clock time for content.
 - **Rationale**: `$RANDOM` cannot be seeded. A stateless hash gives the same value for the same
   inputs on every run and every instance, which is what FR-006 needs, and lets any value be
@@ -54,7 +55,8 @@ be checked through iris-agentic-dev, with throwaway probes, before `/speckit-imp
 ## D4 — Identifiers
 
 - **Decision**:
-  - `scenarioInstanceId = "sci_" _ <22 chars base32 of a GUID>`; never derived from the seed.
+  - `scenarioInstanceId = "sci_" _ <26 chars base32 of a GUID>`; never derived from the seed
+    (amended 2026-10-28 after V2: 128 bits need 26 base32 characters).
   - `orderId = "ORD-" _ scenarioInstanceId _ "-" _ <4-digit ordinal>`; the ordinal is the position
     in the variant's emission script.
   - `transactionId = "txn_" _ <instance suffix> _ "_" _ <ordinal>` for Origin emissions; delivery
@@ -108,6 +110,11 @@ be checked through iris-agentic-dev, with throwaway probes, before `/speckit-imp
   `%CSP.REST` method past it yields a timeout at the client). If the gateway is shorter, the
   setup sets the `/sim/api/v1` application's timeout above `clientTimeout + margin`, or the plan
   records a contract-change note.
+- **Amended 2026-10-28 after V4**: the gateway's `Server_Response_Timeout` is 60 s, equal to the
+  default client timeout, so a plain hold races it (a 504 HTML page). The holding endpoint sets
+  `%response.Timeout = hold + 30` before it hangs; the caller then always sees its own timeout.
+  For tests, `^SignalNoir.Sim.Config("clientTimeoutSeconds")` overrides the client timeout so a
+  timeout variant completes in seconds (the environment variable stays the production source).
 - **Alternatives considered**: closing the socket without a response (cannot be done portably from
   `%CSP.REST`); asking the client to use a shorter timeout for the Simulator (couples the product
   to the Simulator).
@@ -242,5 +249,45 @@ Each result is recorded in this file under "Verification log" when run.
 
 ## Verification log
 
-_Empty — to be filled with throwaway probes through iris-agentic-dev before `/speckit-implement`
-(probes are verification, not submission code, and are deleted after the check)._
+Run 2026-10-28 by Henry on `dev/aihub` (IRIS 2026.3.0AI build 154), throwaway `SignalNoirProbe.*`
+classes, removed afterwards. Full report: `docs/verification/002-v1-v6-build154.md`.
+
+| # | Result |
+|---|---|
+| V1 | Holds; SHA-256 matches the standard vector. 8-byte integers lose precision; 7 bytes are exact (D3 amended) |
+| V2 | Holds; 36-char GUID, distinct per call (D4 amended to 26 base32 chars) |
+| V3 | Holds; two concurrent CSP requests in two processes: the lock serializes, the unique index refuses the racer without it |
+| V4 | Fails as designed; `%response.Timeout` fix verified (D6 amended) |
+| V5 | Holds with `Type = 2` (as Bootstrap; 18 is refused on this build) |
+| V6 | Holds from a real `%UnitTest` case |
+
+## Ownership and calendar gate (2026-10-28)
+
+Henry took 002 over from Henrique on 2026-10-28 (Henrique informed), with the spec, plan and tasks
+Henrique wrote, and asked for the full cycle including implementation (calendar-gate exception as
+for 003, 005, 006, 007 and 009).
+
+## Implementation deviations (2026-10-28)
+
+- `PartnerState` and `ScenarioEvent` are fields of `Model.Instance` (`healthJson`,
+  `appliedEventsJson`), one row per instance, instead of separate classes: they are always read and
+  written with the instance, under its lock.
+- History entries injected by events (`afterEvent.<TYPE>.history`) are `Model.Delivery` rows with
+  no order fields, as the data model says.
+
+## Results (2026-10-28, IRIS 2026.3 AI Hub build 154)
+
+| Check | Result |
+|---|---|
+| Simulator suites (`SignalNoir.Tests.Sim.*`) | 44/44 |
+| Full ObjectScript suite (product + Simulator) | 218/218 |
+| Capture validator | 40 captures, 13/13 operations, 0 failing |
+| Product live contract / fixtures | conform / 25 valid |
+| Isolation (`TestNoCrossReference`) | no reference across the boundary |
+| Answer-key leak scan (`TestAnswerKeyLeak`) | every variant, every endpoint: no leak |
+| Quickstart §2–3 by curl | same content from the same seed, distinct orderIds; emission 201 then 200; 200, 200 replay, 422 |
+| P1 hold (timeScale 0.1, default client timeout 60 s) | 65.0 s; a client waiting 90 s gets the Simulator's own 504, not the gateway's page (V4 fix) |
+| Reserved test set | placeholders only (`FreezeReady()` = false until the freeze, D9) |
+
+The contract has 13 operations (the plan said 12). The test runner used here had read results
+before a long run finished; it now waits for the run's job (all counts above are complete runs).

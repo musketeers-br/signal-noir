@@ -50,7 +50,7 @@ package references `SignalNoir.Sim` and it references none (Principle I, D10); a
 calendar gate — no code before 2026-10-26; integration files (`module.xml`, compose, workflows,
 README) and 001's `Bootstrap.cls` untouched until G1.
 
-**Scale/Scope**: 12 HTTP operations; 7 families / 17 subtypes; ≥ 1 tuning variant per subtype; ≥ 5
+**Scale/Scope**: 13 HTTP operations (contract count); 7 families / 17 subtypes; ≥ 1 tuning variant per subtype; ≥ 5
 reserved test variants each for P5 and P8b at freeze; reference run ≈ 30 agent investigations +
 controls → ~40 instances per run.
 
@@ -84,7 +84,8 @@ controls → ~40 instances per run.
   dependencies explicit below.
 - [x] **Platform Constraints** — build 154, synthetic data (`synthetic: true` on every Order), no
   secrets involved, no image published.
-- [ ] **iris-agentic-dev** — **blocking before /speckit-implement**. Reused claims are
+- [x] **iris-agentic-dev** — V1–V6 verified 2026-10-28 (research "Verification log"; D3, D4 and D6
+  amended). Previously: **blocking before /speckit-implement**. Reused claims are
   001-verified (`%CSP.REST`, `Security.Applications`, `%Persistent`, `%UnitTest`). New claims V1–V6
   (research.md) MUST be verified with throwaway probes through iris-agentic-dev and logged in
   research.md "Verification log" before any task runs; probes are not submission code and are

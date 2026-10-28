@@ -1,0 +1,10 @@
+{
+  "error":{
+    "code":"IDEMPOTENCY_KEY_REUSED",
+    "message":"idempotencyKey already used with a different payload",
+    "details":{
+      "idempotencyKey":"idk_KXSACAGTCAI7DOQP",
+      "originalReceiptId":"rcp_KXSACAGTCAI7DOQPZZWZXHJYR4_1"
+    }
+  }
+}
