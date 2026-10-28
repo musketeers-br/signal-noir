@@ -391,8 +391,10 @@ the patient.
   fails again, maintenance window, cancelled at Origin); idempotency (lost receipt, restart during
   Executing, repeated approval); and P9 data (prior receipt under another transaction identifier
   and orderId).
-- **FR-032**: Each family used by the Benchmark MUST have separate `tuning` and `test` variants, with
-  at least 5 `test` variants for each of P5 and P8b.
+- **FR-032**: The core Benchmark families P5 and P8b MUST each have separate `tuning` and `test`
+  variants, with at least 5 `test` variants per family at the freeze. Clean controls, the Dossier
+  case and the platform-guarantee families (P3, idempotency) are run from pinned `tuning` variants
+  and are not scored as test-set results.
 - **FR-033**: For P9, emission MUST seed the original Order in the Origin history and its Receipt at
   the Partner with a receipt time a few minutes before the resend, and MUST put only the resend in
   the feed.
