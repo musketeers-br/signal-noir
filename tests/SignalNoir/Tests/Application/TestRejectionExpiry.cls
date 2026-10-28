@@ -18,8 +18,7 @@ Method TestFirstAndSecondRejection()
 	Do $$$AssertEquals({}.%FromJSON($ListGet(rows(n), 5)).rejectionReason, "wrong mapping", "the reason travels to the investigation")
 	; second round
 	For step = "DecisionProposed:agent", "PendingApproval:system", "Rejected:operator:ana" {
-		Set g = svc.GetCase(caseId).obj
-		Do $$$AssertTrue(svc.Transition(caseId, g.caseVersion, $Piece(step, ":", 1), $Piece(step, ":", 2, 3), ##class(SignalNoir.Tests.Support).Ev()).ok, step)
+		Do $$$AssertTrue(##class(SignalNoir.Tests.Support).Step(svc, caseId, step).ok, step)
 	}
 	Set c = svc.GetCase(caseId).obj
 	Do $$$AssertEquals(c.denialCount, 2, "count 2")

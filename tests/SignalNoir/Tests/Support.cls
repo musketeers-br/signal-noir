@@ -79,10 +79,68 @@ ClassMethod DriveTo(svc As SignalNoir.Application.CaseService, caseId As %String
 		Set actor = $Piece(step, ":", 2, 3)
 		Set g = svc.GetCase(caseId)
 		If 'g.ok Return g.code
-		Set t = svc.Transition(caseId, g.obj.caseVersion, to, actor, ..Ev("test walk"))
+		; a Case waits for approval on a Proposal; Approved and Rejected need a decision (007)
+		If (to = "PendingApproval") && (g.obj.currentProposalId = "") Do ..FixtureProposal(caseId)
+		If (to = "Approved") || (to = "Rejected") {
+			Set t = ..Decide(svc, caseId, $Select(to = "Approved": "approved", 1: "denied"), $Piece(actor, ":", 2), "test walk")
+		} Else {
+			Set t = svc.Transition(caseId, g.obj.caseVersion, to, actor, ..Ev("test walk"))
+		}
 		If 't.ok Return t.code _ " at " _ to _ ": " _ t.message
 	}
 	Return ""
+}
+
+/// 007: a current Proposal for a Case that reached DecisionProposed by a
+/// raw transition (test fixture written on the records). Returns its id.
+ClassMethod FixtureProposal(caseId As %String, action As %String = "RETRY") As %String
+{
+	Set rec = ##class(SignalNoir.Application.Model.CaseRecord).%OpenId(caseId)
+	If rec.currentProposalId '= "" {
+		Set old = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(rec.currentProposalId)
+		If $IsObject(old) Set old.current = 0  Do old.%Save()
+	}
+	Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%New()
+	Set pr.proposalId = ##class(SignalNoir.Application.IdFactory).%New().New("prop_")
+	Set pr.caseId = caseId, pr.author = "agent", pr.action = action, pr.paramsJson = "{}", pr.current = 1
+	Set pr.createdAt = ##class(SignalNoir.Application.SystemClock).%New().NowUtc()
+	; a contract-complete Proposal: the dev database keeps it and the live check reads it
+	Set pr.diagnosisJson = {"summary": "fixture", "claims": [], "hypotheses": []}.%ToJSON()
+	Set pr.confidence = "LOW", pr.preconditionsJson = "[]", pr.metricsJson = {"toolCalls": 0}.%ToJSON()
+	Set pr.versionsJson = {"policy": "fixture", "mapping": "fixture", "prompt": null, "model": null, "provider": null}.%ToJSON()
+	Do pr.%Save()
+	Set rec.currentProposalId = pr.proposalId
+	Do rec.%Save()
+	Return pr.proposalId
+}
+
+/// One "State:actor" step of a test walk: a raw transition, or the decision
+/// for Approved/Rejected (with a fixture Proposal when the Case has none)
+ClassMethod Step(svc As SignalNoir.Application.CaseService, caseId As %String, step As %String) As SignalNoir.Core.Result
+{
+	Set to = $Piece(step, ":", 1), actor = $Piece(step, ":", 2, 3)
+	Set g = svc.GetCase(caseId).obj
+	If (to = "PendingApproval") && (g.currentProposalId = "") Do ..FixtureProposal(caseId)
+	If (to = "Approved") || (to = "Rejected") Return ..Decide(svc, caseId, $Select(to = "Approved": "approved", 1: "denied"), $Piece(actor, ":", 2), "test walk")
+	Return svc.Transition(caseId, g.caseVersion, to, actor, ..Ev("test walk"))
+}
+
+/// 007: a Case in PendingApproval with a current Proposal
+ClassMethod PendingCase(svc As SignalNoir.Application.CaseService, tag As %String) As %String
+{
+	Set caseId = ..OpenCase(svc, ..Uid(tag))
+	Do ..DriveTo(svc, caseId, "PendingApproval")
+	Return caseId
+}
+
+/// 007: the Operator's decision on the Case's current Proposal at its
+/// current version
+ClassMethod Decide(svc As SignalNoir.Application.CaseService, caseId As %String, decision As %String = "approved", operator As %String = "ana", reason As %String = "") As SignalNoir.Core.Result
+{
+	Set c = svc.GetCase(caseId).obj
+	Set request = {"decision": (decision), "operator": (operator), "expectedCaseVersion": (c.caseVersion)}
+	If reason '= "" Set request.reason = reason
+	Return svc.DecideProposal(caseId, c.currentProposalId, request)
 }
 
 /// Outbox rows of a Case: count by "type:status"
