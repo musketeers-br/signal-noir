@@ -3,8 +3,10 @@ Class SignalNoir.Interop.Bootstrap Extends %RegisteredObject
 
 /// Idempotent startup (D6, D7): read the provider settings from the runtime
 /// environment, materialize the AI Hub provider configuration, record the
-/// availability the health surface reports, verify the lease budget and
-/// register the web applications.
+/// availability the health surface reports, verify the lease budget,
+/// register the web applications and, when SN_BACKGROUND_TASKS is 1,
+/// schedule the sweeper and the Origin feed. The Simulator's application is
+/// registered by the start-up hook, outside the product (002 research D10).
 /// OnStart never throws and never logs the API key: the key is only passed
 /// to the platform calls that need it.
 /// Configuration name of the AI Hub provider configuration
@@ -57,6 +59,8 @@ ClassMethod OnStart() As SignalNoir.Core.Result
 		Set interopStatus = ##class(SignalNoir.Interop.Bootstrap).EnsureInterop()
 		Set ^SignalNoir.Provider("webApplications") = webStatus
 		Set ^SignalNoir.Provider("interop") = interopStatus
+		; gate G1: the periodic work of a clean database
+		Set ^SignalNoir.Provider("backgroundTasks") = ##class(SignalNoir.Interop.Bootstrap).EnsureBackgroundTasks(##class(SignalNoir.Interop.Bootstrap).Env("SN_BACKGROUND_TASKS") = "1")
 		; 003 FR-027: an investigation interrupted by the restart goes to review
 		Set recovered = ##class(SignalNoir.Application.CaseService).Default().RecoverInterrupted()
 		Set ^SignalNoir.Provider("recoveredCases") = $Select(recovered.ok: recovered.ref, 1: "failed: " _ recovered.message)
@@ -182,6 +186,20 @@ ClassMethod EnsureWebApplications() As %String
 	}
 	Set $NAMESPACE = ns
 	Return status
+}
+
+/// Schedules the sweeper and the Origin feed reader, or removes them. Off
+/// by default: the dev database holds test requests that the sweeper would
+/// redeliver (007 research R6). Returns "scheduled", "off" or "failed".
+ClassMethod EnsureBackgroundTasks(enabled As %Boolean) As %String
+{
+	Set ok = 1
+	For cls = "SignalNoir.Tasks.SweeperTask", "SignalNoir.Tasks.OriginFeedTask" {
+		Set sc = $Select(enabled: $ClassMethod(cls, "Ensure"), 1: $ClassMethod(cls, "Remove"))
+		Set ok = ok && $$$ISOK(sc)
+	}
+	If 'ok Return "failed"
+	Return $Select(enabled: "scheduled", 1: "off")
 }
 
 /// Directory with the built console (ui/build); SN_UI_PATH overrides the

@@ -3,6 +3,13 @@
 For the gate integrator. Nothing here was applied in the feature branch (integration files and
 001's bootstrap are edited only at the gate).
 
+**Applied on 2026-10-29 (Henry, branch `g1-wiring-and-012`):** items 1, 2 and the scheduling in
+item 4. The start-up hook `boot/%ZSTART.mac` registers the Simulator, beside `Bootstrap.OnStart`
+rather than inside it, because `TestNoCrossReference` keeps the product free of `SignalNoir.Sim`
+references. With `SN_BACKGROUND_TASKS=1`, `Bootstrap.OnStart` schedules
+`Tasks.OriginFeedTask` (Poll every minute) and `Tasks.SweeperTask`. `.env.example` sets both
+variables. Item 3 (CI) is the `sim-captures` job of `.github/workflows/ci.yml` (feature 012).
+
 1. **Register the Simulator at start.** Add to `SignalNoir.Interop.Bootstrap.OnStart`:
    `Do ##class(SignalNoir.Sim.Setup).EnsureWebApplication()`. It is idempotent and leaves an
    existing registration of the same dispatcher alone.
