@@ -37,4 +37,45 @@ Method TestDetailLayers()
 	Do $ClassMethod(S, "ClearScript", caseId)
 }
 
+
+/// 008 T025 - the detail shows executions and the Receipt copy; the
+/// summary carries the latest execution's outcome (contract CaseSummary)
+Method TestExecutionLayers()
+{
+	Set S = "SignalNoir.Tests.Support"
+	Set svc = ##class(SignalNoir.Application.CaseService).Default()
+	Set caseId = $ClassMethod(S, "ApprovedCase", svc, "api-exec")
+	Set partner = ##class(SignalNoir.Tests.Fakes.ScriptedPartner).%New()
+	Do $ClassMethod(S, "DeliverLast", $ClassMethod(S, "ExecBus", $ClassMethod(S, "Executor", partner)), caseId)
+	Set p = ##class(SignalNoir.Api.Dispatch).CasePayload(svc.GetCase(caseId).obj)
+	Do $$$AssertEquals(p.executions.%Size(), 1, "one execution")
+	Set ex = p.executions.%Get(0)
+	For f = "executionId", "approvalId", "proposalId", "action", "idempotencyKey", "authorizedAt", "leaseGeneration", "revalidation", "attempts", "reconciliations", "outcome", "completedAt" {
+		Do $$$AssertTrue(ex.%IsDefined(f), "Execution." _ f)
+	}
+	Do $$$AssertEquals(ex.outcome, "resolved", "outcome")
+	Do $$$AssertEquals(ex.revalidation.%GetTypeOf("passed"), "boolean", "revalidation.passed boolean")
+	Set at = ex.attempts.%Get(0)
+	For f = "attemptId", "n", "sentAt", "completedAt", "httpStatus", "responseClass", "receiptId" {
+		Do $$$AssertTrue(at.%IsDefined(f), "Attempt." _ f)
+	}
+	Set rc = ex.reconciliations.%Get(0)
+	For f = "at", "trigger", "queriedBy", "found" {
+		Do $$$AssertTrue(rc.%IsDefined(f), "Reconciliation." _ f)
+	}
+	Do $$$AssertEquals(rc.%GetTypeOf("found"), "boolean", "found boolean")
+	For f = "receiptId", "orderId", "idempotencyKey", "receivedAt", "partnerId", "source" {
+		Do $$$AssertTrue(p.receipt.%IsDefined(f), "ReceiptCopy." _ f)
+	}
+	Set run = svc.ListCases("", "older", 200, {"state": ["Resolved"]})
+	Set found = ""
+	For i = 1 : 1 : run.list.Count() If run.list.GetAt(i).caseId = caseId Set found = run.list.GetAt(i)
+	Do $$$AssertEquals(##class(SignalNoir.Api.Dispatch).SummaryPayload(found).executionOutcome, "resolved", "summary executionOutcome")
+	; a Case without execution keeps the empty shape
+	Set other = $ClassMethod(S, "PendingCase", svc, "api-noexec")
+	Set q = ##class(SignalNoir.Api.Dispatch).CasePayload(svc.GetCase(other).obj)
+	Do $$$AssertEquals(q.executions.%Size(), 0, "no executions")
+	Do $$$AssertEquals(q.%GetTypeOf("receipt"), "null", "receipt null")
+}
+
 }

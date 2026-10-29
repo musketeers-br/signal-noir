@@ -64,4 +64,10 @@ Property dossier As %DynamicObject;
 
 Property approvals As %DynamicArray;
 
+/// Read-side projection (feature 008): the executions (contract Execution[])
+/// and the latest Receipt copy (contract ReceiptCopy, "" when none)
+Property executions As %DynamicArray;
+
+Property receipt As %DynamicObject;
+
 }

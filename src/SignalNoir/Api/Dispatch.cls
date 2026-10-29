@@ -233,8 +233,12 @@ ClassMethod CasePayload(dto As SignalNoir.Core.Dto.Case) As %DynamicObject
 	Do payload.%Set("proposals", proposals)
 	Do payload.%Set("approvals", $Select($IsObject(dto.approvals): dto.approvals, 1: []))
 	Do payload.%Set("denialCount", +dto.denialCount)
-	Do payload.%Set("executions", [])
-	Do payload.%Set("receipt", "", "null")
+	Do payload.%Set("executions", $Select($IsObject(dto.executions): dto.executions, 1: []))
+	If $IsObject(dto.receipt) && (dto.receipt.%Size() > 0) {
+		Do payload.%Set("receipt", dto.receipt)
+	} Else {
+		Do payload.%Set("receipt", "", "null")
+	}
 	; an unset %DynamicObject property reads as {}: only a recorded Dossier counts
 	If $IsObject(dto.dossier) && (dto.dossier.%Size() > 0) && ##class(SignalNoir.Api.Dispatch).ShowsDossier(dto) {
 		Do payload.%Set("dossier", dto.dossier)
