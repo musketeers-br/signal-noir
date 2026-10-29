@@ -62,4 +62,46 @@ Method TestConsoleApplicationsRegistered()
 	Do $$$AssertEquals(##class(SignalNoir.Api.Console).Target(), "ui/index.html#/cases", "redirect target")
 }
 
+/// Gate G1 - background tasks follow SN_BACKGROUND_TASKS (unset in the dev
+/// container: off)
+Method TestGateG1Wiring()
+{
+	Set r = ##class(SignalNoir.Interop.Bootstrap).OnStart()
+	Do $$$AssertEquals($Get(^SignalNoir.Provider("backgroundTasks")), "off", "off without SN_BACKGROUND_TASKS")
+	Do $$$AssertEquals(##class(SignalNoir.Tasks.SweeperTask).Count() + ##class(SignalNoir.Tasks.OriginFeedTask).Count(), 0, "nothing scheduled")
+	Do $$$AssertEquals(##class(SignalNoir.Interop.Bootstrap).EnsureBackgroundTasks(1), "scheduled", "scheduled when on")
+	Do $$$AssertEquals(##class(SignalNoir.Interop.Bootstrap).EnsureBackgroundTasks(1), "scheduled", "idempotent")
+	Do $$$AssertEquals(##class(SignalNoir.Tasks.SweeperTask).Count() _ ":" _ ##class(SignalNoir.Tasks.OriginFeedTask).Count(), "1:1", "one task each")
+	Do $$$AssertEquals(..TaskState("SignalNoir.Tasks.OriginFeedTask"), "_SYSTEM:0", "runs as _SYSTEM, not suspended")
+	; a task left suspended under another user is repaired
+	Do ..SetTaskState("SignalNoir.Tasks.OriginFeedTask", "%System", 1)
+	Do $$$AssertEquals(##class(SignalNoir.Interop.Bootstrap).EnsureBackgroundTasks(1), "scheduled", "ensured again")
+	Do $$$AssertEquals(..TaskState("SignalNoir.Tasks.OriginFeedTask"), "_SYSTEM:0", "repaired")
+	Do $$$AssertEquals(##class(SignalNoir.Interop.Bootstrap).EnsureBackgroundTasks(0), "off", "removed when off")
+	Do $$$AssertEquals(##class(SignalNoir.Tasks.SweeperTask).Count() + ##class(SignalNoir.Tasks.OriginFeedTask).Count(), 0, "tests leave no schedule behind")
+}
+
+/// RunAsUser:Suspended of the task of a class in this namespace
+ClassMethod TaskState(cls As %String) As %String
+{
+	Set ns = $NAMESPACE, $NAMESPACE = "%SYS"
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT RunAsUser, Suspended FROM %SYS.Task WHERE TaskClass = ? AND NameSpace = ?", cls, ns)
+	Set out = $Select(rs.%Next(): rs.%Get("RunAsUser") _ ":" _ (+rs.%Get("Suspended")), 1: "")
+	Set $NAMESPACE = ns
+	Return out
+}
+
+ClassMethod SetTaskState(cls As %String, user As %String, suspended As %Integer)
+{
+	Set ns = $NAMESPACE, $NAMESPACE = "%SYS"
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT ID FROM %SYS.Task WHERE TaskClass = ? AND NameSpace = ?", cls, ns)
+	If rs.%Next() {
+		Set t = ##class(%SYS.Task).%OpenId(rs.%Get("ID"))
+		Set t.RunAsUser = user
+		Do t.%Save()
+		If suspended Do ##class(%SYS.Task).Suspend(rs.%Get("ID"))
+	}
+	Set $NAMESPACE = ns
+}
+
 }
