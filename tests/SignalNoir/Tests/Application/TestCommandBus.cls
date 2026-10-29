@@ -5,7 +5,7 @@ Class SignalNoir.Tests.Application.TestCommandBus Extends %UnitTest.TestCase
 ClassMethod Bus() As SignalNoir.Application.CommandBus
 {
 	Set bus = ##class(SignalNoir.Application.CommandBus).Default()
-	Set bus.Investigations = "none"
+	Set bus.Investigations = "none", bus.Executions = "none"
 	Return bus
 }
 
@@ -130,7 +130,7 @@ Method TestRequestWithoutHandlerWaits()
 	Set cmd = ..Last(caseId, "Execute")
 	Set r = ..Bus().Deliver(cmd)
 	Do $$$AssertTrue(r.ok, "answers")
-	Do $$$AssertEquals(r.details.status, "waiting", "waits for its handler (008)")
+	Do $$$AssertEquals(r.details.status, "waiting", "left pending when executions are off")
 	Do $$$AssertEquals(..Status(cmd), "pending", "left pending")
 	Do $$$AssertEquals(..Bus().Deliver("cmd_nope").code, "NOT_FOUND", "unknown request")
 }

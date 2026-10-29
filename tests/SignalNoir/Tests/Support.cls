@@ -285,4 +285,58 @@ ClassMethod Types(svc As SignalNoir.Application.CaseService, caseId As %String) 
 	Return out
 }
 
+
+/// 008: a Case in Approved on a current fixture Proposal of this action
+ClassMethod ApprovedCase(svc As SignalNoir.Application.CaseService, tag As %String, action As %String = "RETRY") As %String
+{
+	Set caseId = ..OpenCase(svc, ..Uid(tag))
+	Do ..DriveTo(svc, caseId, "DecisionProposed")
+	Do ..FixtureProposal(caseId, action)
+	Set g = svc.GetCase(caseId).obj
+	Do svc.Transition(caseId, g.caseVersion, "PendingApproval", "system", ..Ev("test walk"))
+	Do ..Decide(svc, caseId, "approved", "ana")
+	Return caseId
+}
+
+/// 008: a Case in Executing on a HOLD Proposal (no approval needed)
+ClassMethod HoldCase(svc As SignalNoir.Application.CaseService, tag As %String) As %String
+{
+	Set caseId = ..OpenCase(svc, ..Uid(tag))
+	Do ..DriveTo(svc, caseId, "DecisionProposed")
+	Do ..FixtureProposal(caseId, "HOLD")
+	Set g = svc.GetCase(caseId).obj
+	Do svc.Transition(caseId, g.caseVersion, "Executing", "system", ..Ev("validator accepted; no approval required"))
+	Return caseId
+}
+
+/// 008: an execution path over the given Partner (default policy)
+ClassMethod Executor(partner As SignalNoir.Core.Port.PartnerClient, svc As SignalNoir.Application.CaseService = "") As SignalNoir.Application.ExecutionService
+{
+	Set ex = ##class(SignalNoir.Application.ExecutionService).%New()
+	Set ex.Service = $Select($IsObject(svc): svc, 1: ##class(SignalNoir.Application.CaseService).Default())
+	Set ex.Partner = partner
+	Set ex.Policy = ##class(SignalNoir.Core.ExecutionPolicy).%New()
+	Return ex
+}
+
+/// 008: the entry point running executions on this path (no proposer)
+ClassMethod ExecBus(executor As SignalNoir.Application.ExecutionService) As SignalNoir.Application.CommandBus
+{
+	Set bus = ##class(SignalNoir.Application.CommandBus).Default()
+	Set bus.Investigations = "none", bus.Executor = executor
+	Return bus
+}
+
+/// 008: delivers the Case's latest pending request of a type through the bus
+ClassMethod DeliverLast(bus As SignalNoir.Application.CommandBus, caseId As %String, type As %String = "Execute") As SignalNoir.Core.Result
+{
+	Return bus.Deliver(##class(SignalNoir.Tests.Application.TestCommandBus).Last(caseId, type))
+}
+
+/// 008: the Case's executions as stored
+ClassMethod Executions(caseId As %String) As %DynamicArray
+{
+	Return ##class(SignalNoir.Application.CaseService).Default().ListExecutions(caseId)
+}
+
 }

@@ -11,8 +11,9 @@ No change to `contracts/openapi-signalnoir.yaml`, the fixtures or the seam.
 
 ## 008 (Execution, Henrique)
 
-- `Execute` requests are queued by `PendingApproval → Approved` (and by 009's resolution). The
-  entry point `Application.CommandBus.Deliver` leaves them pending until 008 adds the handler there.
+- `Execute` requests are queued by `PendingApproval → Approved` (and by 009's resolution).
+  `Application.CommandBus.Deliver` routes them, and `Reconcile`, to `ExecutionService` (008, done
+  2026-10-28); the `"none"` switch still leaves them pending for tests.
 - The approval that authorizes the execution is `Case.currentApprovalId`; 008 sets it `consumed`
   when it authorizes, and checks `APPROVAL_VALID` (status `valid`, `expiresAt` in the future) at
   revalidation. An approval expired while `Executing` is 008's to refuse ("o Execution BO recusa e

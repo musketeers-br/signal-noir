@@ -2,7 +2,8 @@
 
 Dev-only conformance check of features 003 (FR-032, SC-006), 006 (Evidence,
 Proposal, Diagnosis and metrics layers of the Case detail), 009 (Dossier,
-resolution answers, reference data) and 007 (decision answers). The 009 part cancels one ReviewRequired
+resolution answers, reference data), 007 (decision answers) and 008 (executions, Receipt
+copies and the summary's executionOutcome). The 009 part cancels one ReviewRequired
 test case and the 007 part approves one PendingApproval test case. It reads the list,
 a polling page, one Case detail, its Timeline, an unknown Case and a bad cursor,
 and validates each body against the contract schema (JSON Schema 2020-12, as in
@@ -118,6 +119,16 @@ def main() -> int:
         check("resolution 201", path, 201, "ReviewResolutionResult", {"kind": "cancel", "operator": "Carla", "expectedCaseVersion": version, "reason": "conformance check"})
     else:
         print("skip     fewer than two ReviewRequired cases; resolution answers not exercised")
+    # feature 008: executions, Receipt copies and the summary's executionOutcome
+    executed = 0
+    for state in ("Resolved", "Held", "Executing", "Failed", "Cancelled"):
+        listing = check(f"{state} list", f"/cases?state={state}&limit=5", 200, "CaseListPage")
+        for item in listing["items"][:2]:
+            detail = check("detail+execution", f"/cases/{item['caseId']}", 200, "CaseDetail")
+            executed += bool(detail.get("executions"))
+    if not executed:
+        print("FAIL     no Case detail with executions")
+        failures += 1
     check("action catalog", "/reference/action-catalog", 200, "#/paths/~1reference~1action-catalog/get/responses/200/content/application~1json/schema")
     check("mappings", "/reference/mappings?sourceCode=GLIC-J", 200, "#/paths/~1reference~1mappings/get/responses/200/content/application~1json/schema")
     check("unknown case", "/cases/case_doesnotexist", 404, "ErrorEnvelope")
