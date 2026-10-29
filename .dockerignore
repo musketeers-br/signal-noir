@@ -1,3 +1,19 @@
+# Nothing secret or heavy enters the build context (feature 012 FR-005)
+.git
+.env
+.env.*
+!.env.example
+*.key
+*-docker.tar.gz
+.iris-agentic-dev.toml
 **/.DS_Store
 iris-main.log
-.git
+**/node_modules
+ui/build
+ui/.svelte-kit
+_bmad
+_bmad-output
+.claude
+.agents
+.opencode
+.specify

@@ -1,0 +1,54 @@
+name: ci
+
+# Static checks and the core unit tests (feature 012 FR-010). Nothing here builds, runs, pushes or
+# publishes an image of the AI Hub EAP build: the core tests run on a public IRIS image.
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/secret-scan.sh
+
+  sim-captures:
+    # the committed Simulator captures still match openapi-sim.yaml (002 gate G1 note 3)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv run --with jsonschema --with pyyaml python tests/sim-contract/validate_sim_captures.py
+
+  console:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.17.0'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+
+  core-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start a public IRIS
+        run: |
+          docker run -d --name iris -v "$PWD":/repo:ro intersystems/iris-community:2026.2
+          for i in $(seq 1 60); do docker exec iris iris qlist 2>/dev/null | grep -q running && break; sleep 3; done
+      - name: Compile the product and run the core unit tests
+        run: docker exec -i iris iris session IRIS < tests/ci/core-tests.script

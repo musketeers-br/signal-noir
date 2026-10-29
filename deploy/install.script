@@ -1,0 +1,13 @@
+    // Image build only (feature 012): compiles the product into IRISAPP and installs the start-up
+    // hook. A compile error fails the build. No key is read here: secrets enter at runtime.
+    zn "%SYS"
+    // demo instance: the web gateway's CSPSystem user needs a non-expired password
+    do ##class(Security.Users).UnExpireUserPasswords("*")
+    do $system.OBJ.Load("/home/irisowner/dev/boot/%ZSTART.mac", "ck")
+    zn "IRISAPP"
+    // twice: the first pass settles the compile order
+    do $system.OBJ.LoadDir("/home/irisowner/dev/src", "ck-d", , 1)
+    set sc = $system.OBJ.LoadDir("/home/irisowner/dev/src", "ck-d", .errors, 1)
+    write !, "compile errors: ", +$get(errors), !
+    if $system.Status.IsError(sc) || (+$get(errors) > 0) do $system.Process.Terminate(, 1)
+    halt

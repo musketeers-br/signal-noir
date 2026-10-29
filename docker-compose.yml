@@ -1,14 +1,25 @@
+# Signal Noir submission compose (feature 012). Build the base image first: see README, "Install".
+# Data lives in the container's writable layer: it survives restart and stop/start; `down` resets
+# the demo. No named volume and no bind mount, by design (AD-27).
 services:
   iris:
     build:
       context: .
-      dockerfile: Dockerfile
-    restart: always
+      args:
+        IMAGE: signalnoir/iris-aihub:2026.3.0AI.154.0
+    # local only: never pushed to any registry
+    image: signalnoir/app:local
+    pull_policy: build
+    env_file: .env
     environment:
       - ISC_CPF_MERGE_FILE=/home/irisowner/dev/merge.cpf
     ports:
-      - 1972
-      - 52773
-      - 53773
-    volumes:
-      - ./:/home/irisowner/dev
+      - "1972:1972"
+      - "52773:52773"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/1972'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    restart: unless-stopped
