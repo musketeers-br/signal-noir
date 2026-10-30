@@ -6,8 +6,8 @@ Class SignalNoir.Core.Dto.ValidationInput Extends %RegisteredObject
 /// identity field: the Validator derives it with Core.Identity, so a caller cannot clear it.
 Property proposal As SignalNoir.Core.Dto.Proposal;
 
-/// Evidence as recorded by the Tools gateway (006), one object each
-Property evidence As %DynamicArray;
+/// Evidence as recorded by the Tools gateway (006): the DTOs Core.Identity reads
+Property evidence As list Of SignalNoir.Core.Dto.Evidence;
 
 /// Raw snapshot of the Case's Order
 Property order As %DynamicObject;
@@ -31,7 +31,11 @@ ClassMethod FromJson(json As %DynamicObject) As SignalNoir.Core.Dto.ValidationIn
 	If '$IsObject(json) || 'json.%IsA("%Library.DynamicObject") Return ""
 	Set in = ..%New()
 	Set in.proposal = ..ProposalOf(json.%Get("proposal"))
-	Set in.evidence = $Select(json.%GetTypeOf("evidence") = "array": json.evidence, 1: [])
+	If json.%GetTypeOf("evidence") = "array" {
+		For i = 0 : 1 : json.evidence.%Size() - 1 {
+			If json.evidence.%GetTypeOf(i) = "object" Do in.evidence.Insert(..EvidenceOf(json.evidence.%Get(i)))
+		}
+	}
 	Set in.order = $Select(json.%GetTypeOf("order") = "object": json.order, 1: {})
 	Set in.priorReceiptOrder = $Select(json.%GetTypeOf("priorReceiptOrder") = "object": json.priorReceiptOrder, 1: "")
 	Set in.attemptCount = +json.%Get("attemptCount")
@@ -46,13 +50,46 @@ Method ToJson() As %DynamicObject
 {
 	Set o = {}
 	Set o.proposal = ..ProposalJson()
-	Set o.evidence = ..evidence, o.order = ..order
+	Set o.evidence = ..EvidenceJson(), o.order = ..order
 	Do ..PutOrNull(o, "priorReceiptOrder", ..priorReceiptOrder)
 	Set o.attemptCount = ..attemptCount, o.run = ..run
 	Do ..PutOrNull(o, "reference", $Select($IsObject(..reference): ..reference.ToJson(), 1: ""))
 	Do ..PutOrNull(o, "observed", ..observed)
 	Set o.now = ..now
 	Return o
+}
+
+ClassMethod EvidenceOf(json As %DynamicObject) As SignalNoir.Core.Dto.Evidence [ Private ]
+{
+	Set e = ##class(SignalNoir.Core.Dto.Evidence).%New()
+	For name = "evidenceId", "caseId", "kind", "source", "obsoletedBy", "observedAt" {
+		If json.%GetTypeOf(name) = "string" Set $Property(e, name) = json.%Get(name)
+	}
+	Set e.suspicious = +json.%Get("suspicious")
+	If json.%GetTypeOf("result") '= "unassigned" Set e.result = json.result
+	Return e
+}
+
+Method EvidenceJson() As %DynamicArray [ Private ]
+{
+	Set out = []
+	For i = 1 : 1 : ..evidence.Count() {
+		Set e = ..evidence.GetAt(i)
+		Set o = {"evidenceId": (e.evidenceId), "caseId": (e.caseId), "kind": (e.kind), "source": (e.source)}
+		If $IsObject(e.result) {
+			Set o.result = e.result
+		} Else {
+			Do o.%Set("result", "", "null")
+		}
+		Do o.%Set("suspicious", e.suspicious, "boolean")
+		If e.obsoletedBy = "" {
+			Do o.%Set("obsoletedBy", "", "null")
+		} Else {
+			Set o.obsoletedBy = e.obsoletedBy
+		}
+		Do out.%Push(o)
+	}
+	Return out
 }
 
 ClassMethod ProposalOf(json) As SignalNoir.Core.Dto.Proposal [ Private ]
