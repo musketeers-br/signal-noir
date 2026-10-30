@@ -78,7 +78,7 @@ Method TestOperatorMappingIsHeldUntil004()
 
 /// A refusal of the Operator's choice opens a related Case; when its
 /// investigation cannot finish (no provider), it reaches review with a
-/// fresh Dossier
+/// fresh Dossier, whether or not this instance has a provider
 Method TestRefusalComesBackWithADossier()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
@@ -92,9 +92,12 @@ Method TestRefusalComesBackWithADossier()
 	Do $$$AssertEquals(svc.GetCase(caseId).obj.state, "Failed", "the refused Case fails")
 	Set related = svc.OpenCase(orderId).ref
 	Set inv = svc.GetCase(related).obj
-	Do $$$AssertEquals(inv.previousCaseId _ ":" _ inv.state, caseId _ ":Investigating", "a related Case under investigation")
-	; its investigation cannot run without a provider
-	Do $ClassMethod(..#S, "Investigate", ##class(SignalNoir.Tests.Application.TestCommandBus).Last(related, "Investigate"), "SignalNoir.Proposers.Unavailable")
+	Do $$$AssertEquals(inv.previousCaseId, caseId, "a related Case")
+	; with a provider it is investigated, and the investigation fails here
+	; (Unavailable proposer); without one it goes to review at once
+	If inv.state = "Investigating" {
+		Do $ClassMethod(..#S, "Investigate", ##class(SignalNoir.Tests.Application.TestCommandBus).Last(related, "Investigate"), "SignalNoir.Proposers.Unavailable")
+	}
 	Set rc = svc.GetCase(related).obj
 	Do $$$AssertEquals(rc.state, "ReviewRequired", "ReviewRequired")
 	Do $$$AssertTrue($IsObject(rc.dossier) && (rc.dossier.%Size() > 0), "with a Dossier")
@@ -111,9 +114,10 @@ Method TestLiveOperatorRetry()
 	Set e = $ClassMethod(sim, "Post", "/scenarios/" _ c.scenarioInstanceId _ "/emissions", "")
 	Set order = e.emitted.%Get(0).order
 	Do ##class(SignalNoir.Interop.Service.OrderIn).Accept(order.%ToJSON(), "tx-" _ order.orderId, "", c.scenarioInstanceId)
-	Set caseId = ##class(SignalNoir.Interop.Service.OrderIn).ReportException(order.orderId, "timeout").ref
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Do svc.MarkReviewRequired(caseId, svc.GetCase(caseId).obj.caseVersion, "system", "gate G3 live")
+	; the Exception opens the Case (Open); its routing is not under test here
+	Set caseId = svc.RecordException(order.orderId, $ClassMethod(..#S, "Exception")).ref
+	Do svc.MarkReviewRequired(caseId, 1, "system", "gate G3 live")
 	Do $$$AssertTrue(..Resolve(svc, caseId, "RETRY").ok, "resolved")
 	Do $ClassMethod(..#S, "DeliverLast", $ClassMethod(..#S, "ExecBus", ##class(SignalNoir.Tests.Recovery.TestRecoverySuite).Executor()), caseId)
 	Do $$$AssertEquals(svc.GetCase(caseId).obj.state, "Resolved", "Resolved")

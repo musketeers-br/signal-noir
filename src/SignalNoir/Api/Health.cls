@@ -28,7 +28,7 @@ ClassMethod Payload() As %DynamicObject
 	Do payload.%Set("liveness", "alive")
 	Set provider = ##class(%DynamicObject).%New()
 	Set configured = +$Get(^SignalNoir.Provider("configured"))
-	Do provider.%Set("configured", configured)
+	Do provider.%Set("configured", configured, "boolean")
 	If configured = 0 {
 		Do provider.%Set("reason", ##class(SignalNoir.Api.Health).ProviderReason())
 	}
