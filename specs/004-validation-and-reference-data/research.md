@@ -310,3 +310,12 @@ Decision (Henrique, 2026-10-30): the three failures are accepted as environmenta
 they are not rerun on build 154 before T003. T001 is done. Expect the same three to fail until a
 provider is configured (and `TestHealthPayloadShape` until its `$Find` assertion is fixed); any other
 failure is a regression.
+
+Update (Henrique, 2026-10-30, later the same day): with the Simulator reachable, six more tests fail
+in `Tests.Recovery.TestRecoverySuite` (`TestBlockingPreconditions`, `TestClean`, `TestLateWorker`,
+`TestLostResponse`, `TestRepeatedClickAndCommand`, `TestRestartDuringExecuting`). Same cause, no
+provider: a new Case goes to `ReviewRequired`, the suite needs `Investigating`. The first baseline run
+did not show them because the suite skips itself (passing) when its Simulator probe fails. The
+baseline is therefore 9 environmental failures when the Simulator answers, and the same on the
+unchanged `master` container. Runs of the 004 branch use a second container, `signalnoir-004`, that
+mounts the worktree.
