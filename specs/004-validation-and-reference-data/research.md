@@ -319,3 +319,12 @@ did not show them because the suite skips itself (passing) when its Simulator pr
 baseline is therefore 9 environmental failures when the Simulator answers, and the same on the
 unchanged `master` container. Runs of the 004 branch use a second container, `signalnoir-004`, that
 mounts the worktree.
+
+Update (2026-10-30, after Henry's fix): `master` now carries PR #19 (`fix-provider-independent-tests`),
+which removes the nine failures above: the Recovery suite and `TestGateG3` open the Case with
+`RecordException` and walk it, `TestExecutionFailure` and `TestGateG3` assert the routing for the
+instance, and `/health` returns `provider.configured` as a boolean. The 004 branch merged it
+(8927907). The baseline is now green with no provider configured: 300 tests pass, 0 fail, on two
+consecutive full runs in `signalnoir-004`. The first run right after compiling the changed classes
+showed six `TestRecoverySuite` failures (`<INVALID OREF>`) that did not come back; cause not
+established. Any failure from here on is a regression.
