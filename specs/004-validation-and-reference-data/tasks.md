@@ -55,7 +55,7 @@ and agreed with Henry at T002): `Core/Validator.cls`, `Core/Port/Validator.cls`,
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirm specs/004-validation-and-reference-data/research.md "Verification log" has V1 recorded as passing, and record in the same log that the suites already on `master` pass on the dev container (baseline, compiled twice on a fresh container); if either is missing, stop
+- [x] T001 Confirm specs/004-validation-and-reference-data/research.md "Verification log" has V1 recorded as passing, and record in the same log that the suites already on `master` pass on the dev container (baseline, compiled twice on a fresh container); if either is missing, stop
 - [ ] T002 Walk specs/004-validation-and-reference-data/contracts/coordination-004-006-009.md with Henry (edits 1–6 and the two baseline requests) and record his decision at the end of that file; do not start a task marked **[edit]** on a file he has not agreed to
 
 ---

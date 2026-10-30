@@ -282,4 +282,31 @@ edits, the suites already on `master` pass on the dev container.
 
 ## Verification log
 
-_Empty — to be filled with throwaway probes through iris-agentic-dev before `/speckit-implement`._
+2026-10-30, Henrique (T001), on `congenial-waffle-iris-1`: IRIS 2026.2 (Build 221U), **not** AI Hub
+build 154 (its image is not loaded on this machine). No provider configured (no `SN_*` variables, no
+`.env`). Code under test: `master` at `4d619a4`.
+
+- **V1: passes on 2026.2.** `##class(%Dictionary.CompiledXData).%OpenId("SignalNoir.Sim.Catalog.P1||Variants")`
+  returns the block (`MimeType = application/json`) and `{}.%FromJSON(x.Data)` parses it (a
+  `%DynamicArray`). `SELECT ID FROM %Dictionary.CompiledClass WHERE ID %STARTSWITH 'SignalNoir.Sim.Catalog.'`
+  lists the package's 12 classes. Reading `^oddCOM` directly is refused by iris-agentic-dev, so the
+  Store must use these APIs. Still to confirm on build 154.
+- **Compile:** `iris-agentic-dev compile` compiles one file at a time in `find` order, so the first
+  pass fails on classes whose dependencies come later (181/222), and the second on
+  `COMPILE_SUPERCLASS_STALE` (218/222). The third pass compiles 222/222. The container was not
+  recreated.
+- **Baseline: does not pass.** `RunTest("SignalNoir","/noload/nodelete/recursive")` runs in 43 s:
+  272 methods pass, 3 fail. All three fail because no provider is configured; they also fail when
+  run alone.
+  - `Tests.Api.TestHealth:TestHealthPayloadShape`: test bug. `$Find(reason, "provider unavailable") = 1`
+    is never true (`$Find` returns the position after the match, 21 here), so the not-configured
+    branch always fails. The reason itself is correct.
+  - `Tests.Application.TestExecutionFailure:TestBusinessErrorFailsAndOpensARelatedCase` and
+    `Tests.Recovery.TestGateG3:TestRefusalComesBackWithADossier`: the related Case goes to
+    `ReviewRequired`, not `Investigating`, because `CaseService.ProcessException` sends a new Case
+    to review when `Proposers.Factory.Ready` is false. The tests assume a ready provider.
+
+Decision (Henrique, 2026-10-30): the three failures are accepted as environmental for this baseline;
+they are not rerun on build 154 before T003. T001 is done. Expect the same three to fail until a
+provider is configured (and `TestHealthPayloadShape` until its `$Find` assertion is fixed); any other
+failure is a regression.
