@@ -102,7 +102,28 @@ Preencha ao final:
 | Etapa 4: vazamento de chave | 0 / encontrado |
 | Decisão | prosseguir para o plano / bloqueado |
 
-Saídas relevantes (sem chave, sem `.env`):
+### Execução de 2026-10-30 (parcial, bloqueada na etapa 1)
 
-```text
+- **Container.** `docker compose up -d` falhou: a porta 1972 já estava alocada pelo container
+  `signalnoir-iris` (imagem `signalnoir-dev:154c`, no ar há 4 dias). Esse container não foi parado nem
+  alterado. O spike foi conduzido contra ele, que reporta `status: ready` e `provider.configured: 1` em
+  `/signalnoir/api/v1/health`.
+- **Etapa 1 (inventário): não executada.** `iris session` como `SIGNALNOIR` retornou `Access Denied`. O
+  repositório não guarda credenciais de IRIS, e o `.env` só traz `SN_*`. Não tentei outras credenciais.
+- **Etapa 2 (chamada `choice`/`predicate`): não executada.** Depende da etapa 1, porque sem saber se o
+  AI Hub expõe `decisions` não há caminho válido a testar. Chamar a API direto pelo `curl` não responde
+  à FR-014, porque a rota proibida é justamente essa.
+- **Etapa 3 (falhas mapeadas): não executada.** Exige alterar o `.env` e recriar o container, o que
+  afetaria o `signalnoir-iris` em uso. Não foi feito sem aprovação.
+- **Etapa 4 (vazamento de chave): não executada.** Depende das etapas anteriores.
+- **Decisão:** *pendente.* Sem a etapa 1 a FR-014 não fica satisfeita; a spec segue bloqueada.
+
+Para destravar a etapa 1, rode no terminal (ele pede a senha de forma interativa):
+
+```bash
+docker exec -it signalnoir-iris iris session IRIS -U SIGNALNOIR
 ```
+
+Depois cole a consulta da etapa 1 deste roteiro e envie o resultado.
+
+Saídas relevantes (sem chave, sem `.env`): nenhuma até o momento.
