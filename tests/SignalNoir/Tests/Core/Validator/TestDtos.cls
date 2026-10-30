@@ -79,6 +79,8 @@ Method TestPreconditionResult()
 	Set b = ##class(SignalNoir.Core.Dto.PreconditionResult).FromJson({"check": "ORDER_ACTIVE_AT_ORIGIN", "expected": true, "observed": true, "passed": true, "evidenceId": "evid_9"}).ToJson()
 	Do $$$AssertEquals(b.%GetTypeOf("expected") _ ":" _ b.%GetTypeOf("observed"), "boolean:boolean", "booleans stay booleans")
 	Do $$$AssertEquals(b.evidenceId, "evid_9", "evidenceId")
+	Set o = ##class(SignalNoir.Core.Dto.PreconditionResult).FromJson({"check": "APPROVAL_VALID", "expected": {"proposalId": "prop_1"}, "observed": ["a", "b"], "passed": false}).ToJson()
+	Do $$$AssertEquals(o.expected.proposalId _ ":" _ o.observed.%Size(), "prop_1:2", "objects and arrays survive")
 }
 
 Method TestAdmission()

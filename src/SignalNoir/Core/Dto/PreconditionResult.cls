@@ -43,14 +43,22 @@ ClassMethod Literal(json As %DynamicObject, key As %String) As %String [ Private
 	Set type = json.%GetTypeOf(key)
 	If (type = "unassigned") || (type = "null") Return "null"
 	Set wrapper = {}
-	Do wrapper.%Set("v", json.%Get(key), type)
+	If $IsObject(json.%Get(key)) {
+		Do wrapper.%Set("v", json.%Get(key))
+	} Else {
+		Do wrapper.%Set("v", json.%Get(key), type)
+	}
 	Return $Extract(wrapper.%ToJSON(), 6, *-1)
 }
 
 ClassMethod Put(o As %DynamicObject, key As %String, literal As %String) [ Private ]
 {
 	Set wrapper = {}.%FromJSON("{""v"":" _ literal _ "}")
-	Do o.%Set(key, wrapper.%Get("v"), wrapper.%GetTypeOf("v"))
+	If $IsObject(wrapper.%Get("v")) {
+		Do o.%Set(key, wrapper.%Get("v"))
+	} Else {
+		Do o.%Set(key, wrapper.%Get("v"), wrapper.%GetTypeOf("v"))
+	}
 }
 
 }
