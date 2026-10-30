@@ -39,4 +39,46 @@ ClassMethod CountByKey(key As %String) As %Integer
 	Return $Select(rs.%Next(): +rs.%GetData(1), 1: -1)
 }
 
+Storage Default
+{
+<Data name="ReceiptDefaultData">
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+<Value name="2">
+<Value>idempotencyKey</Value>
+</Value>
+<Value name="3">
+<Value>orderId</Value>
+</Value>
+<Value name="4">
+<Value>scenarioInstanceId</Value>
+</Value>
+<Value name="5">
+<Value>patientId</Value>
+</Value>
+<Value name="6">
+<Value>partnerId</Value>
+</Value>
+<Value name="7">
+<Value>transactionId</Value>
+</Value>
+<Value name="8">
+<Value>receivedAt</Value>
+</Value>
+<Value name="9">
+<Value>orderSnapshotJson</Value>
+</Value>
+<Value name="10">
+<Value>payloadCanon</Value>
+</Value>
+</Data>
+<DataLocation>^SignalNoir.Sim.Model.ReceiptD</DataLocation>
+<DefaultData>ReceiptDefaultData</DefaultData>
+<IdLocation>^SignalNoir.Sim.Model.ReceiptD</IdLocation>
+<IndexLocation>^SignalNoir.Sim.Model.ReceiptI</IndexLocation>
+<StreamLocation>^SignalNoir.Sim.Model.ReceiptS</StreamLocation>
+<Type>%Storage.Persistent</Type>
+}
+
 }

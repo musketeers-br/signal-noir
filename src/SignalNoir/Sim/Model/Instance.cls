@@ -47,4 +47,70 @@ Property healthJson As %String(MAXLEN = 4000);
 
 Property createdAt As %String(MAXLEN = 40);
 
+Storage Default
+{
+<Data name="InstanceDefaultData">
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+<Value name="2">
+<Value>family</Value>
+</Value>
+<Value name="3">
+<Value>subtype</Value>
+</Value>
+<Value name="4">
+<Value>variant</Value>
+</Value>
+<Value name="5">
+<Value>variantSet</Value>
+</Value>
+<Value name="6">
+<Value>partnerId</Value>
+</Value>
+<Value name="7">
+<Value>language</Value>
+</Value>
+<Value name="8">
+<Value>seed</Value>
+</Value>
+<Value name="9">
+<Value>runId</Value>
+</Value>
+<Value name="10">
+<Value>repetition</Value>
+</Value>
+<Value name="11">
+<Value>timeScale</Value>
+</Value>
+<Value name="12">
+<Value>status</Value>
+</Value>
+<Value name="13">
+<Value>phase</Value>
+</Value>
+<Value name="14">
+<Value>appliedEventsJson</Value>
+</Value>
+<Value name="15">
+<Value>emittedOrderIdsJson</Value>
+</Value>
+<Value name="16">
+<Value>emissionJson</Value>
+</Value>
+<Value name="17">
+<Value>healthJson</Value>
+</Value>
+<Value name="18">
+<Value>createdAt</Value>
+</Value>
+</Data>
+<DataLocation>^SignalNoir.Sim.Model.InstanceD</DataLocation>
+<DefaultData>InstanceDefaultData</DefaultData>
+<IdLocation>^SignalNoir.Sim.Model.InstanceD</IdLocation>
+<IndexLocation>^SignalNoir.Sim.Model.InstanceI</IndexLocation>
+<StreamLocation>^SignalNoir.Sim.Model.InstanceS</StreamLocation>
+<Type>%Storage.Persistent</Type>
+}
+
 }
