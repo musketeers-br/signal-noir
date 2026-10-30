@@ -10,8 +10,8 @@ Method TestHealthPayloadShape()
 	Do $$$AssertTrue($IsObject(payload), "payload is an object")
 	Do $$$AssertEquals(payload.liveness, "alive", "liveness is always alive")
 	Do $$$AssertTrue($IsObject(payload.provider), "provider object present")
+	Do $$$AssertEquals(payload.provider.%GetTypeOf("configured"), "boolean", "provider.configured is a JSON boolean")
 	Set configured = +payload.provider.configured
-	Do $$$AssertTrue((configured = 0) || (configured = 1), "provider.configured is boolean")
 	Do $$$AssertTrue((payload.status = "ready") || (payload.status = "degraded"), "status is ready or degraded")
 	Do $$$AssertTrue(payload.serverTime '= "", "serverTime present and ISO-8601")
 	Do $$$AssertTrue(payload.serverTime [ "T", "serverTime is ISO-8601 with a T separator")
@@ -20,7 +20,7 @@ Method TestHealthPayloadShape()
 	} Else {
 		Do $$$AssertEquals(payload.status, "degraded", "status degraded when not configured")
 		Do $$$AssertTrue(payload.provider.reason '= "", "reason present when not configured")
-		Do $$$AssertTrue($Find(payload.provider.reason, "provider unavailable") = 1, "reason names the unavailable provider")
+		Do $$$AssertEquals($Extract(payload.provider.reason, 1, 20), "provider unavailable", "reason names the unavailable provider")
 	}
 }
 

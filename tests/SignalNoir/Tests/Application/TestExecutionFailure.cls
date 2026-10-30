@@ -26,8 +26,15 @@ Method TestBusinessErrorFailsAndOpensARelatedCase()
 	Set related = svc.GetCase(open.ref).obj
 	Do $$$AssertEquals(related.previousCaseId, caseId, "related to the failed Case")
 	Do $$$AssertEquals(related.exceptions.GetAt(1).kind _ ":" _ related.exceptions.GetAt(1).httpStatus, "http_error:500", "with the refusal")
-	Do $$$AssertEquals(related.state, "Investigating", "under investigation")
-	Do $$$AssertEquals(r.details.next.commandId, ##class(SignalNoir.Tests.Application.TestCommandBus).Last(open.ref, "Investigate"), "its request is handed to the entry point")
+	; the related Case is routed like any new Case (001): investigated when
+	; the provider can run, sent to review with that reason when it cannot
+	If ##class(SignalNoir.Proposers.Factory).Ready(related.proposerMode) {
+		Do $$$AssertEquals(related.state, "Investigating", "under investigation")
+		Do $$$AssertEquals(r.details.next.commandId, ##class(SignalNoir.Tests.Application.TestCommandBus).Last(open.ref, "Investigate"), "its request is handed to the entry point")
+	} Else {
+		Do $$$AssertEquals(related.state _ ":" _ related.dossier.reason, "ReviewRequired:provider_unavailable", "no provider: to review")
+		Do $$$AssertTrue('$IsObject(r.details.next) || (r.details.next.commandId = ""), "no request to hand on")
+	}
 }
 
 Method Test409IsABusinessRejection()
