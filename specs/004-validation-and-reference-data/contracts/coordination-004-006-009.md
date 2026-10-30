@@ -11,7 +11,7 @@ listed with the 004 task that carries it.
 |---|------|------|----------|
 | 1 | `Application/ResolutionValidator.cls` | `Verdict(validator, proposal, now)` becomes `Verdict(validator, input)` with a new `InputFor(rec, proposal, now)` that builds the Validation Input (contracts/validation-input.md). The 009 note says "only the body changes"; the callers must also pass what the v2 input needs. Returns the contract verdict including `versions`. | T015 |
 | 2 | `Application/CaseService.cls` | The two call sites, `CompleteInvestigation` and `ResolveReview`, call `InputFor`. The `ValidatorVerdict` event payload gains `versions`. | T015 |
-| 3 | `Core/ActionCatalog.cls` | `RequiresApproval` returns `ExternalEffect(action)`: `REQUEST_REVIEW` becomes false (PRD FR-16: only effectful Actions need Approval; the fixtures record `requiresApproval: false` for `REQUEST_REVIEW`). `Entries()` fills `requiredEvidence`. | T010 |
+| 3 | `Core/ActionCatalog.cls` | `Entries()` fills `requiredEvidence` (it returns `[]` today). `RequiresApproval` already returns `ExternalEffect(action)` on master (merged with 009b), so `REQUEST_REVIEW` is already false, as PRD FR-16 and the fixtures (`requiresApproval: false`) require; nothing to change there. | T010 |
 | 4 | `Tools/LocalSource.cls` | `tool.policies` and `tool.mapping_catalog` answer from the Store instead of "reference data not loaded". Absent when nothing is loaded. | T037 |
 | 5 | `Api/Dispatch.cls` | `Mappings()` serves the Store instead of the `"unloaded"` placeholder. | T037 |
 | 6 | `tests/.../Fakes/FakeValidator.cls`, `Consumer.cls`, `TestConsumerUsesSeam.cls`, `TestResolution.cls`, `TestDossier.cls` | v2 shape: `accepted`/`blocked` instead of `valid`/`invalid`. | T003, T006 |
@@ -25,8 +25,9 @@ listed with the 004 task that carries it.
    one: a weaker baseline than the platform allows (Principle VIII). Call
    `Core.Conditions.Matches(conditions, order, result.synonyms)` (004, US2) so Rules and the
    Validator agree.
-2. **REQUEST_REVIEW approval**, edit 3 above: the endpoint `GET /reference/action-catalog` and the
-   verdict must report the same `requiresApproval`.
+2. **REQUEST_REVIEW approval**: the endpoint `GET /reference/action-catalog` and the verdict must
+   report the same `requiresApproval`. This already holds on master (edit 3); the request is a test
+   on Henry's side that pins the equality.
 
 ## For 008 (Henrique)
 
