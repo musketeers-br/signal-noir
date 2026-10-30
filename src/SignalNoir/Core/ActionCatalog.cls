@@ -26,9 +26,11 @@ ClassMethod ExternalEffect(action As %String) As %Boolean
 	Return ((action = "RETRY") || (action = "APPLY_APPROVED_MAPPING"))
 }
 
+/// Only an Action with an external effect needs human Approval (R19, PRD
+/// FR-16): REQUEST_REVIEW stops automation and has nothing to authorize (009b)
 ClassMethod RequiresApproval(action As %String) As %Boolean
 {
-	Return ((action = "RETRY") || (action = "APPLY_APPROVED_MAPPING") || (action = "REQUEST_REVIEW"))
+	Return ..ExternalEffect(action)
 }
 
 /// Parameter names an Action accepts ("" for none)

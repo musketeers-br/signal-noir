@@ -1,0 +1,36 @@
+{
+  "partnerId":"labpartner-c",
+  "scenarioInstanceId":"sci_KXYGIDGTCAI7DOQPZZWZXHJYR4",
+  "window":{
+    "since":"2026-10-28T20:39:16.026Z",
+    "until":"2026-10-28T20:44:16.026Z",
+    "total":2,
+    "delivered":0,
+    "errors":0,
+    "timeouts":2,
+    "errorRate":1
+  },
+  "items":[
+    {
+      "at":"2026-10-28T20:44:15.005Z",
+      "orderId":"ORD-sci_KXYGIDGTCAI7DOQPZZWZXHJYR4-0001",
+      "transactionId":"txn-test-1",
+      "idempotencyKey":"idk_p8a_2KXYGIDGTCAI",
+      "httpStatus":null,
+      "outcome":"timeout",
+      "latencyMs":6000,
+      "message":"no response before the client timeout"
+    },
+    {
+      "at":"2026-10-28T20:44:13.998Z",
+      "orderId":"ORD-sci_KXYGIDGTCAI7DOQPZZWZXHJYR4-0001",
+      "transactionId":"txn-test-1",
+      "idempotencyKey":"idk_p8a_1KXYGIDGTCAI",
+      "httpStatus":null,
+      "outcome":"timeout",
+      "latencyMs":6000,
+      "message":"no response before the client timeout"
+    }
+  ],
+  "serverTime":"2026-10-28T20:44:16.026Z"
+}

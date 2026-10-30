@@ -79,10 +79,68 @@ ClassMethod DriveTo(svc As SignalNoir.Application.CaseService, caseId As %String
 		Set actor = $Piece(step, ":", 2, 3)
 		Set g = svc.GetCase(caseId)
 		If 'g.ok Return g.code
-		Set t = svc.Transition(caseId, g.obj.caseVersion, to, actor, ..Ev("test walk"))
+		; a Case waits for approval on a Proposal; Approved and Rejected need a decision (007)
+		If (to = "PendingApproval") && (g.obj.currentProposalId = "") Do ..FixtureProposal(caseId)
+		If (to = "Approved") || (to = "Rejected") {
+			Set t = ..Decide(svc, caseId, $Select(to = "Approved": "approved", 1: "denied"), $Piece(actor, ":", 2), "test walk")
+		} Else {
+			Set t = svc.Transition(caseId, g.obj.caseVersion, to, actor, ..Ev("test walk"))
+		}
 		If 't.ok Return t.code _ " at " _ to _ ": " _ t.message
 	}
 	Return ""
+}
+
+/// 007: a current Proposal for a Case that reached DecisionProposed by a
+/// raw transition (test fixture written on the records). Returns its id.
+ClassMethod FixtureProposal(caseId As %String, action As %String = "RETRY") As %String
+{
+	Set rec = ##class(SignalNoir.Application.Model.CaseRecord).%OpenId(caseId)
+	If rec.currentProposalId '= "" {
+		Set old = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(rec.currentProposalId)
+		If $IsObject(old) Set old.current = 0  Do old.%Save()
+	}
+	Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%New()
+	Set pr.proposalId = ##class(SignalNoir.Application.IdFactory).%New().New("prop_")
+	Set pr.caseId = caseId, pr.author = "agent", pr.action = action, pr.paramsJson = "{}", pr.current = 1
+	Set pr.createdAt = ##class(SignalNoir.Application.SystemClock).%New().NowUtc()
+	; a contract-complete Proposal: the dev database keeps it and the live check reads it
+	Set pr.diagnosisJson = {"summary": "fixture", "claims": [], "hypotheses": []}.%ToJSON()
+	Set pr.confidence = "LOW", pr.preconditionsJson = "[]", pr.metricsJson = {"toolCalls": 0}.%ToJSON()
+	Set pr.versionsJson = {"policy": "fixture", "mapping": "fixture", "prompt": null, "model": null, "provider": null}.%ToJSON()
+	Do pr.%Save()
+	Set rec.currentProposalId = pr.proposalId
+	Do rec.%Save()
+	Return pr.proposalId
+}
+
+/// One "State:actor" step of a test walk: a raw transition, or the decision
+/// for Approved/Rejected (with a fixture Proposal when the Case has none)
+ClassMethod Step(svc As SignalNoir.Application.CaseService, caseId As %String, step As %String) As SignalNoir.Core.Result
+{
+	Set to = $Piece(step, ":", 1), actor = $Piece(step, ":", 2, 3)
+	Set g = svc.GetCase(caseId).obj
+	If (to = "PendingApproval") && (g.currentProposalId = "") Do ..FixtureProposal(caseId)
+	If (to = "Approved") || (to = "Rejected") Return ..Decide(svc, caseId, $Select(to = "Approved": "approved", 1: "denied"), $Piece(actor, ":", 2), "test walk")
+	Return svc.Transition(caseId, g.caseVersion, to, actor, ..Ev("test walk"))
+}
+
+/// 007: a Case in PendingApproval with a current Proposal
+ClassMethod PendingCase(svc As SignalNoir.Application.CaseService, tag As %String) As %String
+{
+	Set caseId = ..OpenCase(svc, ..Uid(tag))
+	Do ..DriveTo(svc, caseId, "PendingApproval")
+	Return caseId
+}
+
+/// 007: the Operator's decision on the Case's current Proposal at its
+/// current version
+ClassMethod Decide(svc As SignalNoir.Application.CaseService, caseId As %String, decision As %String = "approved", operator As %String = "ana", reason As %String = "") As SignalNoir.Core.Result
+{
+	Set c = svc.GetCase(caseId).obj
+	Set request = {"decision": (decision), "operator": (operator), "expectedCaseVersion": (c.caseVersion)}
+	If reason '= "" Set request.reason = reason
+	Return svc.DecideProposal(caseId, c.currentProposalId, request)
 }
 
 /// Outbox rows of a Case: count by "type:status"
@@ -225,6 +283,60 @@ ClassMethod Types(svc As SignalNoir.Application.CaseService, caseId As %String) 
 	Set tl = svc.GetTimeline(caseId, 0, 500).list
 	For i = 1 : 1 : tl.Count() Set out = out _ tl.GetAt(i).type _ ";"
 	Return out
+}
+
+
+/// 008: a Case in Approved on a current fixture Proposal of this action
+ClassMethod ApprovedCase(svc As SignalNoir.Application.CaseService, tag As %String, action As %String = "RETRY") As %String
+{
+	Set caseId = ..OpenCase(svc, ..Uid(tag))
+	Do ..DriveTo(svc, caseId, "DecisionProposed")
+	Do ..FixtureProposal(caseId, action)
+	Set g = svc.GetCase(caseId).obj
+	Do svc.Transition(caseId, g.caseVersion, "PendingApproval", "system", ..Ev("test walk"))
+	Do ..Decide(svc, caseId, "approved", "ana")
+	Return caseId
+}
+
+/// 008: a Case in Executing on a HOLD Proposal (no approval needed)
+ClassMethod HoldCase(svc As SignalNoir.Application.CaseService, tag As %String) As %String
+{
+	Set caseId = ..OpenCase(svc, ..Uid(tag))
+	Do ..DriveTo(svc, caseId, "DecisionProposed")
+	Do ..FixtureProposal(caseId, "HOLD")
+	Set g = svc.GetCase(caseId).obj
+	Do svc.Transition(caseId, g.caseVersion, "Executing", "system", ..Ev("validator accepted; no approval required"))
+	Return caseId
+}
+
+/// 008: an execution path over the given Partner (default policy)
+ClassMethod Executor(partner As SignalNoir.Core.Port.PartnerClient, svc As SignalNoir.Application.CaseService = "") As SignalNoir.Application.ExecutionService
+{
+	Set ex = ##class(SignalNoir.Application.ExecutionService).%New()
+	Set ex.Service = $Select($IsObject(svc): svc, 1: ##class(SignalNoir.Application.CaseService).Default())
+	Set ex.Partner = partner
+	Set ex.Policy = ##class(SignalNoir.Core.ExecutionPolicy).%New()
+	Return ex
+}
+
+/// 008: the entry point running executions on this path (no proposer)
+ClassMethod ExecBus(executor As SignalNoir.Application.ExecutionService) As SignalNoir.Application.CommandBus
+{
+	Set bus = ##class(SignalNoir.Application.CommandBus).Default()
+	Set bus.Investigations = "none", bus.Executor = executor
+	Return bus
+}
+
+/// 008: delivers the Case's latest pending request of a type through the bus
+ClassMethod DeliverLast(bus As SignalNoir.Application.CommandBus, caseId As %String, type As %String = "Execute") As SignalNoir.Core.Result
+{
+	Return bus.Deliver(##class(SignalNoir.Tests.Application.TestCommandBus).Last(caseId, type))
+}
+
+/// 008: the Case's executions as stored
+ClassMethod Executions(caseId As %String) As %DynamicArray
+{
+	Return ##class(SignalNoir.Application.CaseService).Default().ListExecutions(caseId)
 }
 
 }

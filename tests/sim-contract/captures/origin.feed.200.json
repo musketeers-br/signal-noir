@@ -1,0 +1,38 @@
+{
+  "items":[
+    {
+      "feedSeq":547,
+      "scenarioInstanceId":"sci_KWZYZQ6TCAI7DOQPZZWZXHJYR4",
+      "runId":null,
+      "repetition":1,
+      "transactionId":"txn_KWZYZQ6TCAI7DOQPZZWZXHJYR4_1",
+      "emittedAt":"2026-10-28T20:44:13.601Z",
+      "order":{
+        "orderId":"ORD-sci_KWZYZQ6TCAI7DOQPZZWZXHJYR4-0001",
+        "partnerId":"labpartner-a",
+        "originUnit":"UNIT-NORTE",
+        "patient":{
+          "patientId":"SYN-PAT-696042",
+          "name":"Ana Sintética",
+          "birthDate":"1984-08-17",
+          "sex":"F"
+        },
+        "exams":[
+          {
+            "code":"GLIC-J"
+          }
+        ],
+        "specimen":{
+          "specimenId":"SP-91193",
+          "collectedAt":"2026-10-27T07:34:00-03:00",
+          "type":"soro"
+        },
+        "requestedAt":"2026-10-27T07:39:00-03:00",
+        "notes":"Routine morning collection.",
+        "synthetic":true
+      }
+    }
+  ],
+  "lastSeq":547,
+  "serverTime":"2026-10-28T20:44:13.604Z"
+}

@@ -1,0 +1,8 @@
+{
+  "error":{
+    "code":"NOT_FOUND",
+    "message":"unknown variant clean/nope",
+    "details":{
+    }
+  }
+}

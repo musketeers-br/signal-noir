@@ -1,0 +1,8 @@
+{
+  "error":{
+    "code":"INVALID_REQUEST",
+    "message":"patientId and scenarioInstanceId are required",
+    "details":{
+    }
+  }
+}

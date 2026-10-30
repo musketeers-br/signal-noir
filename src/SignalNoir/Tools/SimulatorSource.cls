@@ -9,7 +9,7 @@ Parameter TIMEOUTSECONDS = 5;
 
 Method Read(toolName As %String, args As %DynamicObject) As SignalNoir.Core.Result
 {
-	Set base = $System.Util.GetEnviron("SN_SIM_BASE_URL")
+	Set base = ..Base()
 	If base = "" Return ..Absent("simulator not configured (SN_SIM_BASE_URL)")
 	Set partnerId = args.%Get("partnerId"), sid = args.%Get("scenarioInstanceId"), orderId = args.%Get("orderId")
 	Set query = ""
@@ -64,6 +64,15 @@ Method Get(base As %String, path As %String, query As %String) As SignalNoir.Cor
 	}
 	If '$IsObject(body) Return ..Absent("simulator answer is not JSON")
 	Return ##class(SignalNoir.Core.Result).OkObj({"available": true, "result": (body)})
+}
+
+/// The Simulator's base URL: SN_SIM_BASE_URL, else the instance setting
+/// ^SignalNoir.Config("simBaseUrl") (dev instances that cannot be recreated); "" when unset
+ClassMethod Base() As %String
+{
+	Set base = $System.Util.GetEnviron("SN_SIM_BASE_URL")
+	If base = "" Set base = $Get(^SignalNoir.Config("simBaseUrl"))
+	Return base
 }
 
 ClassMethod Enc(value As %String) As %String [ Private ]

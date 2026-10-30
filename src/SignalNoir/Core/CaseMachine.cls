@@ -21,7 +21,7 @@ ClassMethod Table() As %List [ Private ]
 		"DecisionProposed>ReviewRequired", "system;",
 		"DecisionProposed>Investigating", "system;Investigate",
 		"PendingApproval>Approved", "operator,benchmark;Execute",
-		"PendingApproval>Rejected", "operator,benchmark;",
+		"PendingApproval>Rejected", "operator,benchmark;Reassess",
 		"PendingApproval>Investigating", "system;Investigate",
 		"Rejected>Investigating", "system;Investigate",
 		"Rejected>ReviewRequired", "system;",

@@ -13,6 +13,7 @@ XData UrlMap [ XMLNamespace = "http://www.intersystems.com/urlmap" ]
 <Route Url="/cases/:caseid" Method="GET" Call="GetCase"/>
 <Route Url="/cases/:caseid/timeline" Method="GET" Call="GetTimeline"/>
 <Route Url="/cases/:caseid/resolution" Method="POST" Call="Resolve"/>
+<Route Url="/cases/:caseid/proposals/:proposalid/decision" Method="POST" Call="Decide"/>
 <Route Url="/reference/action-catalog" Method="GET" Call="ActionCatalog"/>
 <Route Url="/reference/mappings" Method="GET" Call="Mappings"/>
 </Routes>
@@ -98,6 +99,44 @@ ClassMethod Resolve(caseid As %String) As %Status
 	Set %response.Status = "201 Created"
 	Write ..ResolutionPayload(svc, r.details).%ToJSON()
 	Return $$$OK
+}
+
+/// POST /cases/{caseId}/proposals/{proposalId}/decision (feature 007,
+/// contract decideProposal): 201 decision recorded, 200 replay. The request
+/// the decision queued is delivered after the commit, in the background.
+ClassMethod Decide(caseid As %String, proposalid As %String) As %Status
+{
+	Set %response.ContentType = "application/json"
+	Set body = ""
+	Try {
+		Set body = ##class(%DynamicAbstractObject).%FromJSON(%request.Content)
+	}
+	Catch {
+		Set body = ""
+	}
+	Set svc = ##class(SignalNoir.Application.CaseService).Default()
+	Set r = svc.DecideProposal(caseid, proposalid, body)
+	If 'r.ok Return ..WriteError(r)
+	If r.details.commandId '= "" Job ##class(SignalNoir.Application.CommandBus).DeliverJob(r.details.commandId)
+	Set %response.Status = ..DecisionStatus(r)
+	Write ..DecisionPayload(svc, r.details).%ToJSON()
+	Return $$$OK
+}
+
+ClassMethod DecisionStatus(r As SignalNoir.Core.Result) As %String
+{
+	Return $Select(r.details.replay: "200 OK", 1: "201 Created")
+}
+
+/// ProposalDecisionResult: approval, idempotentReplay, case (CommandAck)
+ClassMethod DecisionPayload(svc As SignalNoir.Application.CaseService, d As %DynamicObject) As %DynamicObject
+{
+	Set payload = {"approval": (svc.ApprovalJson(d.approvalId))}
+	Do payload.%Set("idempotentReplay", d.replay, "boolean")
+	Set ack = {"caseId": (d.caseId), "state": (d.state), "caseVersion": (+d.caseVersion), "lastEventSeq": (+d.lastEventSeq), "serverTime": (d.serverTime)}
+	Do ack.%Set("commandId", d.commandId, $Select(d.commandId = "": "null", 1: "string"))
+	Do payload.%Set("case", ack)
+	Return payload
 }
 
 /// ReviewResolutionResult: kind, proposal, approval, case (CommandAck)
@@ -194,8 +233,12 @@ ClassMethod CasePayload(dto As SignalNoir.Core.Dto.Case) As %DynamicObject
 	Do payload.%Set("proposals", proposals)
 	Do payload.%Set("approvals", $Select($IsObject(dto.approvals): dto.approvals, 1: []))
 	Do payload.%Set("denialCount", +dto.denialCount)
-	Do payload.%Set("executions", [])
-	Do payload.%Set("receipt", "", "null")
+	Do payload.%Set("executions", $Select($IsObject(dto.executions): dto.executions, 1: []))
+	If $IsObject(dto.receipt) && (dto.receipt.%Size() > 0) {
+		Do payload.%Set("receipt", dto.receipt)
+	} Else {
+		Do payload.%Set("receipt", "", "null")
+	}
 	; an unset %DynamicObject property reads as {}: only a recorded Dossier counts
 	If $IsObject(dto.dossier) && (dto.dossier.%Size() > 0) && ##class(SignalNoir.Api.Dispatch).ShowsDossier(dto) {
 		Do payload.%Set("dossier", dto.dossier)

@@ -15,6 +15,9 @@ Property Ids As SignalNoir.Core.Port.IdGenerator;
 /// The single Validator every Proposal passes (feature 009 resolution)
 Property Validator As SignalNoir.Core.Port.Validator;
 
+/// Approval deadline and benchmark admission (feature 007; 004 replaces the default)
+Property Approvals As SignalNoir.Core.Port.ApprovalPolicy;
+
 /// Seconds to wait for a per-Case or per-Order lock
 Parameter LOCKTIMEOUT = 5;
 
@@ -24,6 +27,7 @@ ClassMethod Default() As SignalNoir.Application.CaseService
 	Set svc.Clock = ##class(SignalNoir.Application.SystemClock).%New()
 	Set svc.Ids = ##class(SignalNoir.Application.IdFactory).%New()
 	Set svc.Validator = ##class(SignalNoir.Core.Validator).%New()
+	Set svc.Approvals = ##class(SignalNoir.Core.ApprovalPolicy).%New()
 	Return svc
 }
 
@@ -303,6 +307,8 @@ Method GetCase(caseId As %String) As SignalNoir.Core.Result
 	Set dto.metrics = ..CaseMetrics(caseId)
 	Set dto.dossier = ..LatestDossier(caseId)
 	Set dto.approvals = ..ListApprovals(caseId)
+	Set dto.executions = ..ListExecutions(caseId)
+	Set dto.receipt = ..ReceiptOf(caseId)
 	Return ##class(SignalNoir.Core.Result).OkObj(dto)
 }
 
@@ -637,14 +643,7 @@ Method CompleteInvestigation(investigationId As %String, proposal As SignalNoir.
 			Quit
 		}
 		Set proposalId = ..Ids.New("prop_")
-		If rec.currentProposalId '= "" {
-			Set old = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(rec.currentProposalId)
-			If $IsObject(old) {
-				Set old.current = 0
-				Set old.supersededBy = proposalId
-				$$$ThrowOnError(old.%Save())
-			}
-		}
+		Do ..Supersede(rec, proposalId)
 		Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%New()
 		Set pr.proposalId = proposalId
 		Set pr.caseId = rec.caseId
@@ -795,6 +794,793 @@ ClassMethod NowMs() As %Integer
 	Return ((+z - 47117) * 86400000) + ($Piece(z, ",", 2) * 1000 \ 1)
 }
 
+// ------------------------------------------------------------- approval
+
+/// The Operator's decision on the exact Proposal a Case waits on (feature
+/// 007, contract decideProposal). Checks, under the Case lock: replay of an
+/// approved Proposal (any version), state, current Proposal, version. The
+/// decision, the transition, its Timeline events, the denial Evidence and the
+/// follow-up request commit together. details: approvalId, replay, caseId,
+/// state, caseVersion, lastEventSeq, serverTime, commandId.
+Method DecideProposal(caseId As %String, proposalId As %String, request As %DynamicObject) As SignalNoir.Core.Result
+{
+	Set reasons = ##class(SignalNoir.Core.DecisionShape).Check(request)
+	If reasons.Count() > 0 {
+		Set list = []
+		For i = 1 : 1 : reasons.Count() Do list.%Push(reasons.GetAt(i))
+		Set message = $Select(list.%ToJSON() [ "reason:required_on_denial": "A denial requires a reason; it becomes evidence for the next investigation", 1: "invalid decision: " _ list.%Get(0))
+		Return ##class(SignalNoir.Core.Result).ErrorWith("VALIDATION_FAILED", message, {"reasons": (list)})
+	}
+	If '##class(SignalNoir.Application.Model.CaseRecord).%ExistsId(caseId) Return ..Err("NOT_FOUND", "case not found: " _ caseId)
+	Set actor = "operator:" _ ##class(SignalNoir.Core.Canon).Trim(request.operator)
+	Set decision = request.decision
+	Set reason = ##class(SignalNoir.Core.Canon).Trim(request.%Get("reason"))
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ caseId)
+			Quit
+		}
+		Set rec = ..Load(caseId)
+		If decision = "approved" {
+			Set replay = ..ReplayOf(proposalId)
+			If replay '= "" {
+				Set result = ..DecisionAck(rec, replay, 1, "", now)
+				Quit
+			}
+		}
+		If rec.state '= "PendingApproval" {
+			Set result = ..ErrorWithCase("INVALID_TRANSITION", "Case is " _ rec.state _ ", not PendingApproval", rec, "")
+			Quit
+		}
+		If (proposalId '= rec.currentProposalId) || (rec.caseVersion '= request.expectedCaseVersion) {
+			Set result = ..ErrorWithCase("STALE_VERSION", "The current proposal or case version changed since you loaded it", rec, request.expectedCaseVersion)
+			Quit
+		}
+		Set appr = ..RecordApproval(rec, proposalId, decision, actor, reason, 0, now)
+		If decision = "approved" {
+			Set moved = ..ApplyTransition(rec, "Approved", actor, {"reason": "approved by the operator", "proposalId": (proposalId), "approvalId": (appr.approvalId)}, "", now)
+		} Else {
+			; the reason is evidence for what happens next (contract FR-5)
+			Set ev = ##class(SignalNoir.Core.Dto.Evidence).%New()
+			Set ev.source = "operator.denial_reason", ev.calledBy = actor, ev.observedAt = now, ev.durationMs = 0
+			Set ev.result = {"text": (reason), "proposalId": (proposalId)}
+			Do ..SaveEvidence(rec, "", ev, ##class(SignalNoir.Core.Suspicion).Scan(ev.result), now)
+			Set moved = ..ApplyTransition(rec, "Rejected", actor, {"reason": "denied by the operator", "proposalId": (proposalId), "approvalId": (appr.approvalId), "rejectionReason": (reason)}, {"rejectionReason": (reason)}, now)
+		}
+		If 'moved.ok {
+			Set result = moved
+			Quit
+		}
+		$$$ThrowOnError(rec.%Save())
+		Set result = ..DecisionAck(rec, appr.approvalId, 0, moved.details.commandId, now)
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "decision failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// Processes a Reassess request (the follow-up of a denial): on the Case it
+/// was written for, applies the rejection destinations of 003 (first ->
+/// Investigating with the reason, second -> ReviewRequired) and marks the
+/// request done, in one commit. A request whose Case moved is discarded.
+Method Reassess(commandId As %String) As SignalNoir.Core.Result
+{
+	Set outbox = ##class(SignalNoir.Application.Model.OutboxRecord).%OpenId(commandId)
+	If '$IsObject(outbox) || (outbox.type '= "Reassess") Return ..Err("NOT_FOUND", "reassess request not found: " _ commandId)
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", outbox.caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ outbox.caseId)
+			Quit
+		}
+		Do outbox.%Reload()
+		Set rec = ..Load(outbox.caseId)
+		If outbox.status '= "pending" {
+			Set result = ##class(SignalNoir.Core.Result).OkRef(commandId)
+			Set result.details = {"status": ("already " _ outbox.status)}
+			Quit
+		}
+		If (rec.state '= "Rejected") || (rec.caseVersion '= outbox.caseVersionAfter) {
+			Set result = ..DiscardLocked(rec, outbox, "case moved: " _ rec.state _ " v" _ rec.caseVersion, now)
+			Quit
+		}
+		Set facts = ##class(%DynamicObject).%FromJSON($Select(outbox.payloadJson '= "": outbox.payloadJson, 1: "{}"))
+		Set to = ##class(SignalNoir.Core.CaseMachine).AfterRejection(rec.denialCount)
+		Set why = $Select(to = "ReviewRequired": "second rejection", 1: "first rejection")
+		Set moved = ..ApplyTransition(rec, to, "system", {"reason": (why), "rejectionReason": (facts.rejectionReason)}, $Select(to = "Investigating": {"rejectionReason": (facts.rejectionReason)}, 1: ""), now)
+		If 'moved.ok {
+			Set result = moved
+			Quit
+		}
+		Set outbox.status = "done", outbox.dispatchedAt = now
+		$$$ThrowOnError(outbox.%Save())
+		$$$ThrowOnError(rec.%Save())
+		Set result = ##class(SignalNoir.Core.Result).OkRef(commandId)
+		Set result.details = {"status": "done", "state": (to), "commandId": (moved.details.commandId)}
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "reassess failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// The single entry point's version check: a pending request whose Case is
+/// no longer at the version it was written for is discarded, with
+/// CommandDiscarded on the Timeline (AD-20). details.discarded = 1 or 0.
+Method DiscardIfStale(commandId As %String) As SignalNoir.Core.Result
+{
+	Set outbox = ##class(SignalNoir.Application.Model.OutboxRecord).%OpenId(commandId)
+	If '$IsObject(outbox) Return ..Err("NOT_FOUND", "command not found: " _ commandId)
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", outbox.caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ outbox.caseId)
+			Quit
+		}
+		Do outbox.%Reload()
+		Set rec = ..Load(outbox.caseId)
+		If (outbox.status = "pending") && $IsObject(rec) && (rec.caseVersion '= outbox.caseVersionAfter) {
+			Set result = ..DiscardLocked(rec, outbox, "case moved: " _ rec.state _ " v" _ rec.caseVersion, now)
+			Quit
+		}
+		Set result = ##class(SignalNoir.Core.Result).OkRef(commandId)
+		Set result.details = {"discarded": 0, "status": (outbox.status)}
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "discard check failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// Sweeper command: expires an approval past its deadline while its Case is
+/// still Approved with it (007 FR-008). Anything else is left alone; an
+/// approval expired while executing is 008's revalidation to refuse.
+/// details.expired = 1 or 0.
+Method ExpireApproval(approvalId As %String, now As %String = "") As SignalNoir.Core.Result
+{
+	Set appr = ##class(SignalNoir.Application.Model.ApprovalRecord).%OpenId(approvalId)
+	If '$IsObject(appr) Return ..Err("NOT_FOUND", "approval not found: " _ approvalId)
+	If now = "" Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", appr.caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ appr.caseId)
+			Quit
+		}
+		Do appr.%Reload()
+		Set rec = ..Load(appr.caseId)
+		Set due = (appr.decision = "approved") && (appr.status = "valid") && ..Policy().IsExpired(appr.expiresAt, now)
+		If 'due || (rec.state '= "Approved") || (rec.currentApprovalId '= approvalId) {
+			Set result = ##class(SignalNoir.Core.Result).OkRef(approvalId)
+			Set result.details = {"expired": 0}
+			Quit
+		}
+		Set appr.status = "expired"
+		$$$ThrowOnError(appr.%Save())
+		Do ..AppendEvent(rec, "ApprovalExpired", "sweeper", approvalId, {"approvalId": (approvalId), "proposalId": (appr.proposalId), "expiresAt": (appr.expiresAt)}, now)
+		Set moved = ..ApplyTransition(rec, "PendingApproval", "sweeper", {"reason": "approval expired", "approvalId": (approvalId)}, "", now)
+		If 'moved.ok {
+			Set result = moved
+			Quit
+		}
+		$$$ThrowOnError(rec.%Save())
+		Set result = ##class(SignalNoir.Core.Result).OkRef(approvalId)
+		Set result.details = {"expired": 1}
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "expire approval failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// The approval policy in use (the default when none was injected)
+Method Policy() As SignalNoir.Core.Port.ApprovalPolicy
+{
+	If '$IsObject(..Approvals) Set ..Approvals = ##class(SignalNoir.Core.ApprovalPolicy).%New()
+	Return ..Approvals
+}
+
+/// Records a decision on a Proposal inside the caller's transaction, with
+/// ApprovalRecorded on the Timeline; an approval becomes currentApprovalId
+Method RecordApproval(rec As SignalNoir.Application.Model.CaseRecord, proposalId As %String, decision As %String, actor As %String, reason As %String, automatic As %Boolean, now As %String) As SignalNoir.Application.Model.ApprovalRecord [ Private ]
+{
+	Set appr = ##class(SignalNoir.Application.Model.ApprovalRecord).%New()
+	Set appr.approvalId = ..Ids.New("appr_"), appr.caseId = rec.caseId, appr.proposalId = proposalId
+	Set appr.decision = decision, appr.by = actor, appr.at = now, appr.status = "valid", appr.reason = reason
+	Set appr.expiresAt = $Select(decision = "approved": ..Policy().ExpiresAt(now), 1: "")
+	$$$ThrowOnError(appr.%Save())
+	If decision = "approved" Set rec.currentApprovalId = appr.approvalId
+	Set facts = {"approvalId": (appr.approvalId), "proposalId": (proposalId), "decision": (decision), "by": (actor)}
+	Do facts.%Set("expiresAt", appr.expiresAt, $Select(appr.expiresAt = "": "null", 1: "string"))
+	Do facts.%Set("automatic", ''automatic, "boolean")
+	Do ..AppendEvent(rec, "ApprovalRecorded", actor, appr.approvalId, facts, now)
+	Return appr
+}
+
+/// The approval a repeated approval returns: an approved, valid or consumed
+/// approval of this Proposal ("" when none; expired ones are never replayed)
+Method ReplayOf(proposalId As %String) As %String [ Private ]
+{
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT approvalId FROM SignalNoir_Application_Model.ApprovalRecord WHERE proposalId = ? AND decision = 'approved' AND status IN ('valid', 'consumed') ORDER BY approvalId", proposalId)
+	Return $Select(rs.%Next(): rs.%Get("approvalId"), 1: "")
+}
+
+/// Why PendingApproval -> Approved/Rejected is refused ("" when allowed):
+/// the event must name a recorded decision on the current Proposal
+Method DecisionGuard(rec As SignalNoir.Application.Model.CaseRecord, toState As %String, payload As %DynamicObject) As %String [ Private ]
+{
+	Set approvalId = $Select($IsObject(payload): payload.%Get("approvalId"), 1: "")
+	If approvalId = "" Return "a recorded decision is required to reach " _ toState
+	Set appr = ##class(SignalNoir.Application.Model.ApprovalRecord).%OpenId(approvalId)
+	If '$IsObject(appr) || (appr.caseId '= rec.caseId) Return "unknown decision " _ approvalId
+	If appr.proposalId '= rec.currentProposalId Return "decision " _ approvalId _ " is not on the current proposal"
+	If appr.decision '= $Select(toState = "Approved": "approved", 1: "denied") Return "decision " _ approvalId _ " is " _ appr.decision
+	If (toState = "Approved") && (appr.status '= "valid") Return "approval " _ approvalId _ " is " _ appr.status
+	Return ""
+}
+
+/// The command acknowledgement of a decision (CommandAck + approval)
+Method DecisionAck(rec As SignalNoir.Application.Model.CaseRecord, approvalId As %String, replay As %Boolean, commandId As %String, now As %String) As SignalNoir.Core.Result [ Private ]
+{
+	Set result = ##class(SignalNoir.Core.Result).OkRef(approvalId)
+	Set result.details = {"approvalId": (approvalId), "caseId": (rec.caseId), "state": (rec.state), "caseVersion": (rec.caseVersion), "lastEventSeq": (rec.lastEventSeq), "serverTime": (now), "commandId": (commandId)}
+	Do result.details.%Set("replay", ''replay, "boolean")
+	Return result
+}
+
+/// Retires the current Proposal for a new one: not current, superseded by
+/// it, and its valid approvals superseded (007 FR-010)
+Method Supersede(rec As SignalNoir.Application.Model.CaseRecord, newProposalId As %String) [ Private ]
+{
+	If rec.currentProposalId = "" Quit
+	Set old = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(rec.currentProposalId)
+	If $IsObject(old) {
+		Set old.current = 0
+		Set old.supersededBy = newProposalId
+		$$$ThrowOnError(old.%Save())
+	}
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT approvalId FROM SignalNoir_Application_Model.ApprovalRecord WHERE proposalId = ? AND decision = 'approved' AND status = 'valid'", rec.currentProposalId)
+	While rs.%Next() {
+		Set appr = ##class(SignalNoir.Application.Model.ApprovalRecord).%OpenId(rs.%Get("approvalId"))
+		Set appr.status = "superseded"
+		$$$ThrowOnError(appr.%Save())
+		If rec.currentApprovalId = appr.approvalId Set rec.currentApprovalId = ""
+	}
+}
+
+/// Marks a pending request discarded, with CommandDiscarded (caller's transaction)
+Method DiscardLocked(rec As SignalNoir.Application.Model.CaseRecord, outbox As SignalNoir.Application.Model.OutboxRecord, why As %String, now As %String) As SignalNoir.Core.Result [ Private ]
+{
+	Set outbox.status = "discarded", outbox.dispatchedAt = now
+	$$$ThrowOnError(outbox.%Save())
+	Do ..AppendEvent(rec, "CommandDiscarded", "system", outbox.commandId, {"commandId": (outbox.commandId), "type": (outbox.type), "reason": (why)}, now)
+	$$$ThrowOnError(rec.%Save())
+	Set r = ##class(SignalNoir.Core.Result).OkRef(outbox.commandId)
+	Set r.details = {"discarded": 1, "status": "discarded", "reason": (why)}
+	Return r
+}
+
+// ------------------------------------------------------------- execution
+
+/// The authorization CAS of an execution (feature 008, research R1). The
+/// caller observed and revalidated outside any transaction; this commit,
+/// under the Case lock and on the version the Execute request carries,
+/// records the Execution, RevalidationPerformed, the consumed approval and
+/// the move to Executing (passed), Held or Cancelled (blocked), and marks the
+/// request done. An approval no longer valid changes no state (the sweeper
+/// expires it). While another execution of the Order is reconciling,
+/// nothing is written and the request stays pending (FR-013).
+/// plan: {revalidation, idempotencyKey, payload, mappingRef, owner,
+/// leaseSeconds, hold}. details.status: authorized, held, cancelled,
+/// refused, waiting, discarded or "already <status>".
+Method AuthorizeExecution(commandId As %String, plan As %DynamicObject) As SignalNoir.Core.Result
+{
+	Set outbox = ##class(SignalNoir.Application.Model.OutboxRecord).%OpenId(commandId)
+	If '$IsObject(outbox) || (outbox.type '= "Execute") Return ..Err("NOT_FOUND", "execute request not found: " _ commandId)
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", outbox.caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ outbox.caseId)
+			Quit
+		}
+		Do outbox.%Reload()
+		If outbox.status '= "pending" {
+			Set result = ..ExecAnswer(commandId, "already " _ outbox.status, "", "")
+			Quit
+		}
+		Set rec = ..Load(outbox.caseId)
+		If rec.caseVersion '= outbox.caseVersionAfter {
+			Set result = ..DiscardLocked(rec, outbox, "case moved: " _ rec.state _ " v" _ rec.caseVersion, now)
+			Quit
+		}
+		Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(rec.currentProposalId)
+		Set isHold = $IsObject(pr) && (pr.action = "HOLD")
+		If '$IsObject(pr) || '$Select(isHold: rec.state = "Executing", 1: rec.state = "Approved") {
+			Set result = ..DiscardLocked(rec, outbox, "not executable in " _ rec.state, now)
+			Quit
+		}
+		; uncertain blocks every new send for the Order (FR-013, research R7)
+		Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT executionId FROM SignalNoir_Application_Model.ExecutionRecord WHERE orderId = ? AND outcome = 'reconciling'", rec.orderId)
+		If rs.%Next() {
+			Set result = ..ExecAnswer(commandId, "waiting", rs.%Get("executionId"), "")
+			Set result.details.reason = "execution " _ rs.%Get("executionId") _ " is reconciling"
+			Quit
+		}
+		Set rv = plan.revalidation
+		If isHold {
+			Set rv = {"passed": true, "checks": [], "destination": "Held", "reason": ("HOLD executed" _ $Select($IsObject(pr) && (pr.paramsJson [ "reason"): ": " _ ..PayloadObject(pr.paramsJson).reason, 1: ""))}
+		}
+		If 'isHold && (rv.destination = "") {
+			; the approval cannot authorize: record the check, change nothing
+			Do ..AppendEvent(rec, "RevalidationPerformed", "system", rec.currentApprovalId, {"passed": false, "checks": (rv.checks), "resultingState": (rec.state), "reason": (rv.reason)}, now)
+			Do ..DoneLocked(outbox, now)
+			$$$ThrowOnError(rec.%Save())
+			Set result = ..ExecAnswer(commandId, "refused", "", rec.state)
+			Set result.details.reason = rv.reason
+			Quit
+		}
+		Set orderRec = ##class(SignalNoir.Application.Model.OrderRecord).%OpenId(rec.orderId)
+		Set ex = ##class(SignalNoir.Application.Model.ExecutionRecord).%New()
+		Set ex.executionId = ..Ids.New("exec_"), ex.caseId = rec.caseId, ex.orderId = rec.orderId, ex.partnerId = rec.partnerId
+		Set ex.proposalId = pr.proposalId, ex.action = pr.action, ex.approvalId = $Select(isHold: "", 1: rec.currentApprovalId)
+		Set ex.scenarioInstanceId = $Select($IsObject(orderRec): orderRec.scenarioInstanceId, 1: ""), ex.runId = rec.runId
+		Set ex.authorizedAt = now, ex.leaseOwner = plan.owner, ex.leaseGeneration = 1
+		Set to = $Select(isHold: "Held", rv.passed: "Executing", 1: rv.destination)
+		Set reval = {"checks": (rv.checks), "at": (now), "resultingState": (to)}
+		Do reval.%Set("passed", rv.passed, "boolean")
+		Set ex.revalidationJson = reval.%ToJSON()
+		If to = "Executing" {
+			Set ex.idempotencyKey = plan.idempotencyKey
+			Set ex.payloadJson = $Select($IsObject(plan.payload): ##class(SignalNoir.Core.EffectKey).Canonical(plan.payload), 1: "")
+			If $IsObject(plan.%Get("mappingRef")) Set ex.mappingRefJson = plan.mappingRef.%ToJSON()
+			Set ex.stepLeaseUntil = ..Plus(now, plan.leaseSeconds), ex.outcome = "in_progress"
+		} Else {
+			Set ex.outcome = $Select(to = "Cancelled": "cancelled", 1: "held"), ex.completedAt = now, ex.failureReason = rv.reason
+		}
+		$$$ThrowOnError(ex.%Save())
+		; the approval is spent on this execution, whatever revalidation found
+		If ex.approvalId '= "" {
+			Set appr = ##class(SignalNoir.Application.Model.ApprovalRecord).%OpenId(ex.approvalId)
+			Do appr.%Reload()
+			Set appr.status = "consumed"
+			$$$ThrowOnError(appr.%Save())
+		}
+		If 'isHold {
+			Set facts = {"executionId": (ex.executionId), "checks": (rv.checks), "resultingState": (to), "reason": (rv.reason)}
+			Do facts.%Set("passed", rv.passed, "boolean")
+			Do ..AppendEvent(rec, "RevalidationPerformed", "system", ex.executionId, facts, now)
+		}
+		Set facts = {"executionId": (ex.executionId), "proposalId": (ex.proposalId), "action": (ex.action), "leaseGeneration": 1}
+		Do facts.%Set("approvalId", ex.approvalId, $Select(ex.approvalId = "": "null", 1: "string"))
+		Do facts.%Set("idempotencyKey", ex.idempotencyKey, $Select(ex.idempotencyKey = "": "null", 1: "string"))
+		If (to = "Executing") || isHold Do ..AppendEvent(rec, "ExecutionAuthorized", "system", ex.executionId, facts, now)
+		Set rec.currentExecutionId = ex.executionId, rec.executionOutcome = ex.outcome
+		If rec.state '= to {
+			Set moved = ..ApplyTransition(rec, to, "system", {"reason": (rv.reason), "executionId": (ex.executionId), "proposalId": (ex.proposalId)}, "", now)
+			If 'moved.ok {
+				Set result = moved
+				Quit
+			}
+		}
+		Do ..DoneLocked(outbox, now)
+		$$$ThrowOnError(rec.%Save())
+		Set result = ..ExecAnswer(commandId, $Select(to = "Executing": "authorized", 1: $ZConvert(to, "L")), ex.executionId, to)
+		Set result.details.generation = 1
+	}
+	Catch ex {
+		Set result = ..FromException(ex, "authorize execution failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// Records an attempt before it is sent (persist before effect, FR-006)
+/// and renews the lease. Refused under an older generation or once the
+/// execution left in_progress. details: n, attemptId, transactionId.
+Method StartAttempt(executionId As %String, generation As %Integer, owner As %String, leaseSeconds As %Integer) As SignalNoir.Core.Result
+{
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		Set ex = ..LockExecution(executionId, .rec, .locks)
+		If '$IsObject(ex) {
+			Set result = ..Err("NOT_FOUND", "execution not found or busy: " _ executionId)
+			Quit
+		}
+		If (ex.leaseGeneration '= generation) || (ex.outcome '= "in_progress") {
+			Set result = ..StaleWrite(rec, ex, generation, "start attempt", "", now)
+			Quit
+		}
+		Set attempts = ..PayloadObject(ex.attemptsJson)
+		If '$IsObject(attempts) Set attempts = []
+		Set n = attempts.%Size() + 1
+		Set attempt = {"attemptId": (executionId _ "_a" _ n), "n": (n), "transactionId": ("txn_" _ $Extract(executionId, 6, *) _ "_" _ n), "sentAt": (now), "completedAt": null, "httpStatus": null, "receiptId": null}
+		Do attempts.%Push(attempt)
+		Set ex.attemptsJson = attempts.%ToJSON(), ex.leaseOwner = owner, ex.stepLeaseUntil = ..Plus(now, leaseSeconds)
+		$$$ThrowOnError(ex.%Save())
+		Set result = ##class(SignalNoir.Core.Result).OkRef(executionId)
+		Set result.details = {"n": (n), "attemptId": (attempt.attemptId), "transactionId": (attempt.transactionId)}
+	}
+	Catch err {
+		Set result = ..FromException(err, "start attempt failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// Completes attempt n with the Partner's answer and its class (FR-006 to
+/// FR-012): success records the Receipt and resolves; uncertain marks the
+/// execution reconciling and queues Reconcile in the same commit; transient
+/// asks for a retry while attempts remain; a business error or an exhausted
+/// budget fails. A write under an older generation is discarded; if it held
+/// a Receipt, a Reconcile (lost_cas) is queued instead (FR-017).
+/// details.status: resolved, reconciling, retry, failed or discarded;
+/// details.commandId: the Reconcile request, when one was queued.
+Method FinishAttempt(executionId As %String, generation As %Integer, n As %Integer, answer As %DynamicObject, classified As %DynamicObject, maxAttempts As %Integer) As SignalNoir.Core.Result
+{
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		Set ex = ..LockExecution(executionId, .rec, .locks)
+		If '$IsObject(ex) {
+			Set result = ..Err("NOT_FOUND", "execution not found or busy: " _ executionId)
+			Quit
+		}
+		If (ex.leaseGeneration '= generation) || (ex.outcome '= "in_progress") {
+			Set result = ..StaleWrite(rec, ex, generation, "finish attempt " _ n, $Select(classified.class = "success": "lost_cas", 1: ""), now)
+			Quit
+		}
+		Set attempts = ..PayloadObject(ex.attemptsJson)
+		Set attempt = attempts.%Get(n - 1)
+		Set attempt.completedAt = now, attempt.responseClass = classified.class, attempt.bodyExcerpt = classified.excerpt
+		Do attempt.%Set("httpStatus", $Select(answer.answered: +answer.status, 1: ""), $Select(answer.answered: "number", 1: "null"))
+		Set receiptId = $Select($IsObject(classified.receipt): classified.receipt.receiptId, 1: "")
+		Do attempt.%Set("receiptId", receiptId, $Select(receiptId = "": "null", 1: "string"))
+		Set ex.attemptsJson = attempts.%ToJSON()
+		Set facts = {"executionId": (executionId), "n": (n), "transactionId": (attempt.transactionId), "responseClass": (classified.class)}
+		Do facts.%Set("httpStatus", attempt.httpStatus, $Select(attempt.httpStatus = "": "null", 1: "number"))
+		Do facts.%Set("receiptId", receiptId, $Select(receiptId = "": "null", 1: "string"))
+		Do ..AppendEvent(rec, "AttemptRecorded", "system", attempt.attemptId, facts, now)
+		Set status = "", commandId = ""
+		If classified.class = "success" {
+			Do ..SaveReceipt(rec, ex, classified.receipt, "delivery", now)
+			Set status = ..SettleLocked(rec, ex, "resolved", "", now)
+		} ElseIf classified.class = "uncertain" {
+			Set ex.outcome = "reconciling"
+			Set commandId = ..QueueReconcile(rec, ex, $Select(classified.kind = "timeout": "timeout", 1: "uncertain_response"), now)
+			Set status = "reconciling"
+		} ElseIf (classified.class = "transient") && (n < maxAttempts) {
+			Set status = "retry"
+		} Else {
+			Set why = $Select(classified.class = "transient": "attempts exhausted (" _ n _ ")", 1: "partner refused: HTTP " _ attempt.httpStatus)
+			Set status = ..SettleLocked(rec, ex, "failed", why, now)
+		}
+		If status = "" Quit
+		Set rec.executionOutcome = ex.outcome
+		$$$ThrowOnError(ex.%Save())
+		$$$ThrowOnError(rec.%Save())
+		Set result = ##class(SignalNoir.Core.Result).OkRef(executionId)
+		Set result.details = {"status": (status), "commandId": (commandId), "class": (classified.class)}
+	}
+	Catch err {
+		Set result = ..FromException(err, "finish attempt failed")
+	}
+	If '$IsObject(result) Set result = ..Err("", "finish attempt produced no result")
+	Return ..Finish(result, .locks)
+}
+
+/// Takes a Reconcile request over (research R5, R6): the lease passes to
+/// owner with generation + 1, the execution is reconciling, and the request
+/// is done, in one commit. A settled execution only closes the request.
+/// details: status (taken, settled or "already <status>"), executionId, generation.
+Method TakeOverExecution(commandId As %String, owner As %String, leaseSeconds As %Integer) As SignalNoir.Core.Result
+{
+	Set outbox = ##class(SignalNoir.Application.Model.OutboxRecord).%OpenId(commandId)
+	If '$IsObject(outbox) || (outbox.type '= "Reconcile") Return ..Err("NOT_FOUND", "reconcile request not found: " _ commandId)
+	Set facts = ..PayloadObject(outbox.payloadJson)
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		Set ex = ..LockExecution(facts.executionId, .rec, .locks)
+		If '$IsObject(ex) {
+			Set result = ..Err("", "execution not found or busy: " _ facts.executionId)
+			Quit
+		}
+		Do outbox.%Reload()
+		If outbox.status '= "pending" {
+			Set result = ..ExecAnswer(commandId, "already " _ outbox.status, ex.executionId, rec.state)
+			Quit
+		}
+		Do ..DoneLocked(outbox, now)
+		If (ex.outcome '= "in_progress") && (ex.outcome '= "reconciling") {
+			$$$ThrowOnError(rec.%Save())
+			Set result = ..ExecAnswer(commandId, "settled", ex.executionId, rec.state)
+			Quit
+		}
+		Set ex.leaseGeneration = ex.leaseGeneration + 1, ex.leaseOwner = owner, ex.stepLeaseUntil = ..Plus(now, leaseSeconds)
+		Set ex.outcome = "reconciling", rec.executionOutcome = "reconciling"
+		$$$ThrowOnError(ex.%Save())
+		$$$ThrowOnError(rec.%Save())
+		Set result = ..ExecAnswer(commandId, "taken", ex.executionId, rec.state)
+		Set result.details.generation = ex.leaseGeneration, result.details.trigger = facts.trigger
+	}
+	Catch err {
+		Set result = ..FromException(err, "take over failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// Records one query of the Partner's Receipts (contract Reconciliation).
+/// entry: {trigger, queriedBy, found, receipt, unreadable}. A Receipt found
+/// resolves the Case. Otherwise then decides: "" (record only), "resume"
+/// (back to in_progress, the same key may be sent again), "fail" (attempts
+/// exhausted) or "reconciling" (stays unknown). details.status: resolved,
+/// recorded, resumed, failed, reconciling or discarded.
+Method RecordReconciliation(executionId As %String, generation As %Integer, entry As %DynamicObject, then As %String = "") As SignalNoir.Core.Result
+{
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		Set ex = ..LockExecution(executionId, .rec, .locks)
+		If '$IsObject(ex) {
+			Set result = ..Err("NOT_FOUND", "execution not found or busy: " _ executionId)
+			Quit
+		}
+		If (ex.leaseGeneration '= generation) || ((ex.outcome '= "in_progress") && (ex.outcome '= "reconciling")) {
+			Set result = ..StaleWrite(rec, ex, generation, "reconciliation", $Select($IsObject(entry.%Get("receipt")): "lost_cas", 1: ""), now)
+			Quit
+		}
+		Set found = ''entry.found
+		Set receiptId = $Select(found: entry.receipt.receiptId, 1: "")
+		Set item = {"at": (now), "trigger": (entry.trigger), "queriedBy": (entry.queriedBy), "evidenceId": null}
+		Do item.%Set("found", found, "boolean")
+		Do item.%Set("receiptId", receiptId, $Select(receiptId = "": "null", 1: "string"))
+		Set list = ..PayloadObject(ex.reconciliationsJson)
+		If '$IsObject(list) Set list = []
+		Do list.%Push(item)
+		Set ex.reconciliationsJson = list.%ToJSON()
+		Set facts = {"executionId": (executionId), "trigger": (entry.trigger), "queriedBy": (entry.queriedBy), "found": (found)}
+		Do facts.%Set("found", found, "boolean")
+		Do facts.%Set("receiptId", receiptId, $Select(receiptId = "": "null", 1: "string"))
+		If entry.unreadable Set facts.unreadable = 1, facts.reason = entry.reason
+		Do ..AppendEvent(rec, "ReconciliationPerformed", "system", executionId, facts, now)
+		Set status = "recorded"
+		If found {
+			Do ..SaveReceipt(rec, ex, entry.receipt, "reconciliation", now)
+			Set status = ..SettleLocked(rec, ex, "resolved", "", now)
+		} ElseIf then = "resume" {
+			Set ex.outcome = "in_progress", status = "resumed"
+		} ElseIf then = "fail" {
+			Set status = ..SettleLocked(rec, ex, "failed", "no receipt after reconciliation; attempts exhausted", now)
+		} ElseIf then = "reconciling" {
+			Set ex.outcome = "reconciling", status = "reconciling"
+		}
+		If status = "" Quit
+		Set rec.executionOutcome = ex.outcome
+		$$$ThrowOnError(ex.%Save())
+		$$$ThrowOnError(rec.%Save())
+		Set result = ##class(SignalNoir.Core.Result).OkRef(executionId)
+		Set result.details = {"status": (status)}
+	}
+	Catch err {
+		Set result = ..FromException(err, "record reconciliation failed")
+	}
+	If '$IsObject(result) Set result = ..Err("", "reconciliation produced no result")
+	Return ..Finish(result, .locks)
+}
+
+/// The sweeper's lease pass (AD-22, FR-018): an execution in Executing past
+/// its lease gets a Reconcile request (lease_expired), never a review. Does
+/// nothing when it is settled or a Reconcile is already pending.
+/// Result.ref = the new commandId ("" when none was needed).
+Method RequestReconcile(executionId As %String, trigger As %String, actor As %String = "sweeper") As SignalNoir.Core.Result
+{
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		Set ex = ..LockExecution(executionId, .rec, .locks)
+		If '$IsObject(ex) {
+			Set result = ..Err("NOT_FOUND", "execution not found or busy: " _ executionId)
+			Quit
+		}
+		Set open = ((ex.outcome = "in_progress") || (ex.outcome = "reconciling")) && (rec.state = "Executing")
+		If 'open || ..HasPendingReconcile(rec.caseId) {
+			Set result = ##class(SignalNoir.Core.Result).OkRef("")
+			Quit
+		}
+		Set commandId = ..QueueReconcile(rec, ex, trigger, now)
+		Do ..AppendEvent(rec, "Annotation", actor, executionId, {"text": ("lease of " _ executionId _ " expired at " _ ex.stepLeaseUntil _ "; reconciliation requested"), "commandId": (commandId)}, now)
+		$$$ThrowOnError(rec.%Save())
+		Set result = ##class(SignalNoir.Core.Result).OkRef(commandId)
+	}
+	Catch err {
+		Set result = ..FromException(err, "request reconcile failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// Sweeper reassessment of a Held Case (AD-7, FR-020): the waiting
+/// condition ended, so the Case goes back to Investigating for a new
+/// Proposal, with ReassessmentPerformed and the Investigate request.
+Method ReassessHeld(caseId As %String, expectedVersion As %Integer, observed As %DynamicObject) As SignalNoir.Core.Result
+{
+	If '##class(SignalNoir.Application.Model.CaseRecord).%ExistsId(caseId) Return ..Err("NOT_FOUND", "case not found: " _ caseId)
+	Set now = ..Now()
+	Set result = ""
+	TSTART
+	Try {
+		If '..Acquire("^SignalNoir.CaseLock", caseId, .locks) {
+			Set result = ..Err("", "case busy: " _ caseId)
+			Quit
+		}
+		Set rec = ..Load(caseId)
+		If (rec.state '= "Held") || (rec.caseVersion '= expectedVersion) {
+			Set result = ..ErrorWithCase("STALE_VERSION", "Case changed since it was read", rec, expectedVersion)
+			Quit
+		}
+		Do ..AppendEvent(rec, "ReassessmentPerformed", "sweeper", caseId, {"from": "Held", "observed": (observed)}, now)
+		Set moved = ..ApplyTransition(rec, "Investigating", "sweeper", {"reason": "reassessment: the waiting condition ended"}, "", now)
+		If 'moved.ok {
+			Set result = moved
+			Quit
+		}
+		$$$ThrowOnError(rec.%Save())
+		Set result = moved
+	}
+	Catch err {
+		Set result = ..FromException(err, "reassess held failed")
+	}
+	Return ..Finish(result, .locks)
+}
+
+/// The executions of a Case (contract Execution), oldest first
+Method ListExecutions(caseId As %String) As %DynamicArray
+{
+	Set out = []
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT executionId FROM SignalNoir_Application_Model.ExecutionRecord WHERE caseId = ? ORDER BY authorizedAt, executionId", caseId)
+	While rs.%Next() {
+		Do out.%Push(..ExecutionJson(rs.%Get("executionId")))
+	}
+	Return out
+}
+
+Method ExecutionJson(executionId As %String) As %DynamicObject
+{
+	Set ex = ##class(SignalNoir.Application.Model.ExecutionRecord).%OpenId(executionId)
+	If '$IsObject(ex) Return ""
+	Do ex.%Reload()
+	Set o = {"executionId": (ex.executionId), "proposalId": (ex.proposalId), "action": (ex.action), "idempotencyKey": (ex.idempotencyKey), "authorizedAt": (ex.authorizedAt), "leaseGeneration": (ex.leaseGeneration), "outcome": (ex.outcome)}
+	Do o.%Set("approvalId", ex.approvalId, $Select(ex.approvalId = "": "null", 1: "string"))
+	Do o.%Set("stepLeaseUntil", ex.stepLeaseUntil, $Select(ex.stepLeaseUntil = "": "null", 1: "string"))
+	If ex.revalidationJson = "" {
+		Do o.%Set("revalidation", "", "null")
+	} Else {
+		; passed is a JSON boolean (early rows stored it as text)
+		Set reval = ..PayloadObject(ex.revalidationJson)
+		Do reval.%Set("passed", ''reval.passed, "boolean")
+		Do o.%Set("revalidation", reval)
+	}
+	Do o.%Set("reconciliations", ..PayloadObject(ex.reconciliationsJson))
+	Do o.%Set("attempts", ..PayloadObject(ex.attemptsJson))
+	Do o.%Set("completedAt", ex.completedAt, $Select(ex.completedAt = "": "null", 1: "string"))
+	Return o
+}
+
+/// The Case's latest Receipt copy (contract ReceiptCopy), "" when none
+Method ReceiptOf(caseId As %String) As %DynamicObject
+{
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT receiptId FROM SignalNoir_Application_Model.ReceiptCopyRecord WHERE caseId = ? ORDER BY recordedAt DESC", caseId)
+	If 'rs.%Next() Return ""
+	Set r = ##class(SignalNoir.Application.Model.ReceiptCopyRecord).%OpenId(caseId _ "||" _ rs.%Get("receiptId"))
+	Set o = {"receiptId": (r.receiptId), "orderId": (r.orderId), "idempotencyKey": (r.idempotencyKey), "receivedAt": (r.receivedAt), "partnerId": (r.partnerId), "source": (r.source), "equivalenceConfirmed": null, "annotations": []}
+	If r.externalRef '= "" Set o.externalRef = r.externalRef
+	If r.orderSnapshotMinimalJson '= "" Set o.orderSnapshotMinimal = ..PayloadObject(r.orderSnapshotMinimalJson)
+	Return o
+}
+
+/// Loads an execution and locks its Case inside the caller's transaction
+Method LockExecution(executionId As %String, Output rec As SignalNoir.Application.Model.CaseRecord, ByRef locks) As SignalNoir.Application.Model.ExecutionRecord [ Private ]
+{
+	Set rec = ""
+	Set ex = ##class(SignalNoir.Application.Model.ExecutionRecord).%OpenId(executionId)
+	If '$IsObject(ex) Return ""
+	If '..Acquire("^SignalNoir.CaseLock", ex.caseId, .locks) Return ""
+	Do ex.%Reload()
+	Set rec = ..Load(ex.caseId)
+	Return ex
+}
+
+/// A write under an older generation, or on a settled execution: refused
+/// and recorded (CommandDiscarded); a Receipt in hand becomes a Reconcile
+/// (lost_cas) so the effect is never thrown away (FR-016, FR-017)
+Method StaleWrite(rec As SignalNoir.Application.Model.CaseRecord, ex As SignalNoir.Application.Model.ExecutionRecord, generation As %Integer, what As %String, reconcileTrigger As %String, now As %String) As SignalNoir.Core.Result [ Private ]
+{
+	Set why = what _ " under generation " _ generation _ "; execution at generation " _ ex.leaseGeneration _ ", " _ ex.outcome
+	Set commandId = ""
+	If reconcileTrigger '= "" {
+		If (ex.outcome = "in_progress") || (ex.outcome = "reconciling") {
+			If '..HasPendingReconcile(rec.caseId) Set commandId = ..QueueReconcile(rec, ex, reconcileTrigger, now)
+		}
+	}
+	Do ..AppendEvent(rec, "CommandDiscarded", "system", ex.executionId, {"executionId": (ex.executionId), "generation": (generation), "reason": (why), "commandId": (commandId)}, now)
+	$$$ThrowOnError(rec.%Save())
+	Set r = ##class(SignalNoir.Core.Result).OkRef(ex.executionId)
+	Set r.details = {"status": "discarded", "reason": (why), "commandId": (commandId)}
+	Return r
+}
+
+/// A Reconcile request without a transition (the Case stays Executing),
+/// at the Case's current version so the entry point does not discard it
+Method QueueReconcile(rec As SignalNoir.Application.Model.CaseRecord, ex As SignalNoir.Application.Model.ExecutionRecord, trigger As %String, now As %String) As %String [ Private ]
+{
+	Set outbox = ##class(SignalNoir.Application.Model.OutboxRecord).%New()
+	Set outbox.commandId = ..Ids.New("cmd_"), outbox.type = "Reconcile", outbox.caseId = rec.caseId
+	Set outbox.caseVersionAfter = rec.caseVersion, outbox.status = "pending", outbox.createdAt = now
+	Set outbox.payloadJson = {"executionId": (ex.executionId), "trigger": (trigger)}.%ToJSON()
+	$$$ThrowOnError(outbox.%Save())
+	Return outbox.commandId
+}
+
+Method HasPendingReconcile(caseId As %String) As %Boolean [ Private ]
+{
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT commandId FROM SignalNoir_Application_Model.OutboxRecord WHERE caseId = ? AND type = 'Reconcile' AND status = 'pending'", caseId)
+	Return rs.%Next()
+}
+
+/// Ends an execution: resolved (Executing -> Resolved) or failed
+/// (Executing -> Failed), with the outcome on the Case. Returns the status.
+Method SettleLocked(rec As SignalNoir.Application.Model.CaseRecord, ex As SignalNoir.Application.Model.ExecutionRecord, outcome As %String, why As %String, now As %String) As %String [ Private ]
+{
+	Set ex.outcome = outcome, ex.completedAt = now, ex.failureReason = why
+	Set rec.executionOutcome = outcome
+	Set to = $Select(outcome = "resolved": "Resolved", 1: "Failed")
+	Set moved = ..ApplyTransition(rec, to, "system", {"reason": ($Select(why '= "": why, 1: "valid receipt")), "executionId": (ex.executionId)}, "", now)
+	If 'moved.ok $$$ThrowStatus($$$ERROR($$$GeneralError, moved.message))
+	Return outcome
+}
+
+/// Stores the Case's copy of a Partner Receipt once, with ReceiptRecorded
+Method SaveReceipt(rec As SignalNoir.Application.Model.CaseRecord, ex As SignalNoir.Application.Model.ExecutionRecord, receipt As %DynamicObject, source As %String, now As %String) [ Private ]
+{
+	If ##class(SignalNoir.Application.Model.ReceiptCopyRecord).%ExistsId(rec.caseId _ "||" _ receipt.receiptId) Quit
+	Set r = ##class(SignalNoir.Application.Model.ReceiptCopyRecord).%New()
+	Set r.caseId = rec.caseId, r.receiptId = receipt.receiptId, r.executionId = ex.executionId
+	Set r.orderId = receipt.orderId, r.idempotencyKey = receipt.idempotencyKey, r.receivedAt = receipt.receivedAt
+	Set r.partnerId = $Select(receipt.partnerId '= "": receipt.partnerId, 1: ex.partnerId), r.source = source
+	Set r.externalRef = receipt.%Get("externalRef"), r.recordedAt = now
+	If $IsObject(receipt.%Get("orderSnapshot")) Set r.orderSnapshotMinimalJson = {"orderId": (receipt.orderSnapshot.orderId), "exams": (receipt.orderSnapshot.exams)}.%ToJSON()
+	$$$ThrowOnError(r.%Save())
+	Do ..AppendEvent(rec, "ReceiptRecorded", "system", receipt.receiptId, {"executionId": (ex.executionId), "receiptId": (receipt.receiptId), "source": (source)}, now)
+}
+
+/// Marks a request done inside the caller's transaction
+Method DoneLocked(outbox As SignalNoir.Application.Model.OutboxRecord, now As %String) [ Private ]
+{
+	Set outbox.status = "done", outbox.dispatchedAt = now
+	$$$ThrowOnError(outbox.%Save())
+}
+
+ClassMethod ExecAnswer(commandId As %String, status As %String, executionId As %String, state As %String) As SignalNoir.Core.Result [ Private ]
+{
+	Set r = ##class(SignalNoir.Core.Result).OkRef(commandId)
+	Set r.details = {"status": (status), "executionId": (executionId), "state": (state)}
+	Return r
+}
+
 // ------------------------------------------------------------ resolution
 
 /// Operator resolution of a review (feature 009, contract resolveReview):
@@ -866,14 +1652,7 @@ Method ResolveReview(caseId As %String, request As %DynamicObject) As SignalNoir
 				Do ..SaveEvidence(rec, "", ev, ##class(SignalNoir.Core.Suspicion).Scan(ev.result), now, noteId)
 			}
 			Set proposalId = ..Ids.New("prop_")
-			If rec.currentProposalId '= "" {
-				Set old = ##class(SignalNoir.Application.Model.ProposalRecord).%OpenId(rec.currentProposalId)
-				If $IsObject(old) {
-					Set old.current = 0
-					Set old.supersededBy = proposalId
-					$$$ThrowOnError(old.%Save())
-				}
-			}
+			Do ..Supersede(rec, proposalId)
 			Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%New()
 			Set pr.proposalId = proposalId, pr.caseId = caseId, pr.author = actor, pr.createdAt = now, pr.current = 1
 			Set pr.diagnosisJson = ..Json(proposal.diagnosis), pr.action = proposal.action, pr.paramsJson = ..Json(proposal.params)
@@ -893,13 +1672,8 @@ Method ResolveReview(caseId As %String, request As %DynamicObject) As SignalNoir
 					Set result = moved
 					Quit
 				}
-				Set appr = ##class(SignalNoir.Application.Model.ApprovalRecord).%New()
-				Set appr.approvalId = ..Ids.New("appr_"), appr.caseId = caseId, appr.proposalId = proposalId, appr.decision = "approved", appr.by = actor
-				Set appr.at = now, appr.expiresAt = ..Plus(now, 15 * 60), appr.status = "valid"
-				$$$ThrowOnError(appr.%Save())
-				Set rec.currentApprovalId = appr.approvalId
-				Do ..AppendEvent(rec, "ApprovalRecorded", actor, appr.approvalId, {"approvalId": (appr.approvalId), "proposalId": (proposalId), "decision": "approved", "by": (actor), "expiresAt": (appr.expiresAt)}, now)
-				Set moved = ..ApplyTransition(rec, "Approved", actor, {"reason": "approved by the resolving operator", "proposalId": (proposalId)}, "", now)
+				Set appr = ..RecordApproval(rec, proposalId, "approved", actor, "", 0, now)
+				Set moved = ..ApplyTransition(rec, "Approved", actor, {"reason": "approved by the resolving operator", "proposalId": (proposalId), "approvalId": (appr.approvalId)}, "", now)
 				Set out.approvalId = appr.approvalId
 			} Else {
 				Set moved = ..ApplyTransition(rec, "Executing", "system", {"reason": "validator accepted; no approval required", "proposalId": (proposalId)}, "", now)
@@ -954,6 +1728,8 @@ Method ApprovalJson(approvalId As %String) As %DynamicObject
 {
 	Set a = ##class(SignalNoir.Application.Model.ApprovalRecord).%OpenId(approvalId)
 	If '$IsObject(a) Return ""
+	; never a stale in-memory copy (the sweeper or a newer Proposal may have changed it)
+	Do a.%Reload()
 	Set o = {"approvalId": (a.approvalId), "proposalId": (a.proposalId), "decision": (a.decision), "by": (a.by), "at": (a.at), "status": (a.status)}
 	Do o.%Set("expiresAt", a.expiresAt, $Select(a.expiresAt = "": "null", 1: "string"))
 	Do o.%Set("reason", a.reason, $Select(a.reason = "": "null", 1: "string"))
@@ -1000,11 +1776,7 @@ Method SaveDossier(rec As SignalNoir.Application.Model.CaseRecord, reviewReason 
 /// ISO-8601 UTC plus seconds
 ClassMethod Plus(iso As %String, seconds As %Integer) As %String [ Private ]
 {
-	Set day = $ZDateH($Extract(iso, 1, 10), 3)
-	Set secs = $ZTimeH($Extract(iso, 12, 19)) + seconds
-	Set day = day + (secs \ 86400), secs = secs # 86400
-	Set frac = $Piece($Piece(iso, ".", 2), "Z", 1)
-	Return $ZDate(day, 3) _ "T" _ $ZTime(secs, 1) _ $Select(frac '= "": "." _ frac, 1: "") _ "Z"
+	Return ##class(SignalNoir.Core.ApprovalPolicy).Plus(iso, seconds)
 }
 
 /// Routes a Case in DecisionProposed by the Validator's verdict (feature 009,
@@ -1022,7 +1794,13 @@ Method RouteProposal(rec As SignalNoir.Application.Model.CaseRecord, proposal As
 		Set why = $Select($IsObject(proposal.params) && (proposal.params.reason '= ""): proposal.params.reason, 1: "no safe action")
 		Return ..ApplyTransition(rec, "ReviewRequired", "system", {"reason": ("review requested: " _ why)}, "", now)
 	}
-	If verdict.requiresApproval Return ..ApplyTransition(rec, "PendingApproval", "system", {"reason": "validator accepted; approval required", "proposalId": (rec.currentProposalId)}, "", now)
+	If verdict.requiresApproval {
+		Set moved = ..ApplyTransition(rec, "PendingApproval", "system", {"reason": "validator accepted; approval required", "proposalId": (rec.currentProposalId)}, "", now)
+		; inside a BenchmarkRun the process that runs the Case approves for the run (007 FR-014)
+		If 'moved.ok || '..Policy().Admit("benchmark", rec.runId) Return moved
+		Set appr = ..RecordApproval(rec, rec.currentProposalId, "approved", "benchmark", "automatic approval inside BenchmarkRun " _ rec.runId, 1, now)
+		Return ..ApplyTransition(rec, "Approved", "benchmark", {"reason": "automatic approval inside a BenchmarkRun", "proposalId": (rec.currentProposalId), "approvalId": (appr.approvalId)}, "", now)
+	}
 	Return ..ApplyTransition(rec, "Executing", "system", {"reason": "validator accepted; no approval required", "proposalId": (rec.currentProposalId)}, "", now)
 }
 
@@ -1194,6 +1972,13 @@ Method ApplyTransition(rec As SignalNoir.Application.Model.CaseRecord, toState A
 	Set from = rec.state
 	Set code = ##class(SignalNoir.Core.CaseMachine).Check(from, toState, actor)
 	If code '= "" Return ..ErrorWithCase(code, "transition " _ from _ " -> " _ toState _ $Select(code = "INVALID_ACTOR": " not allowed to " _ actor, 1: " rejected"), rec, "")
+	; the benchmark actor acts only inside a BenchmarkRun (007 FR-014)
+	If '..Policy().Admit(actor, rec.runId) Return ..ErrorWithCase("INVALID_ACTOR", "the benchmark actor acts only inside a BenchmarkRun", rec, "")
+	; Approved and Rejected need a recorded decision on the current Proposal (007 FR-007)
+	If (from = "PendingApproval") && ((toState = "Approved") || (toState = "Rejected")) {
+		Set why = ..DecisionGuard(rec, toState, payload)
+		If why '= "" Return ..ErrorWithCase("INVALID_TRANSITION", why, rec, "")
+	}
 	Set reason = ""
 	If $IsObject(payload) Set reason = payload.reason
 	Set rec.state = toState
@@ -1400,7 +2185,7 @@ Method Refuse(orderId As %String, transactionId As %String, reasons As %ListOfDa
 /// Conflict result with the current Case facts the client needs to reload
 Method ErrorWithCase(code As %String, message As %String, rec As SignalNoir.Application.Model.CaseRecord, expectedVersion As %String) As SignalNoir.Core.Result [ Private ]
 {
-	Set details = {"caseVersion": (rec.caseVersion), "lastEventSeq": (rec.lastEventSeq), "state": (rec.state), "serverTime": (..Now())}
+	Set details = {"caseId": (rec.caseId), "caseVersion": (rec.caseVersion), "lastEventSeq": (rec.lastEventSeq), "state": (rec.state), "serverTime": (..Now())}
 	If expectedVersion '= "" Do details.%Set("expectedCaseVersion", +expectedVersion)
 	Do details.%Set("currentProposalId", rec.currentProposalId, $Select(rec.currentProposalId = "": "null", 1: "string"))
 	Return ##class(SignalNoir.Core.Result).ErrorWith(code, message, details)

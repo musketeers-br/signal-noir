@@ -79,25 +79,37 @@ Mudanças neles são aplicadas em lote no gate de integração.
 | Spec | Status | Pessoa | Onda | Worktree |
 |---|---|---|---|---|
 | 001 runtime-skeleton-and-seams | concluída | José | 0 | |
-| 002 scenario-simulator | spec/plan/tasks prontos | Henrique | 1 | `.claude/worktrees/002-scenario-simulator` |
-| 003 order-case-lifecycle | implementada (aguardando gate G1) | Henry | 1 | branch `003-order-case-lifecycle` |
-| 004 validation-and-reference-data | reservada | Henrique | 2 | |
-| 005 operator-console | implementada (aguardando gate G2; decisão/resolução testadas contra fixtures até 007/009) | Henry | 3 | branch `005-operator-console` |
-| 006 investigation-and-proposal | implementada (aguardando gate G2; AI Hub ao vivo pendente, T060) | Henry | 2 | branch `006-investigation-and-proposal` |
-| 007 approval-and-outbox | reservada | Henrique | 3 | |
-| 008 execution-and-recovery | reservada | Henrique | 4 | |
-| 009 review-dossier-and-resolution | implementada (aguardando gate G3; Validador v1 até a 004, Aprovação compartilhada com a 007) | Henry | 4 | branch `009-review-dossier-and-resolution` |
+| 002 scenario-simulator | implementada (aguardando gate G1; assumida do Henrique em 28/10; V1–V6 verificados no build 154; inclui o leitor do feed da Origem) | Henry | 1 | no `master` (PR #16) |
+| 003 order-case-lifecycle | implementada (aguardando gate G1) | Henry | 1 | no `master` |
+| 004 validation-and-reference-data | spec/plan/tasks prontos, revisados contra o master; decisões do Henry respondidas e ambiente verificado (V1): pronta para implementar, caminho crítico do G1 e do G2 | Henrique | 2 | branch `004-validation-and-reference-data` |
+| 005 operator-console | implementada (aguardando gate G2; decisão/resolução testadas contra fixtures até 007/009) | Henry | 3 | no `master` |
+| 006 investigation-and-proposal | implementada (aguardando gate G2; AI Hub ao vivo verificado, T060; SC-004 medido com gêmeos idênticos, T061) | Henry | 2 | no `master` |
+| 007 approval-and-outbox | implementada (aguardando gate G2; assumida do Henrique em 28/10; política de Aprovação padrão até a 004, handler do `Execute` na 008, sweeper ligado no Bootstrap no gate) | Henry | 3 | no `master` (PR #14) |
+| 008 execution-and-recovery | implementada (aguardando gate G3; assumida do Henrique em 28/10; política de execução padrão até a 004, mapeamento só com o catálogo da 004) | Henry | 4 | branch `008-execution-and-recovery` |
+| 009 review-dossier-and-resolution | implementada (aguardando gate G3; Validador v1 até a 004; correção 009b no `master`) | Henry | 4 | no `master` |
 | 010 benchmark-and-reference-run | reservada | Henrique | 5 | |
 | 011 prior-receipt-p9 | condicional | José | 5 | |
 | 012 packaging-and-cross-install | reservada | Henry | 5 | |
 
-Trilhas: Henrique = Simulador e efeito (002 → 004 → 007 → 008 → 010) e integrador dos gates; Henry = Caso, Agente e console (003 → 006 → 005 → 009 → 012); José = revisão do 010 e 011 condicional, só na onda 5.
+Trilhas (002, 007 e 008 passaram para o Henry em 28/10): Henrique = validação e benchmark (004 → 010) e integrador dos gates; Henry = Simulador, Caso, Agente, efeito e console (003 → 006 → 005 → 009 → 007 → 002 → 008 → 012); José = revisão do 010 e 011 condicional, só na onda 5.
 
 Papéis fixos fora do board:
 
 - **010 independência (Princípio VIII):** casos reservados e gabarito P5/P8b com Henrique; baseline de regras com Henry (escrito na onda 4); revisão do baseline e do avaliador com José. Henry (autor do Agente) não acessa as variantes reservadas até o congelamento. A revisão do José confirma que o baseline não foi enfraquecido e fica registrada no relatório.
 - **012 cross-install:** Henry escreve o README; Henrique instala em máquina limpa.
 - **011:** condicional. O José abre o `contract-change` de P9 na onda 5; sem contrato aprovado, ou sem tempo depois da revisão do 010, a 011 fica fora da submissão. Os dados de P9 já existem no Simulador (002, US7).
+
+Lacunas sem dono (registradas em 2026-10-26, resolvidas em 2026-10-28):
+
+- **Leitor do feed da Origem.** Resolvida: `SignalNoir.Interop.Service.OriginFeed.Poll()` (Henry, entregue com a 002) lê `GET /origin/feed`, chama `OrderIn.Accept`, faz a primeira entrega ao Parceiro e reporta a Exceção que abre o Caso. O agendamento fica para o gate G1 (`specs/002-scenario-simulator/contracts/g1-integration.md`).
+- **Ambiente com iris-agentic-dev.** Resolvida: V1–V6 verificados no AI Hub build 154 (`specs/002-scenario-simulator/research.md`). Kit em `dev/aihub/README.md`.
+
+Pendências do gate G1 (aplicadas pelo integrador):
+
+- `Sim.Setup.EnsureWebApplication()` no Bootstrap (`/sim/api/v1`).
+- Agendar `OriginFeed.Poll()`.
+- Ligar o sweeper (`SweeperTask.Ensure`) num banco limpo.
+- Criar `.env.example` com `SN_SIM_BASE_URL`.
 
 ## Merge
 

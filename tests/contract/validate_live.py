@@ -1,8 +1,10 @@
 """Validate live Signal Noir API responses against contracts/openapi-signalnoir.yaml.
 
 Dev-only conformance check of features 003 (FR-032, SC-006), 006 (Evidence,
-Proposal, Diagnosis and metrics layers of the Case detail) and 009 (Dossier,
-resolution answers, reference data). The 009 part cancels one ReviewRequired test case. It reads the list,
+Proposal, Diagnosis and metrics layers of the Case detail), 009 (Dossier,
+resolution answers, reference data), 007 (decision answers) and 008 (executions, Receipt
+copies and the summary's executionOutcome). The 009 part cancels one ReviewRequired
+test case and the 007 part approves one PendingApproval test case. It reads the list,
 a polling page, one Case detail, its Timeline, an unknown Case and a bad cursor,
 and validates each body against the contract schema (JSON Schema 2020-12, as in
 contracts/tools/validate_fixtures.py).
@@ -70,12 +72,34 @@ def main() -> int:
         check("timeline", f"/cases/{case_id}/timeline?sinceSeq=0&limit=2", 200, "TimelinePage")
         check("timeline tail", f"/cases/{case_id}/timeline?sinceSeq={detail['lastEventSeq']}", 200, "TimelinePage")
     proposed = check("with proposals", "/cases?state=PendingApproval&limit=50", 200, "CaseListPage")
-    # cases walked to PendingApproval by backend tests have no proposal; use real ones
-    for item in [i for i in proposed["items"] if i.get("currentProposal")][:2]:
+    # backend tests leave PendingApproval cases with a fixture proposal and no evidence;
+    # every detail must conform, and at least one investigated case must carry evidence
+    investigated = 0
+    for item in [i for i in proposed["items"] if i.get("currentProposal")][:10]:
         detail = check("detail+proposal", f"/cases/{item['caseId']}", 200, "CaseDetail")
-        if not detail.get("proposals") or not detail.get("evidence"):
-            print("FAIL     PendingApproval detail without proposals/evidence")
+        investigated += bool(detail.get("proposals") and detail.get("evidence"))
+    if proposed["items"] and not investigated:
+        print("FAIL     no PendingApproval detail with proposals and evidence")
+        failures += 1
+    # feature 007: the decision on the exact Proposal
+    waiting = [i for i in proposed["items"] if i.get("currentProposal")]
+    if waiting:
+        item = waiting[-1]
+        case_id, version, proposal_id = item["caseId"], item["caseVersion"], item["currentProposal"]["proposalId"]
+        path = f"/cases/{case_id}/proposals/{proposal_id}/decision"
+        check("decision 400", path, 400, "ErrorEnvelope", {"decision": "denied", "operator": "Carla", "expectedCaseVersion": version})
+        stale = check("decision 409", path, 409, "ErrorEnvelope", {"decision": "approved", "operator": "Carla", "expectedCaseVersion": version + 100})
+        if stale.get("error", {}).get("details", {}).get("currentProposalId") != proposal_id:
+            print("FAIL     409 without the current proposal")
             failures += 1
+        check("decision 404", "/cases/case_doesnotexist/proposals/prop_x/decision", 404, "ErrorEnvelope", {"decision": "approved", "operator": "Carla", "expectedCaseVersion": 1})
+        created = check("decision 201", path, 201, "ProposalDecisionResult", {"decision": "approved", "operator": "Carla", "expectedCaseVersion": version})
+        replay = check("decision 200", path, 200, "ProposalDecisionResult", {"decision": "approved", "operator": "Carla", "expectedCaseVersion": version})
+        if not replay.get("idempotentReplay") or replay.get("approval", {}).get("approvalId") != created.get("approval", {}).get("approvalId"):
+            print("FAIL     replay did not return the same approval")
+            failures += 1
+    else:
+        print("skip     no PendingApproval case with a proposal; decision answers not exercised")
     # feature 009: review dossier, resolution answers and reference data
     review = check("in review", "/cases?state=ReviewRequired&limit=3", 200, "CaseListPage")
     for item in review["items"][:1]:
@@ -95,6 +119,16 @@ def main() -> int:
         check("resolution 201", path, 201, "ReviewResolutionResult", {"kind": "cancel", "operator": "Carla", "expectedCaseVersion": version, "reason": "conformance check"})
     else:
         print("skip     fewer than two ReviewRequired cases; resolution answers not exercised")
+    # feature 008: executions, Receipt copies and the summary's executionOutcome
+    executed = 0
+    for state in ("Resolved", "Held", "Executing", "Failed", "Cancelled"):
+        listing = check(f"{state} list", f"/cases?state={state}&limit=5", 200, "CaseListPage")
+        for item in listing["items"][:2]:
+            detail = check("detail+execution", f"/cases/{item['caseId']}", 200, "CaseDetail")
+            executed += bool(detail.get("executions"))
+    if not executed:
+        print("FAIL     no Case detail with executions")
+        failures += 1
     check("action catalog", "/reference/action-catalog", 200, "#/paths/~1reference~1action-catalog/get/responses/200/content/application~1json/schema")
     check("mappings", "/reference/mappings?sourceCode=GLIC-J", 200, "#/paths/~1reference~1mappings/get/responses/200/content/application~1json/schema")
     check("unknown case", "/cases/case_doesnotexist", 404, "ErrorEnvelope")

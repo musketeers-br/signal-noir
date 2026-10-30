@@ -72,8 +72,7 @@ Method TestSecondRejectionAndFreshDossier()
 	Do $$$AssertEquals($ClassMethod(S, "DriveTo", svc, caseId, "Rejected"), "", "first rejection")
 	Do svc.ResolveRejection(caseId, svc.GetCase(caseId).obj.caseVersion, "no")
 	For step = "DecisionProposed:agent", "PendingApproval:system", "Rejected:operator:ana" {
-		Set g = svc.GetCase(caseId).obj
-		Do svc.Transition(caseId, g.caseVersion, $Piece(step, ":", 1), $Piece(step, ":", 2, 3), $ClassMethod(S, "Ev"))
+		Do $ClassMethod(S, "Step", svc, caseId, step)
 	}
 	Do svc.ResolveRejection(caseId, svc.GetCase(caseId).obj.caseVersion, "still no")
 	Set first = ..Latest(svc, caseId)

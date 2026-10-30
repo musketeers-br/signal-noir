@@ -1,6 +1,7 @@
 ROUTINE %ZSTART
 	; Signal Noir startup hook (feature 001, AD-27).
-	; Installed in the %SYS namespace by the build (see iris.script).
+	; Installed in the %SYS namespace by the build (deploy/install.script;
+	; dev/aihub/setup.script for the dev image).
 	; SYSTEM^%ZSTART runs at instance start; it must never crash the instance,
 	; so every failure is caught and logged, never thrown.
 SYSTEM
@@ -8,6 +9,16 @@ SYSTEM
 		New $Namespace
 		Zn "IRISAPP"
 		Do ##class(SignalNoir.Interop.Bootstrap).OnStart()
+	}
+	Catch ex {
+		Do ex.Log()
+	}
+	; gate G1: the scenario Simulator's API. Registered here, beside the
+	; product, because the product reaches the Simulator only over HTTP.
+	Try {
+		New $Namespace
+		Zn "IRISAPP"
+		Do ##class(SignalNoir.Sim.Setup).EnsureWebApplication()
 	}
 	Catch ex {
 		Do ex.Log()
