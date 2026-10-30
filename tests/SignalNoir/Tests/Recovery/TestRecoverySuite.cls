@@ -46,9 +46,11 @@ ClassMethod ApprovedLive(family As %String, variant As %String, seed As %Integer
 	Set x = {"sci": (c.scenarioInstanceId), "order": (e.emitted.%Get(0).order)}
 	Set order = x.order
 	Do ##class(SignalNoir.Interop.Service.OrderIn).Accept(order.%ToJSON(), "tx-" _ order.orderId, "", x.sci)
-	Set opened = ##class(SignalNoir.Interop.Service.OrderIn).ReportException(order.orderId, "timeout")
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set caseId = opened.ref
+	; the Exception opens the Case and the test walks it to investigation:
+	; the suite tests execution, not the routing that depends on a provider
+	Set caseId = svc.RecordException(order.orderId, $ClassMethod(..#S, "Exception")).ref
+	Do $ClassMethod(..#S, "Step", svc, caseId, "Investigating:system")
 	Do $ClassMethod(..#S, "Step", svc, caseId, "DecisionProposed:agent")
 	Do $ClassMethod(..#S, "FixtureProposal", caseId)
 	Do $ClassMethod(..#S, "Step", svc, caseId, "PendingApproval:system")
