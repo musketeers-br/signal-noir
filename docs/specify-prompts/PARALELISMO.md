@@ -28,7 +28,6 @@ Como dividir as 12 specs entre 3 pessoas sem donos fixos e sem conflito de merge
 | 003 order-case-lifecycle | `docs/seams.md` v1 |
 | 004 validation-and-reference-data | `docs/seams.md` v1 (porta do Validator) |
 | 005 operator-console | contratos + fixtures (dia 1) |
-| 014 liquid-console-redesign | implementada no `ui/` (tema claro/escuro, tokens, rail, vidro com fallbacks); falta só a checagem do `theme-init.js` na instância IRIS (T036) | Henry | — | branch `master`, sem commit |
 | 006 investigation-and-proposal | `001` + DTOs de Case do `003` + `002` |
 | 007 approval-and-outbox | `001` + `004`; pode usar fake do Validator |
 | 008 execution-and-recovery | `001` + `002`; pode usar fake de Approval/Execution |
@@ -91,6 +90,7 @@ Mudanças neles são aplicadas em lote no gate de integração. Exceção: a 012
 | 010 benchmark-and-reference-run | reservada | Henrique | 5 | |
 | 011 prior-receipt-p9 | condicional | José | 5 | |
 | 012 packaging-and-cross-install | parcial (29/10): imagem, compose, README, `.env.example`, smoke, scan de segredos e CI no repositório, verificados no ARM64; faltam a validação rápida (depende da 010), o cross-install do Henrique, o vídeo e a submissão | Henry | 5 | branch `g1-wiring-and-012` |
+| 014 liquid-console-redesign | no `master` (PR #24; tema claro/escuro, tokens, rail, vidro com fallbacks); falta só a checagem do `theme-init.js` na instância IRIS (T036) | Henry | extra | no `master` |
 
 Trilhas (002, 007 e 008 passaram para o Henry em 28/10): Henrique = validação e benchmark (004 → 010) e integrador dos gates; Henry = Simulador, Caso, Agente, efeito e console (003 → 006 → 005 → 009 → 007 → 002 → 008 → 012); José = revisão do 010 e 011 condicional, só na onda 5.
 
