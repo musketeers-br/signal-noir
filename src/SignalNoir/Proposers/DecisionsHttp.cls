@@ -38,9 +38,9 @@ Method Decide(body As %DynamicObject, timeoutSeconds As %Integer) As SignalNoir.
 		Set http = ##class(%Net.HttpRequest).%New()
 		Set http.Server = ..#SERVER, http.Https = 1, http.SSLConfiguration = ..EnsureTls()
 		Set http.Timeout = $Select(+timeoutSeconds > 0: +timeoutSeconds, 1: 20)
-		Set http.ContentType = "application/json"
+		Set http.ContentType = "application/json; charset=utf-8"
 		Do http.SetHeader("Authorization", "Bearer " _ ..Key())
-		Do http.EntityBody.Write(request.%ToJSON())
+		Do http.EntityBody.Write(..Payload(request))
 		Set sc = http.Post(..#PATH)
 		If $$$ISERR(sc) {
 			Set result = ##class(SignalNoir.Core.Result).Error("provider_unavailable", "decisions call failed: " _ $System.Status.GetErrorCodes(sc))
@@ -71,6 +71,14 @@ Method Decide(body As %DynamicObject, timeoutSeconds As %Integer) As SignalNoir.
 		Set result = ##class(SignalNoir.Core.Result).Error("provider_unavailable", "decisions call failed: " _ ex.Name)
 	}
 	Return result
+}
+
+/// The request as UTF-8 bytes. The body stream is binary, so text such as
+/// "código" in a synthetic Order would otherwise go out as Latin-1 and the
+/// API answers 400 invalid_json (found in the 016 live test).
+ClassMethod Payload(request As %DynamicObject) As %String
+{
+	Return $ZConvert(request.%ToJSON(), "O", "UTF8")
 }
 
 /// Live smoke check (labelled live): one synthetic request through the
