@@ -9,7 +9,9 @@
 	import CaseDetail from './CaseDetail.svelte';
 	import CaseList from './CaseList.svelte';
 	import ConnectionNote from './ConnectionNote.svelte';
+	import ThemeToggle from './ThemeToggle.svelte';
 	import Toasts from './Toasts.svelte';
+	import { theme } from '../stores/theme.svelte';
 
 	let { pollMs = 1500 }: { pollMs?: number } = $props();
 
@@ -18,6 +20,7 @@
 	let main: HTMLElement;
 	let timer: ReturnType<typeof setInterval> | undefined;
 	let polling = false;
+	let stopTheme: (() => void) | undefined;
 
 	function route(): { view: 'list' } | { view: 'case'; caseId: string } {
 		const m = /^#\/cases\/([^/?#]+)/.exec(location.hash);
@@ -52,6 +55,7 @@
 	}
 
 	onMount(() => {
+		stopTheme = theme.listen();
 		if (!location.hash) location.hash = '#/cases';
 		window.addEventListener('hashchange', go);
 		go();
@@ -61,19 +65,22 @@
 	onDestroy(() => {
 		if (typeof window !== 'undefined') window.removeEventListener('hashchange', go);
 		clearInterval(timer);
+		stopTheme?.();
 	});
 
 	const problem = $derived(nameProblem(operator.name));
 </script>
 
+<div class="shell">
 <header class="topbar">
 	<a class="wordmark" href="#/cases">Signal Noir</a>
-	<nav aria-label="Main"><a href="#/cases">Cases</a></nav>
+	<nav class="rail-nav" aria-label="Main"><a href="#/cases" aria-current="page">Cases</a></nav>
 	<label class="name-field">Acting as (declared name)
 		<input type="text" value={operator.name} oninput={(e) => operator.set((e.currentTarget as HTMLInputElement).value)} aria-invalid={problem === 'colon'} autocomplete="name" />
 	</label>
 	{#if problem === 'colon'}<span class="inline-error small" role="alert">{COPY.nameNoColon}</span>{/if}
 	<span class="badge-synthetic">{COPY.syntheticData}</span>
+	<ThemeToggle />
 	<ConnectionNote />
 </header>
 <main bind:this={main} tabindex="-1" class="main">
@@ -83,4 +90,5 @@
 		<CaseList {list} />
 	{/if}
 </main>
+</div>
 <Toasts />

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foundations</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./signal.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1500px; box-sizing: border-box; padding: 32px; display: flex; gap: 32px; background: #6B6A66">
+  <sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+    <div class="sn {{t.cls}}" style="flex: 1 1 0; min-width: 0; border-radius: 36px; padding: 36px; display: flex; flex-direction: column; gap: 34px">
+      <div class="blob b1" aria-hidden="true"></div>
+      <div class="blob b2" aria-hidden="true"></div>
+
+      <div style="position: relative; display: flex; flex-direction: column; gap: 6px">
+        <span class="eyebrow">Signal Noir · {{t.name}}</span>
+        <h1 style="font-size: 34px; font-weight: 700; letter-spacing: -.02em">Foundations</h1>
+        <p class="mute" style="font-size: 14px">Soft raised and inset surfaces, liquid glass for floating layers, one teal accent.</p>
+      </div>
+
+      <section style="position: relative; display: flex; flex-direction: column; gap: 14px">
+        <h2 class="eyebrow">Surfaces</h2>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 84px; border-radius: 22px; background: var(--bg); border: 1px solid var(--line)"></div><span style="font-size: 12px; font-weight: 600">Base</span></div>
+          <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 84px; border-radius: 22px; background: var(--surf); box-shadow: var(--sh-raise)"></div><span style="font-size: 12px; font-weight: 600">Raised</span></div>
+          <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 84px; border-radius: 22px; background: var(--surf-2); box-shadow: var(--sh-inset)"></div><span style="font-size: 12px; font-weight: 600">Inset</span></div>
+          <div class="glass" style="display: flex; flex-direction: column; gap: 8px; height: 84px; border-radius: 22px; padding: 12px; justify-content: flex-end"><span style="font-size: 12px; font-weight: 600">Liquid glass</span></div>
+        </div>
+      </section>
+
+      <section style="position: relative; display: flex; flex-direction: column; gap: 14px">
+        <h2 class="eyebrow">Color roles</h2>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 44px; border-radius: 14px; background: var(--accent)"></div><span style="font-size: 12px; font-weight: 600">Accent</span></div>
+          <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 44px; border-radius: 14px; background: var(--ok-soft); color: var(--ok); display: grid; place-items: center; font-weight: 700; font-size: 13px">Ok</div><span style="font-size: 12px; font-weight: 600">Success</span></div>
+          <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 44px; border-radius: 14px; background: var(--warn-soft); color: var(--warn); display: grid; place-items: center; font-weight: 700; font-size: 13px">Warn</div><span style="font-size: 12px; font-weight: 600">Caution</span></div>
+          <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 44px; border-radius: 14px; background: var(--bad-soft); color: var(--bad); display: grid; place-items: center; font-weight: 700; font-size: 13px">Bad</div><span style="font-size: 12px; font-weight: 600">Danger</span></div>
+        </div>
+      </section>
+
+      <section style="position: relative; display: flex; flex-direction: column; gap: 14px">
+        <h2 class="eyebrow">Elevation</h2>
+        <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px">
+          <div class="e1" style="height: 64px; border-radius: 18px; display: grid; place-items: center; font-size: 12px; font-weight: 600">L1 Flat</div>
+          <div class="e2" style="height: 64px; border-radius: 18px; display: grid; place-items: center; font-size: 12px; font-weight: 600">L2 Hover</div>
+          <div class="e3" style="height: 64px; border-radius: 18px; display: grid; place-items: center; font-size: 12px; font-weight: 600">L3 Raised</div>
+          <div class="e4" style="height: 64px; border-radius: 18px; display: grid; place-items: center; font-size: 12px; font-weight: 600">L4 Modal</div>
+          <div class="e5" style="height: 64px; border-radius: 18px; display: grid; place-items: center; font-size: 12px; font-weight: 600">L5 Popover</div>
+        </div>
+      </section>
+
+      <section style="position: relative; display: flex; flex-direction: column; gap: 14px">
+        <h2 class="eyebrow">Radius</h2>
+        <div style="display: flex; align-items: flex-end; gap: 18px">
+          <div class="e3" style="width: 48px; height: 48px; border-radius: 12px"></div>
+          <div class="e3" style="width: 56px; height: 56px; border-radius: 18px"></div>
+          <div class="e3" style="width: 64px; height: 64px; border-radius: 28px"></div>
+          <div class="e3" style="width: 72px; height: 72px; border-radius: 36px"></div>
+          <div class="e3" style="width: 80px; height: 40px; border-radius: 999px"></div>
+          <span class="mute mono" style="font-size: 12px">12 · 18 · 28 · 36 · pill</span>
+        </div>
+      </section>
+
+      <section style="position: relative; display: flex; flex-direction: column; gap: 12px">
+        <h2 class="eyebrow">Type</h2>
+        <div style="font-size: 34px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1">Display 34</div>
+        <div style="font-size: 22px; font-weight: 700; letter-spacing: -.01em">Heading 22</div>
+        <div style="font-size: 15px">Body 15 — Inter keeps dense case data readable.</div>
+        <div class="mono" style="font-size: 13px; color: var(--accent)">CS-1042 · REMAP_TEST_CODE</div>
+      </section>
+
+      <section style="position: relative; display: flex; flex-direction: column; gap: 16px">
+        <h2 class="eyebrow">Controls</h2>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
+          <button class="btn btn-primary">Approve</button>
+          <button class="btn btn-primary" disabled="{{ true }}"><span class="spin" aria-hidden="true"></span>Executing…</button>
+          <button class="btn">Send back</button>
+          <button class="btn" disabled="{{ true }}">Unavailable</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+          <label class="field"><input type="text" placeholder="Search" aria-label="Default field"></label>
+          <label class="field act"><input type="text" value="Focused" aria-label="Focused field"></label>
+          <label class="field err"><input type="text" value="Invalid order id" aria-label="Error field"></label>
+          <div style="display: flex; align-items: center; gap: 18px">
+            <div class="switch on" role="img" aria-label="Switch on"></div>
+            <div class="switch" role="img" aria-label="Switch off"></div>
+            <div class="check on" role="img" aria-label="Checked"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+            <div class="check" role="img" aria-label="Unchecked"></div>
+          </div>
+        </div>
+        <div class="seg" style="align-self: flex-start"><button class="on">Overview</button><button>Details</button><button>Receipt</button></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <span class="chip ok"><span class="dot"></span>HIGH</span>
+          <span class="chip warn"><span class="dot"></span>MEDIUM</span>
+          <span class="chip bad"><span class="dot"></span>LOW</span>
+          <span class="chip"><span class="dot"></span>Reconciling</span>
+          <span class="chip mute">Synthetic</span>
+        </div>
+        <div class="bar" style="max-width: 360px"><i style="width: 62%"></i></div>
+      </section>
+
+      <section style="position: relative; display: flex; flex-direction: column; gap: 14px">
+        <h2 class="eyebrow">Feedback</h2>
+        <div class="glass" style="border-radius: 22px; padding: 16px 20px; display: flex; gap: 12px; align-items: flex-start">
+          <span class="chip ok" style="padding: 0 7px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+          <span style="font-size: 14px; font-weight: 500">Approved. The effect runs at most once.</span>
+        </div>
+        <div class="well" style="padding: 16px 20px; font-size: 14px"><span class="mute">No Cases match this filter.</span></div>
+      </section>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { themes: [{ cls: 'light', name: 'Light' }, { cls: 'dark', name: 'Dark' }] };
+  }
+}
+</script>
+</body>
+</html>

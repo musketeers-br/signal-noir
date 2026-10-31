@@ -1,0 +1,56 @@
+/* Opaque surfaces for what the Operator reads to decide; glass only for what floats (FR-012). */
+.layer, .evidence-card, .interpretation-card, .dossier, .banner, .timeline, .case-link {
+	background: var(--surface); border: 1px solid var(--glass-edge);
+}
+.layer { border-radius: var(--r-lg); padding: var(--sp-4); margin-bottom: var(--sp-4); box-shadow: var(--e3); }
+.well, .raw, .next-step { background: var(--surface-inset); box-shadow: var(--inset); }
+.raw { padding: var(--sp-2); border-radius: var(--r-sm); overflow: auto; white-space: pre-wrap; }
+.next-step { background: var(--accent-soft); border-radius: var(--r-md); padding: 10px var(--sp-3); margin: var(--sp-3) 0; box-shadow: none; }
+
+.banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border: 1px solid currentColor; border-radius: var(--r-lg); margin-bottom: var(--sp-4); box-shadow: var(--e2); }
+.banner p { margin: 0; color: var(--ink); }
+
+.evidence-card { border-left: 4px solid var(--fact); border-radius: var(--r-md); padding: 10px var(--sp-3); margin: var(--sp-2) 0; }
+.evidence-card.obsolete { opacity: 0.75; border-left-style: dashed; }
+.evidence-card.highlight { box-shadow: var(--ring); }
+.ev-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.ev-head h4 { margin: 0; font-size: var(--fs-small); }
+.conflict { border: 1px solid var(--interpretation); background: var(--interpretation-soft); border-radius: var(--r-md); padding: var(--sp-2); margin: var(--sp-2) 0; }
+.conflict-head { margin: 0 0 var(--sp-1); }
+.side-by-side { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.interpretation-card { border: 1px dashed var(--interpretation); border-radius: var(--r-lg); padding: var(--sp-3); }
+
+.dossier { border: 2px solid var(--attention); border-radius: var(--r-lg); padding: var(--sp-4); margin-bottom: var(--sp-4); box-shadow: var(--e3); }
+.resolution fieldset { border: 1px solid var(--line-strong); border-radius: var(--r-md); }
+.empty, .not-yet { padding: var(--sp-3); border: 1px dashed var(--line-strong); border-radius: var(--r-md); color: var(--ink-muted); background: var(--surface-inset); }
+
+.timeline { border-radius: var(--r-lg); padding: var(--sp-3); box-shadow: var(--e3); }
+.timeline ol { padding-left: 0; list-style: none; display: grid; gap: var(--sp-2); }
+
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: var(--sp-1) var(--sp-3); margin: var(--sp-2) 0; }
+.kv dt { color: var(--ink-muted); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.table { border-collapse: collapse; width: 100%; margin: var(--sp-2) 0; display: block; overflow-x: auto; }
+.table th, .table td { border-bottom: 1px solid var(--line); padding: var(--sp-1) var(--sp-2); text-align: left; }
+tr.divergent { background: var(--attention-soft); }
+
+/* floating layers: liquid glass */
+.glass, .topbar, .dialog, .toast, .connection-note {
+	background: var(--glass); border: 1px solid var(--glass-edge);
+	-webkit-backdrop-filter: blur(var(--blur)) saturate(1.4); backdrop-filter: blur(var(--blur)) saturate(1.4);
+}
+.dialog { max-width: 640px; width: calc(100% - 32px); max-height: calc(100vh - 32px); overflow: auto; border-radius: var(--r-xl); color: var(--ink); padding: var(--sp-5); box-shadow: var(--e4); }
+.dialog::backdrop { background: var(--backdrop); }
+.toasts { position: fixed; right: var(--sp-4); bottom: var(--sp-4); display: grid; gap: var(--sp-2); z-index: 10; max-width: calc(100vw - 32px); }
+.toast { border: 1px solid currentColor; border-radius: var(--r-lg); padding: 10px var(--sp-4); color: var(--ink); max-width: 420px; box-shadow: var(--e5); }
+.toast[data-tone='success'] { border-color: var(--success); }
+.toast[data-tone='muted'] { border-color: var(--line-strong); }
+.connection-note { margin: 0; padding: 6px var(--sp-3); border-radius: var(--r-md); color: var(--attention); font-size: var(--fs-small); border-color: var(--attention); }
+
+/* no blur available, or reduced transparency asked: opaque stand-in with the same text pair */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+	.glass, .topbar, .dialog, .toast, .connection-note { background: var(--glass-solid); }
+}
+@media (prefers-reduced-transparency: reduce) {
+	.glass, .topbar, .dialog, .toast, .connection-note { background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
