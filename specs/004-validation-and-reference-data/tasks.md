@@ -109,11 +109,11 @@ and agreed with Henry at T002): `Core/Validator.cls`, `Core/Port/Validator.cls`,
 
 **Independent Test**: quickstart §1 (TestMappings).
 
-- [ ] T021 [P] [US2] Write failing tests/SignalNoir/Tests/Core/Validator/TestConditions.cls: `specimenType` against `specimen.type` matches `plasma`→`PLASMA`, `soro`→`SERUM`, with spaces and mixed case; `specimenUnit` against `specimen.unit`; empty conditions always match; an absent Order field never matches; source code found among `exams[].code` case-insensitively
-- [ ] T022 [US2] Implement src/SignalNoir/Core/Conditions.cls (`Canonical(field, value, synonyms)`, `Matches(conditions, order, synonyms)`, `HasSourceCode(order, code)`, field→path table per research D7) until T021 passes
-- [ ] T023 [P] [US2] Write failing tests/SignalNoir/Tests/Core/Validator/TestMappings.cls covering spec US2 AS1–AS5 (plasma accepted with `MAPPING_CONDITION_MATCHES`; serum blocked `MAPPING_CONDITION_MISMATCH`; unknown id or version `MAPPING_NOT_FOUND`; missing source code `MAPPING_SOURCE_CODE_ABSENT`; unconditional `map_tsh_legacy` accepted without `MAPPING_CONDITION_MATCHES`) and SC-006 (exactly one of the two `GLIC-J` Mappings accepted per Order)
-- [ ] T024 [US2] Add step 6 to src/SignalNoir/Core/Validator.cls using `Conditions` and `input.reference.mappings` until T023 passes
-- [ ] T025 [US2] Run T021 and T023 green
+- [x] T021 [P] [US2] Write failing tests/SignalNoir/Tests/Core/Validator/TestConditions.cls: `specimenType` against `specimen.type` matches `plasma`→`PLASMA`, `soro`→`SERUM`, with spaces and mixed case; `specimenUnit` against `specimen.unit`; empty conditions always match; an absent Order field never matches; source code found among `exams[].code` case-insensitively
+- [x] T022 [US2] Implement src/SignalNoir/Core/Conditions.cls (`Canonical(field, value, synonyms)`, `Matches(conditions, order, synonyms)`, `HasSourceCode(order, code)`, field→path table per research D7) until T021 passes
+- [x] T023 [P] [US2] Write failing tests/SignalNoir/Tests/Core/Validator/TestMappings.cls covering spec US2 AS1–AS5 (plasma accepted with `MAPPING_CONDITION_MATCHES`; serum blocked `MAPPING_CONDITION_MISMATCH`; unknown id or version `MAPPING_NOT_FOUND`; missing source code `MAPPING_SOURCE_CODE_ABSENT`; unconditional `map_tsh_legacy` accepted without `MAPPING_CONDITION_MATCHES`) and SC-006 (exactly one of the two `GLIC-J` Mappings accepted per Order)
+- [x] T024 [US2] Add step 6 to src/SignalNoir/Core/Validator.cls using `Conditions` and `input.reference.mappings` until T023 passes
+- [x] T025 [US2] Run T021 and T023 green
 
 **Checkpoint**: P8b's wrong-Mapping effect is impossible through the Validator.
 

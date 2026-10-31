@@ -2,9 +2,10 @@ Class SignalNoir.Tests.Application.TestResolution Extends %UnitTest.TestCase
 {
 
 /// 009 T010, T012 - operator resolution through the same Validator
-ClassMethod ReviewCase(svc, tag) As %String
+/// A Case in ReviewRequired; examCode, when given, is the one exam of its Order
+ClassMethod ReviewCase(svc, tag, examCode As %String = "") As %String
 {
-	Set caseId = ##class(SignalNoir.Tests.Support).OpenCase(svc, ##class(SignalNoir.Tests.Support).Uid(tag))
+	Set caseId = ##class(SignalNoir.Tests.Support).OpenCase(svc, ##class(SignalNoir.Tests.Support).Uid(tag), "", examCode)
 	Do svc.MarkReviewRequired(caseId, 1, "system", "moved by test")
 	Return caseId
 }
@@ -17,7 +18,7 @@ ClassMethod Outbox(caseId, type) As %Integer
 Method TestAcceptedMappingIsApprovedByTheSameOperator()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set caseId = ..ReviewCase(svc, "res-ok")
+	Set caseId = ..ReviewCase(svc, "res-ok", "GLIC-J")
 	Set v = svc.GetCase(caseId).obj.caseVersion
 	Set r = svc.ResolveReview(caseId, {"kind": "action", "operator": "Carla", "expectedCaseVersion": (v), "action": "APPLY_APPROVED_MAPPING", "params": {"mappingId": "map_glicj_soro", "mappingVersion": "2026.10.1"}, "note": "phone"})
 	Do $$$AssertTrue(r.ok, "accepted: " _ r.message)

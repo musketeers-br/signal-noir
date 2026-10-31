@@ -38,10 +38,13 @@ ClassMethod Exception(kind As %String = "timeout", httpStatus As %String = "") A
 	Return ex
 }
 
-/// Accepts an Order and records its first Exception: returns the caseId (Open)
-ClassMethod OpenCase(svc As SignalNoir.Application.CaseService, orderId As %String, runId As %String = "") As %String
+/// Accepts an Order and records its first Exception: returns the caseId (Open).
+/// examCode, when given, is the one exam the Order holds (a Case a Mapping can be applied to).
+ClassMethod OpenCase(svc As SignalNoir.Application.CaseService, orderId As %String, runId As %String = "", examCode As %String = "") As %String
 {
-	Set a = svc.AcceptOrder(..Order(orderId, , runId))
+	Set order = ..Order(orderId, , runId)
+	If examCode '= "" Set order.snapshot.exams = [{"code": (examCode)}]
+	Set a = svc.AcceptOrder(order)
 	If 'a.ok Return ""
 	Set r = svc.RecordException(orderId, ..Exception())
 	Return $Select(r.ok: r.ref, 1: "")

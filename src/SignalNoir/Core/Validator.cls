@@ -31,14 +31,49 @@ Method Validate(input As SignalNoir.Core.Dto.ValidationInput) As SignalNoir.Core
 	; 4 parameters, confidence and the versions the Proposal relied on
 	If '..ParamsValid(proposal) Return ..Block(verdict, "PARAMS_INVALID")
 
-	Set verdict.verdict = "accepted"
 	If action = "REQUEST_REVIEW" {
+		Set verdict.verdict = "accepted"
 		Do verdict.reasons.Insert("REVIEW_ALWAYS_ACCEPTED")
 		Return verdict
 	}
-	Do verdict.reasons.Insert("ACTION_IN_CATALOG")
-	If action = "APPLY_APPROVED_MAPPING" Do verdict.reasons.Insert("PARAMS_VALID")
+
+	; steps 5 to 12 all run: a block wins over the passes, and the reasons keep the step order
+	Set blocks = "", passes = $ListBuild("ACTION_IN_CATALOG")
+	If action = "APPLY_APPROVED_MAPPING" {
+		Set passes = passes _ $ListBuild("PARAMS_VALID")
+		; 6 the Mapping exists, its source code is in the Order, its conditions match
+		Set fail = ..MappingCheck(input, .pass)
+		If fail '= "" Set blocks = blocks _ $ListBuild(fail)
+		If pass '= "" Set passes = passes _ $ListBuild(pass)
+	}
+	Set codes = $Select(blocks '= "": blocks, 1: passes)
+	Set verdict.verdict = $Select(blocks '= "": "blocked", 1: "accepted")
+	For i = 1 : 1 : $ListLength(codes) Do verdict.reasons.Insert($List(codes, i))
 	Return verdict
+}
+
+/// Step 6. Returns the failing code ("" when the Mapping applies); pass is
+/// MAPPING_CONDITION_MATCHES when the Mapping has conditions and they match.
+Method MappingCheck(input As SignalNoir.Core.Dto.ValidationInput, Output pass As %String) As %String [ Private ]
+{
+	Set pass = ""
+	Set params = input.proposal.params
+	Set item = ..FindMapping(input.reference, params.mappingId, params.mappingVersion)
+	If '$IsObject(item) Return "MAPPING_NOT_FOUND"
+	If '##class(SignalNoir.Core.Conditions).HasSourceCode(input.order, item.sourceCode) Return "MAPPING_SOURCE_CODE_ABSENT"
+	If '##class(SignalNoir.Core.Conditions).Matches(item.conditions, input.order, input.reference.synonyms) Return "MAPPING_CONDITION_MISMATCH"
+	If ##class(SignalNoir.Core.Conditions).Count(item.conditions) > 0 Set pass = "MAPPING_CONDITION_MATCHES"
+	Return ""
+}
+
+/// The Mapping of the snapshot with exactly this id and version
+Method FindMapping(reference As SignalNoir.Core.Dto.ReferenceData, mappingId As %String, mappingVersion As %String) As %DynamicObject [ Private ]
+{
+	Set each = reference.mappings.%GetIterator()
+	While each.%GetNext(.index, .item) {
+		If $IsObject(item) && (item.%Get("mappingId") = mappingId) && (item.%Get("mappingVersion") = mappingVersion) Return item
+	}
+	Return ""
 }
 
 /// A blocked verdict carries only the code of the step that failed

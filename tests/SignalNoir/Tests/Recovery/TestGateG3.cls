@@ -66,7 +66,7 @@ Method TestOperatorHoldMakesNoCall()
 Method TestOperatorMappingIsHeldUntil004()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set caseId = ##class(SignalNoir.Tests.Application.TestResolution).ReviewCase(svc, "g3-mapping")
+	Set caseId = ##class(SignalNoir.Tests.Application.TestResolution).ReviewCase(svc, "g3-mapping", "GLIC-J")
 	Set r = ..Resolve(svc, caseId, "APPLY_APPROVED_MAPPING", {"mappingId": "map_glicj_soro", "mappingVersion": "2026.10.1"})
 	Do $$$AssertTrue(r.ok, "resolved: " _ r.message)
 	Set partner = ##class(SignalNoir.Tests.Fakes.ScriptedPartner).%New()
