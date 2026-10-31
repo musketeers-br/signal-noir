@@ -1,15 +1,15 @@
 {
   "items":[
     {
-      "receiptId":"rcp_K43XLSOTCAI7DOQPZZWZXHJYR4_1",
-      "orderId":"ORD-sci_K43XLSOTCAI7DOQPZZWZXHJYR4-0001",
-      "idempotencyKey":"idk_rcp_K43XLSOTCAI7DOQP",
-      "receivedAt":"2026-10-28T20:44:16.142Z",
+      "receiptId":"rcp_XV5ZJIGVFMI7DOQPZZWZXHJYR4_1",
+      "orderId":"ORD-sci_XV5ZJIGVFMI7DOQPZZWZXHJYR4-0001",
+      "idempotencyKey":"idk_rcp_XV5ZJIGVFMI7DOQP",
+      "receivedAt":"2026-10-31T13:05:26.454Z",
       "partnerId":"labpartner-a",
-      "scenarioInstanceId":"sci_K43XLSOTCAI7DOQPZZWZXHJYR4",
+      "scenarioInstanceId":"sci_XV5ZJIGVFMI7DOQPZZWZXHJYR4",
       "transactionId":"txn-test-1",
       "orderSnapshot":{
-        "orderId":"ORD-sci_K43XLSOTCAI7DOQPZZWZXHJYR4-0001",
+        "orderId":"ORD-sci_XV5ZJIGVFMI7DOQPZZWZXHJYR4-0001",
         "partnerId":"labpartner-a",
         "originUnit":"UNIT-CENTRO",
         "patient":{
@@ -32,8 +32,8 @@
         "notes":"Coleta de rotina.",
         "synthetic":true
       },
-      "externalRef":"/sim/api/v1/receipts/rcp_K43XLSOTCAI7DOQPZZWZXHJYR4_1"
+      "externalRef":"/sim/api/v1/receipts/rcp_XV5ZJIGVFMI7DOQPZZWZXHJYR4_1"
     }
   ],
-  "serverTime":"2026-10-28T20:44:16.205Z"
+  "serverTime":"2026-10-31T13:05:26.514Z"
 }

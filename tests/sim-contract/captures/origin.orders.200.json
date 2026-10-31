@@ -1,12 +1,12 @@
 {
   "items":[
     {
-      "orderId":"ORD-sci_KW5LWZ6TCAI7DOQPZZWZXHJYR4-0001",
-      "transactionId":"txn_KW5LWZ6TCAI7DOQPZZWZXHJYR4_1",
+      "orderId":"ORD-sci_XQDCYY6VFMI7DOQPZZWZXHJYR4-0001",
+      "transactionId":"txn_XQDCYY6VFMI7DOQPZZWZXHJYR4_1",
       "status":"active",
-      "emittedAt":"2026-10-28T20:44:13.645Z",
+      "emittedAt":"2026-10-31T13:05:24.005Z",
       "order":{
-        "orderId":"ORD-sci_KW5LWZ6TCAI7DOQPZZWZXHJYR4-0001",
+        "orderId":"ORD-sci_XQDCYY6VFMI7DOQPZZWZXHJYR4-0001",
         "partnerId":"labpartner-a",
         "originUnit":"UNIT-NORTE",
         "patient":{
@@ -31,5 +31,5 @@
       }
     }
   ],
-  "serverTime":"2026-10-28T20:44:13.650Z"
+  "serverTime":"2026-10-31T13:05:24.013Z"
 }
