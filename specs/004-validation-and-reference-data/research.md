@@ -225,9 +225,10 @@ before `/speckit-implement` (iris-agentic-dev was not reachable from the plannin
 ## D12 — Preconditions (Revalidation)
 
 - **Decision**: `Revalidate(input)` runs the whole pipeline plus step 8 using `input.observed`
-  (`partnerHealth {status, errorRate, windowSeconds}`, `maintenance {active}` from Partner and from
-  policy, `originStatus`, `approval {proposalId, deadline}`, `proposalCurrent`, `policyVersionInForce`,
-  `mappingVersionInForce`, `mappingExists`, `now`). Each check returns `PreconditionResult {check,
+  (`partnerHealth {status, errorRate, evidenceId}`, `partnerMaintenanceActive`, `originStatus`,
+  `approval {approvalId, proposalId, deadline}`, `proposalCurrent`, `policyVersionInForce`,
+  `mappingVersionInForce`, `mappingExists`; the clock is `input.now`; the policy's own maintenance
+  windows are read from the snapshot). Each check returns `PreconditionResult {check,
   expected, observed, passed, evidenceId}`. Only these values feed step 8, so other new Evidence cannot
   change the outcome (FR-022).
 - **Rationale**: FR-019–FR-022; 008 owns gathering the observed values and the transition to `Held`.
@@ -328,3 +329,32 @@ instance, and `/health` returns `provider.configured` as a boolean. The 004 bran
 consecutive full runs in `signalnoir-004`. The first run right after compiling the changed classes
 showed six `TestRecoverySuite` failures (`<INVALID OREF>`) that did not come back; cause not
 established. Any failure from here on is a regression.
+
+### Quickstart walked end to end (2026-10-31, T043)
+
+Container `signalnoir-004`, branch `004-validation-and-reference-data`; full recursive run: 414 tests
+passing, 0 failing.
+
+1. **Core suites** (`TestCatalogParams`, `TestMappings`, `TestEvidenceConfidenceIdentity`,
+   `TestApprovalPolicy`, `TestPreconditions`, `TestPriorReceipt`, `TestDeterminismNoIo`): all pass.
+   The static scan looked at 94 methods of 12 classes and found no I/O; the mean of 1000 validations
+   is 0.07 ms (budget 50 ms); a fresh process (`JOB`) gives the same JSON for the 14 inputs.
+2. **Fixture agreement** (`TestFixtureVerdicts`): the 13 verdicts rebuilt; 12 match (reasons and
+   `requiresApproval`). `resolution.201.action.json` is the known divergence: 004 gives
+   `ACTION_IN_CATALOG, PARAMS_VALID, MAPPING_CONDITION_MATCHES, REQUIRED_EVIDENCE_PRESENT`, the
+   fixture records the first two. The fixtures are written in the mock's older Evidence shape
+   (`patient.id`, `catalogVersion`, `orders`/`receipts`); the test translates the shape and nothing
+   else.
+3. **Reference data**: `TestStore` (version B without `map_glicj_soro` blocks the same Proposal with
+   `MAPPING_NOT_FOUND`, a run pinned to 2026.10.1 still accepts while B is in force, malformed
+   fixtures are refused and leave the versions in force alone), `TestMappingsMatchContractFixture`,
+   `TestReferenceTools`, `TestReferenceEndpoints`: all pass.
+4. **Adapter and recording**: `TestResolutionValidator` passes; the stored verdict and the
+   `ValidatorVerdict` event carry `verdict`, `reasons`, `requiresApproval` and `versions`.
+5. **Endpoints over HTTP** (`http://localhost:64987/signalnoir/api/v1`): `GET /reference/action-catalog`
+   returns four entries with `requiredEvidence` filled and `requiresApproval` false for `HOLD` and
+   `REQUEST_REVIEW`; `GET /reference/mappings?sourceCode=GLIC-J` returns the two Mappings with
+   `mappingVersion` 2026.10.1.
+
+Deviations from the quickstart text: the container is `signalnoir-004` on port 64987, not
+`signalnoir-iris` on 52773; and the Evidence of the fixtures is translated, as noted in item 2.

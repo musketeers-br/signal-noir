@@ -30,7 +30,7 @@ ClassMethod InputFor(rec As SignalNoir.Application.Model.CaseRecord, proposal As
 /// The Order snapshot of the prior Receipt the Proposal names, as the Case's own Evidence
 /// (tool.receipts_and_orders_by_patient) recorded it; "" when the Proposal names none or the
 /// Evidence does not hold it. The Validator compares its canonical key with the Order's.
-ClassMethod PriorReceiptOrder(evidence As %ListOfObjects, proposal As SignalNoir.Core.Dto.Proposal) As %DynamicObject [ Private ]
+ClassMethod PriorReceiptOrder(evidence As %ListOfObjects, proposal As SignalNoir.Core.Dto.Proposal) As %DynamicObject
 {
 	Set candidate = proposal.priorReceiptCandidate
 	If '$IsObject(candidate) || (candidate.%GetTypeOf("receiptId") '= "string") || (candidate.receiptId = "") Return ""
