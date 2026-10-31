@@ -540,11 +540,17 @@
   }
   const REASON_TEXT = {
     MAPPING_CONDITION_MISMATCH: 'The mapping condition does not match this order (specimen type).',
-    MAPPING_UNKNOWN: 'The mapping is not in the approved catalog.',
-    MAPPING_VERSION_MISMATCH: 'The mapping version is not the approved one.',
-    MAPPING_SOURCE_CODE_MISMATCH: 'The mapping does not translate this order\'s code.',
+    ACTION_NOT_IN_CATALOG: 'The action is not in the closed catalog.',
+    MAPPING_NOT_FOUND: 'No approved mapping with this id and version is in force.',
+    MAPPING_SOURCE_CODE_ABSENT: 'The order does not contain the mapping\'s source code.',
     POLICY_CODE_DISCONTINUED: 'Policy says this code is discontinued, so a retry would fail again.',
-    IDENTITY_UNRESOLVED: 'Patient identity is ambiguous. Confirm it at the origin first; hold or cancel are allowed.',
+    IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION: 'Patient identity is ambiguous. Confirm it at the origin first; hold or cancel are allowed.',
+    EVIDENCE_MISSING_POLICY: 'The required policy evidence is missing.',
+    EVIDENCE_MISSING_ATTEMPT_HISTORY: 'The attempt history evidence is missing.',
+    EVIDENCE_MISSING_PARTNER_HEALTH: 'Recent partner health evidence is missing.',
+    EVIDENCE_MISSING_MAPPING: 'Evidence of the approved mapping is missing.',
+    EVIDENCE_MISSING_ORDER_FIELD: 'Evidence of the order field the mapping depends on is missing.',
+    EVIDENCE_MISSING_HEALTH_OR_WINDOW: 'Neither partner health nor a maintenance window is in evidence.',
     ALREADY_IN_REVIEW: 'The case is already in review.'
   };
 

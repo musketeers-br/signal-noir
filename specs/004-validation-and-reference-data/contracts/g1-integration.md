@@ -5,6 +5,13 @@ for 007 and 008. Nothing here changes `contracts/openapi-signalnoir.yaml`.
 
 ## 1. Fix the prototype mock, regenerate the fixtures, flip T041
 
+**Done on 2026-10-31** (branch `g1-regenerate-fixtures-004`): the mock was fixed as in the table
+below, the exporter regenerated the fixtures (only `resolution.201.action.json` changed, and the
+other 24 came out byte for byte), `validate_fixtures.py` reports 25 valid and 0 invalid, and
+`TestFixtureVerdicts.TestResolution201` is now the same equality as the other twelve. The text that
+follows is what was done and why. Two guards of the prototype that are not Validator rules kept
+their own codes (`ALREADY_IN_REVIEW`, `POLICY_CODE_DISCONTINUED`): they are in no fixture.
+
 `contracts/fixtures/resolution.201.action.json` records the verdict of an Operator's conditional
 Mapping (`map_glicj_plasma`, with its Evidence in) as `[ACTION_IN_CATALOG, PARAMS_VALID]`. The rules
 of 004 give `[ACTION_IN_CATALOG, PARAMS_VALID, MAPPING_CONDITION_MATCHES, REQUIRED_EVIDENCE_PRESENT]`

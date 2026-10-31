@@ -55,7 +55,9 @@
       "verdict": "accepted",
       "reasons": [
         "ACTION_IN_CATALOG",
-        "PARAMS_VALID"
+        "PARAMS_VALID",
+        "MAPPING_CONDITION_MATCHES",
+        "REQUIRED_EVIDENCE_PRESENT"
       ],
       "requiresApproval": true,
       "at": "2026-10-29T13:01:38Z"

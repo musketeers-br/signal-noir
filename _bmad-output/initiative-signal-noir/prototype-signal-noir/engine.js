@@ -386,28 +386,59 @@ window.SN_ENGINE = (function () {
 
   function validName(name) { return typeof name === 'string' && name.trim().length > 0 && name.length <= 64 && name.indexOf(':') < 0; }
 
+  // The rules the Validator applies to an Operator's proposal (feature 004, research D3): the same
+  // as for an Agent's or Rules Mode's, with the closed reason codes of contracts/reason-codes.md, in
+  // pipeline order. A failure listed is every failed check; a block wins over a review; an accepted
+  // verdict lists the pass codes of the steps that apply. Two guards of this prototype are not
+  // Validator rules and keep their own codes: ALREADY_IN_REVIEW and POLICY_CODE_DISCONTINUED.
+  const REVIEW_CODES = ['IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION', 'EVIDENCE_MISSING_POLICY', 'EVIDENCE_MISSING_ATTEMPT_HISTORY', 'EVIDENCE_MISSING_PARTNER_HEALTH', 'EVIDENCE_MISSING_MAPPING', 'EVIDENCE_MISSING_ORDER_FIELD', 'EVIDENCE_MISSING_HEALTH_OR_WINDOW'];
+
   function validateOperatorAction(c, action, params) {
-    const reasons = [];
-    const snap = c.order.snapshot;
-    if (ACTIONS.indexOf(action) < 0) reasons.push('ACTION_NOT_IN_CATALOG');
-    if (action === 'REQUEST_REVIEW') reasons.push('ALREADY_IN_REVIEW');
-    if (action === 'APPLY_APPROVED_MAPPING') {
-      const m = FX.REF.mappings.find(x => x.mappingId === (params || {}).mappingId);
-      if (!m) reasons.push('MAPPING_UNKNOWN');
-      else {
-        if (m.mappingVersion !== params.mappingVersion) reasons.push('MAPPING_VERSION_MISMATCH');
-        if (m.sourceCode !== snap.exams[0].code) reasons.push('MAPPING_SOURCE_CODE_MISMATCH');
-        if (m.conditions.specimenType && m.conditions.specimenType !== snap.specimen.type) reasons.push('MAPPING_CONDITION_MISMATCH');
-      }
-    }
-    if (action === 'RETRY' && c._flags.retryWouldFail) reasons.push('POLICY_CODE_DISCONTINUED');
-    if (c._flags.identityAmbiguous && (action === 'RETRY' || action === 'APPLY_APPROVED_MAPPING')) reasons.push('IDENTITY_UNRESOLVED');
-    return {
-      verdict: reasons.length ? 'blocked' : 'accepted',
-      reasons: reasons.length ? reasons : ['ACTION_IN_CATALOG', 'PARAMS_VALID'],
-      requiresApproval: action === 'RETRY' || action === 'APPLY_APPROVED_MAPPING',
+    const requiresApproval = action === 'RETRY' || action === 'APPLY_APPROVED_MAPPING';
+    const done = (fails, passes) => ({
+      verdict: fails.length ? (fails.every(x => REVIEW_CODES.indexOf(x) >= 0) ? 'review' : 'blocked') : 'accepted',
+      reasons: fails.length ? fails : passes,
+      requiresApproval,
       at: iso(S.now)
-    };
+    });
+    if (ACTIONS.indexOf(action) < 0) return done(['ACTION_NOT_IN_CATALOG'], []);
+    const fails = [], passes = ['ACTION_IN_CATALOG'];
+    const snap = c.order.snapshot;
+    const p = params || {};
+    if (action === 'REQUEST_REVIEW') fails.push('ALREADY_IN_REVIEW');
+    let mapping = null;
+    if (action === 'APPLY_APPROVED_MAPPING') {
+      passes.push('PARAMS_VALID');
+      mapping = FX.REF.mappings.find(x => x.mappingId === p.mappingId && x.mappingVersion === p.mappingVersion) || null;
+      if (!mapping) fails.push('MAPPING_NOT_FOUND');
+      else if (!snap.exams.some(e => e.code === mapping.sourceCode)) fails.push('MAPPING_SOURCE_CODE_ABSENT');
+      else if (mapping.conditions.specimenType && mapping.conditions.specimenType !== snap.specimen.type) fails.push('MAPPING_CONDITION_MISMATCH');
+      else if (Object.keys(mapping.conditions).length) passes.push('MAPPING_CONDITION_MATCHES');
+    }
+    if (action === 'RETRY') {
+      if (c._flags.retryWouldFail) fails.push('POLICY_CODE_DISCONTINUED');
+      else passes.push('RETRY_BUDGET_AVAILABLE');
+    }
+    if (c._flags.identityAmbiguous && (action === 'RETRY' || action === 'APPLY_APPROVED_MAPPING')) fails.push('IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION');
+    // minimum Evidence of the Action: only what counts (a fact of this Case, not obsolete, not suspicious)
+    const has = src => c.evidence.some(e => e.source === src && !e.obsoletedBy && !e.suspicious);
+    const missing = [];
+    if (action === 'RETRY') {
+      if (!has('tool.policies')) missing.push('EVIDENCE_MISSING_POLICY');
+      if (!has('tool.partner_failure_history')) missing.push('EVIDENCE_MISSING_ATTEMPT_HISTORY');
+      if (!has('tool.partner_health')) missing.push('EVIDENCE_MISSING_PARTNER_HEALTH');
+    } else if (action === 'APPLY_APPROVED_MAPPING') {
+      if (!has('tool.policies')) missing.push('EVIDENCE_MISSING_POLICY');
+      if (mapping) {
+        if (!has('tool.mapping_catalog')) missing.push('EVIDENCE_MISSING_MAPPING');
+        if (mapping.conditions.specimenType && !(snap.specimen && snap.specimen.type)) missing.push('EVIDENCE_MISSING_ORDER_FIELD');
+      }
+    } else if (action === 'HOLD') {
+      if (!has('tool.partner_health') && !has('tool.policies')) missing.push('EVIDENCE_MISSING_HEALTH_OR_WINDOW');
+    }
+    if (missing.length) fails.push.apply(fails, missing);
+    else if (action !== 'REQUEST_REVIEW') passes.push('REQUIRED_EVIDENCE_PRESENT');
+    return done(fails, passes);
   }
 
   function scheduleAfterDenial(c, operator, reason) {
@@ -530,8 +561,8 @@ window.SN_ENGINE = (function () {
 
       const v = validateOperatorAction(c, b.action, b.params || {});
       const firstEvidence = (c.dossier && c.dossier.relevantEvidenceIds && c.dossier.relevantEvidenceIds[0]) || (c.evidence[0] || {}).evidenceId;
-      if (v.verdict === 'blocked') {
-        event(c, 'ValidatorVerdict', 'system', null, { verdict: 'blocked', reasons: v.reasons, requiresApproval: v.requiresApproval, author: by, action: b.action });
+      if (v.verdict !== 'accepted') {
+        event(c, 'ValidatorVerdict', 'system', null, { verdict: v.verdict, reasons: v.reasons, requiresApproval: v.requiresApproval, author: by, action: b.action });
         return respond('POST', path, body, 422, err('VALIDATION_FAILED', 'The validator blocked the operator proposal', { verdict: v, caseVersion: c.caseVersion, lastEventSeq: c.lastEventSeq, serverTime: iso(S.now) }));
       }
       const prop = propose(c, {

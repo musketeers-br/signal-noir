@@ -100,7 +100,7 @@ ok(until('case_0b6f19', c => c.state === 'ReviewRequired'), 'ambiguous → Revie
 c = E.S.cases.get('case_0b6f19');
 ok(c.dossier.collidingRecords.length === 2, 'dossier has 2 colliding records');
 r = E.api.resolve('case_0b6f19', { kind: 'action', operator: 'Henrique', expectedCaseVersion: c.caseVersion, action: 'RETRY', params: {} });
-ok(r.status === 422 && r.body.error.details.verdict.reasons.includes('IDENTITY_UNRESOLVED'), 'retry on ambiguous → 422 IDENTITY_UNRESOLVED');
+ok(r.status === 422 && r.body.error.details.verdict.reasons.includes('IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION') && r.body.error.details.verdict.verdict === 'review', 'retry on ambiguous → 422 IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION (a review)');
 r = E.api.resolve('case_0b6f19', { kind: 'cancel', operator: 'Henrique', expectedCaseVersion: c.caseVersion, reason: '' });
 ok(r.status === 400, 'cancel without reason → 400');
 r = E.api.resolve('case_0b6f19', { kind: 'cancel', operator: 'Henrique', expectedCaseVersion: c.caseVersion, reason: 'Origin will resend with the confirmed patient' });

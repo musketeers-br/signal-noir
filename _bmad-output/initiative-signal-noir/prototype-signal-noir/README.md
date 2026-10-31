@@ -24,7 +24,7 @@ O relógio é virtual: começa em 29/10/2026, 10:00 BRT, e anda 1 s por segundo 
 | 4 | *The order is cancelled at the origin after approval* | Aprovar, a Revalidação falha e o Caso termina `Cancelled`, sem envio. | R15 |
 | 5 | *The partner accepts but the response is lost* | Banner violeta "Outcome unknown". "Try to send again with a new proposal" é bloqueado (`CommandDiscarded`). A Reconciliação encontra o Recibo, sem reenvio. | R16 |
 | 6 | *The LLM provider is unavailable* (já aberto) | O Dossiê separa "What was checked" de "What we don't know". Resolver com `map_glicj_soro` dá 422 do validador; `map_glicj_plasma` resolve. | R10, R17 |
-| 7 | *Ambiguous patient identity* (já aberto) | Registros em colisão com os campos divergentes marcados. `RETRY` é bloqueado (`IDENTITY_UNRESOLVED`); `HOLD` e `Cancel` são aceitos. | R10 |
+| 7 | *Ambiguous patient identity* (já aberto) | Registros em colisão com os campos divergentes marcados. `RETRY` é bloqueado (`IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION`); `HOLD` e `Cancel` são aceitos. | R10 |
 | 8 | *The "failed" order was already delivered* (P9, condicionado) | `ResolvedByPriorReceipt` sem nenhuma Execução. | R18 |
 | 9 | Aba **Benchmark** | Relatório em duas partes, com um empate visível. Os números são de layout, não medidos. | R11 |
 

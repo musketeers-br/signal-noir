@@ -77,6 +77,11 @@ Operator path uses the same reason rules, regenerate the fixtures with
 Still divergent on `master` as of 2026-10-26: the 2026-10-25 fixture change only renamed
 `ALTA/MEDIA/BAIXA` to `HIGH/MEDIUM/LOW`.
 
+**Resolved on 2026-10-31.** The mock's `validateOperatorAction` now applies the rules of 004 with the
+closed reason codes (see [g1-integration.md](./g1-integration.md)); the exporter regenerated the
+fixtures, and only `resolution.201.action.json` changed, by gaining the two missing reasons. The 25
+fixtures validate against the contract. `TestFixtureVerdicts` now agrees on all 13 verdicts.
+
 ## Items for Henry
 
 See [coordination-004-006-009.md](./coordination-004-006-009.md): the edits to files merged by
