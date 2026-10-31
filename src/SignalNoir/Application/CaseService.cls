@@ -1833,7 +1833,7 @@ Method ApplyMeta(inv As SignalNoir.Application.Model.InvestigationRecord, meta A
 {
 	Set inv.durationMs = ..NowMs() - inv.startedMs
 	If '$IsObject(meta) Return
-	For key = "provider", "model", "promptVersion", "policyVersion", "mappingVersion", "tokensIn", "tokensOut", "estCostUsd" {
+	For key = "provider", "model", "promptVersion", "policyVersion", "mappingVersion", "tokensIn", "tokensOut", "tokensCached", "estCostUsd" {
 		If meta.%Get(key) '= "" Set $Property(inv, key) = meta.%Get(key)
 	}
 }
@@ -2033,7 +2033,7 @@ Method NewCase(orderRec As SignalNoir.Application.Model.OrderRecord, previousCas
 	Set rec.caseVersion = 1
 	Set rec.lastEventSeq = 0
 	Set rec.runId = orderRec.runId
-	Set rec.proposerMode = "agent"
+	Set rec.proposerMode = ##class(SignalNoir.Proposers.Factory).ConfiguredMode()
 	Set rec.synthetic = 1
 	Set rec.replay = 0
 	Set rec.createdAt = now

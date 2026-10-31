@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-29
 
-**Status**: Draft
+**Status**: Ready for planning (spike FR-014 done on 2026-10-31; route decided by Henry: direct HTTP client)
 
 **Input**: User request to add the OpenAI Decisions API guide to the project and to keep the
 approach usable for any critical system with interoperability, not only the laboratory scenario.
@@ -187,12 +187,21 @@ report lists Decisions with counts and denominators, and that a replayed answer 
   origin MUST NOT have a shortcut, a relaxed rule or a separate validation path (Constitution III).
 - **FR-013**: The Benchmark MUST list Decisions as a contender beside Agent and Rules, with the same
   Tools and protections, and a frozen question set, thresholds and model.
-- **FR-014**: Before planning, a spike MUST show on build 154, through the AI Hub provider
-  configuration, one successful `decisions` call with a `choice` and a `predicate` question, and one
-  refused or failed call mapped to a value. The roteiro is
+- **FR-014**: Before planning, a spike MUST show on build 154 one successful `decisions` call with a
+  `choice` and a `predicate` question, and one refused or failed call mapped to a value. (Done on
+  2026-10-31 through the direct HTTP route; the AI Hub route is not available on build 154.) The roteiro is
   [`docs/verification/013-decisions-spike.md`](../../docs/verification/013-decisions-spike.md). The
-  spike's evidence goes into the same file. If the
-  spike fails, the mode MUST NOT be built on a direct HTTP client without a new decision by the user.
+  spike's evidence goes into the same file.
+
+- **FR-015**: `decisions` MUST be a value of the contract's `ProposerMode` and of the Timeline `Actor`,
+  added through a contract change; nothing else in the contract changes.
+- **FR-016**: A proposer answer refused by its provider MUST send the Case to review with the reason
+  "proposer refused: <provider reason>", and an uncertain Decisions answer with the reasons of User
+  Story 2. Neither reason may contain the provider's raw error text (the 401 message echoes part of
+  the key).
+- **FR-017**: The deployment MUST choose the proposer mode of new Cases with `SN_PROPOSER_MODE`
+  (`agent` by default; `rules` and `decisions` allowed). An unknown value MUST fall back to `agent`.
+  The mode in effect is visible on every Case (`proposerMode`).
 
 ## Success Criteria *(mandatory)*
 
@@ -206,22 +215,27 @@ report lists Decisions with counts and denominators, and that a replayed answer 
 - **SC-005**: The FR-014 spike is recorded in `docs/verification/` with its result, before the plan is
   written.
 
-## Open Questions *(decide before planning)*
+## Clarifications
 
-1. **Route (decided: AI Hub).** The call goes through the AI Hub provider configuration, as the Agent
-   does, with no direct HTTP client in the application. **Not yet verified:** the repository's AI Hub
-   notes (`docs/ai-hub-start.md`, `docs/verification/002-v1-v6-build154.md`) do not say whether build
-   154 can call `POST /v1/decisions` through `%AI.Provider`. A spike MUST answer this before the plan
-   is written (see FR-014). If AI Hub cannot reach the endpoint, this spec is blocked, and the route
-   must be reopened with the user.
-2. **Model.** The guide names `gpt-6-luna`. Confirm the exact model id and its availability on our
-   account. The reference summary was produced from the page by a secondary read, so the page must
-   be checked first.
-3. **Thresholds.** The confidence threshold and the tie margin need labelled examples. They MUST be
-   calibrated on development data, never on the reserved Benchmark set (Constitution VIII).
-4. **Diagnosis.** The API returns probabilities, not sentences. The plan assumes that Diagnosis claims
-   come from the `predicate` questions and the Evidence ids, not from free text. Confirm this before
-   the plan is written.
+### Session 2026-10-31
+
+- **Route.** The spike (`docs/verification/013-decisions-spike.md`) showed that AI Hub build 154 does
+  not expose `POST /v1/decisions`: `%AI.Provider` offers only chat completion, and its capabilities do
+  not include decisions. Henry decided on a **direct HTTP client** to the OpenAI endpoint. The live
+  spike on that route passed: one `choice` and one `predicate` answered in 930 ms; an unknown model
+  (404 `model_not_found`) and an invalid key (401 `invalid_api_key`) came back as errors; no key in
+  the logs. This is the one proposer that does not run through AI Hub, and the README says so.
+- **Model.** `gpt-6-luna`, the only model the official page lists, verified on our account.
+- **Thresholds.** Start values: top probability ≥ 0.5, tie margin 0.1, predicate ≥ 0.7. They are
+  versioned with the question set (`decisions-v1`), are not calibrated yet, and MUST be calibrated on
+  development data only, never on the reserved Benchmark set (Constitution VIII).
+- **Diagnosis.** Confirmed: claims come from the `predicate` answers and the Evidence ids; the
+  summary is a fixed sentence built from the chosen option and its probability. No model free text.
+- **Mode selection.** A Case gets the `decisions` mode only when the deployment sets
+  `SN_PROPOSER_MODE=decisions` (FR-011, off by default). The key is `SN_DECISIONS_API_KEY`, or the
+  Agent's `SN_AI_API_KEY` when the Agent's provider is `openai`.
+- **Refusal reason.** A refused answer goes to review with the reason "proposer refused" instead of
+  "invalid proposer response", for every proposer (FR-016).
 
 ## Out of Scope
 

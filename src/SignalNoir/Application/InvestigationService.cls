@@ -107,7 +107,7 @@ ClassMethod Work(investigationId As %String)
 		Set proposer = $ClassMethod(inv.proposerClass, "%New")
 		Set answer = proposer.Propose(context)
 		If $IsObject(answer.details) {
-			For key = "provider", "model", "promptVersion", "tokensIn", "tokensOut", "estCostUsd" {
+			For key = "provider", "model", "promptVersion", "tokensIn", "tokensOut", "tokensCached", "estCostUsd" {
 				If answer.details.%Get(key) '= "" Do meta.%Set(key, answer.details.%Get(key))
 			}
 		}
@@ -205,7 +205,10 @@ ClassMethod Versions(svc As SignalNoir.Application.CaseService, caseId As %Strin
 ClassMethod FailureReason(r As SignalNoir.Core.Result) As %String
 {
 	If r.code = "provider_unavailable" Return "provider unavailable: " _ r.message
-	If (r.code = "invalid_response") || (r.code = "refused") Return "invalid proposer response"
+	If r.code = "invalid_response" Return "invalid proposer response"
+	; 013 FR-016: a refusal and an indecisive typed answer keep their own reason
+	If r.code = "refused" Return "proposer refused: " _ r.message
+	If r.code = "uncertain" Return r.message
 	If r.code = "budget_exceeded" Return r.message
 	Return "proposer failed: " _ r.message
 }

@@ -43,7 +43,8 @@ Method TestRefusalProseAndFailure()
 		Do $ClassMethod(S, "Investigate", cmd, "SignalNoir.Tests.Fakes.AgentWithFakeRuntime")
 		Set c = svc.GetCase(caseId).obj
 		Do $$$AssertEquals(c.state, "ReviewRequired", "review for " _ script)
-		Set expected = $Select(script [ "provider_unavailable": "provider unavailable: fake-ai-hub timed out", 1: "invalid proposer response")
+		; 013 FR-016: a refusal keeps its own reason
+		Set expected = $Select(script [ "provider_unavailable": "provider unavailable: fake-ai-hub timed out", script [ "refused:": "proposer refused: content policy", 1: "invalid proposer response")
 		Do $$$AssertEquals(c.reviewReason, expected, "reason for " _ script)
 		Do $$$AssertEquals(c.proposals.Count(), 0, "nothing shown as a Proposal")
 	}
