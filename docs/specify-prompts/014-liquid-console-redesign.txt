@@ -1,0 +1,22 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/fixtures/**, specs/005-operator-console/spec.md. Do not invent fields, states, actions, endpoints or error codes.
+- Visual reference (non-normative): specs/014-liquid-console-redesign/design/ (signal.css, Foundations.dc.html, Main.dc.html), generated with Claude Design: https://claude.ai/artifact/BTNyMepHb9VeoTevRfGDQX . Where the reference and the spec disagree, the spec wins.
+- Existing visual system: _bmad-output/initiative-signal-noir/ux-signal-noir/DESIGN.md and EXPERIENCE.md. Its semantic color meanings (accent, fact, interpretation, attention, hold, success, danger, focus) and its state glyph+label rule are kept. Its Elevation & Depth, Shapes and dark-mode rules are superseded by this feature, and the spec must say so.
+- Behavior only. No language, framework, library, file layout or storage choice in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Enums, identifiers and contract values stay in English.
+
+Feature: apply the new visual design to the complete Operator console (feature 005).
+
+Describe the behavior:
+1. Every view of the console (Case list, Case detail with its six layers and Timeline, approval dialog, Review Dossier and resolution form, toasts, connection note, empty and not-found states, top bar or rail) uses one visual system: soft raised and inset surfaces, liquid-glass layers only for what floats, one teal accent.
+2. Light and dark themes, both complete. The console starts in the system preference, a top-bar control switches theme, the choice is remembered in the browser and wins over the system preference, and there is no flash of the wrong theme.
+3. Nothing about behavior changes: what is shown, what is sent, polling, routes, copy, focus management and server-answer handling stay as in 005, and every 005 test passes without edits to its assertions.
+4. Meaning survives the style: fact vs interpretation, attention, hold, success, danger and "outcome unknown" stay distinct; state is always glyph plus label; SYNTHETIC and REPLAY labels stay everywhere; the pill shape stays reserved for Case state chips.
+5. Responsive in the three bands of 005 (1100+, 640-1099, under 640), no horizontal scroll at 360 px, touch targets of at least 44 px, and no navigation entry for a screen that does not exist.
+6. WCAG 2.2 AA in both themes, plus graceful fallback: no blur support, reduced transparency, reduced motion, forced colors, print.
+7. The look is defined once as named tokens with light and dark values, and DESIGN.md is updated to match and to mark what it supersedes. No network request outside the console is needed to render (no third-party web fonts).
+8. The reference shows invented sample data, a quick-approve button, four summary counts and navigation for screens that do not exist. None of these is adopted unless the contract and the earlier specs support it.
