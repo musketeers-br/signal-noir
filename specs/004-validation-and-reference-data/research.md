@@ -358,3 +358,26 @@ passing, 0 failing.
 
 Deviations from the quickstart text: the container is `signalnoir-004` on port 64987, not
 `signalnoir-iris` on 52773; and the Evidence of the fixtures is translated, as noted in item 2.
+
+### Diff review (2026-10-31, T046)
+
+Against the Constitution, the spec, the plan and the tests, on the changes since PR #21 of `master`
+(the earlier ones were reviewed when they were merged):
+
+- **Only the listed files changed**, with these exceptions, each needed by a requirement:
+  `Application/InvestigationService.cls` (a Proposal's policy version is read from `policyVersion`
+  of the Tool's result, so `POLICY_VERSION_UNCHANGED` compares real versions);
+  `Application/ResolutionValidator.cls` (`RunFor`, `PriorReceiptOrder`, the Proposal's `caseId`);
+  and the test supports of other features, whose Cases had no Evidence or an Order without the
+  exam the Mapping needs (`Support`, `TestResolution`, `TestResolutionValidator`, `TestGateG3`,
+  `TestInvestigation`, `Fakes/ScriptedSource`).
+- **`contracts/` at the root is untouched.** The fixture divergence is asserted, not edited.
+- **No rule reads the origin.** The only `origin` in `Core/Validator.cls` is `originStatus`, the
+  Origin system's answer about the Order. `TestCatalogParams`, `TestMappings`, `TestPreconditions`
+  and `TestFixtureVerdicts` check that the author of a Proposal changes nothing.
+- **No second recorder of verdicts.** `ValidatorVerdict` events are still appended only by
+  `CaseService` (the investigation path and `ResolveReview`).
+- **The Core classes pass the no-I/O scan** (`TestDeterminismNoIo`: 94 methods of 12 classes).
+- **No new Action, reason code, precondition or condition field** can be added by an input: the
+  catalog, `Core.Reasons`, `Vocab` and `Core.Conditions` are code.
+

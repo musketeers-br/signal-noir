@@ -194,8 +194,8 @@ and agreed with Henry at T002): `Core/Validator.cls`, `Core/Port/Validator.cls`,
 - [x] T042 Write tests/SignalNoir/Tests/Core/Validator/TestDeterminismNoIo.cls: static scan of the compiled methods of `SignalNoir.Core.Validator`, `Reasons`, `Conditions` and the four new DTOs (research D13); every input of `Inputs.cls` validated twice and across a fresh process (`JOB`) gives identical JSON; 1000 validations mean ≤ 50 ms (SC-005)
 - [x] T043 Walk specs/004-validation-and-reference-data/quickstart.md end to end and record results in research.md "Verification log"
 - [x] T044 Update specs/004-validation-and-reference-data/plan.md: iris-agentic-dev gate to pass citing V1 and the baseline, or list what failed
-- [ ] T045 [P] Write specs/004-validation-and-reference-data/contracts/g1-integration.md for the integrator: (1) fix the prototype mock for `resolution.201.action.json`, regenerate fixtures with `tools/export-api-fixtures.js`, re-run `contracts/tools/validate_fixtures.py`, flip T041's expectation; (2) remove `identity` from the `ValidationInput` row of docs/seams.md and its spec-side copy (documentation only); (3) Henry's answer on the Rules specimen synonyms (coordination request 1)
-- [ ] T046 [P] Review the diff against the Constitution, spec, plan and tests: only the listed files changed; `contracts/` untouched; Core classes pass the no-I/O scan; `origin` read by no rule; no second recorder of verdicts
+- [x] T045 [P] Write specs/004-validation-and-reference-data/contracts/g1-integration.md for the integrator: (1) fix the prototype mock for `resolution.201.action.json`, regenerate fixtures with `tools/export-api-fixtures.js`, re-run `contracts/tools/validate_fixtures.py`, flip T041's expectation; (2) remove `identity` from the `ValidationInput` row of docs/seams.md and its spec-side copy (documentation only); (3) Henry's answer on the Rules specimen synonyms (coordination request 1)
+- [x] T046 [P] Review the diff against the Constitution, spec, plan and tests: only the listed files changed; `contracts/` untouched; Core classes pass the no-I/O scan; `origin` read by no rule; no second recorder of verdicts
 
 ---
 
