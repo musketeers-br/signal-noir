@@ -182,9 +182,9 @@ and agreed with Henry at T002): `Core/Validator.cls`, `Core/Port/Validator.cls`,
 
 **Independent Test**: quickstart §1 (TestPriorReceipt).
 
-- [ ] T038 [P] [US7] Write failing tests/SignalNoir/Tests/Core/Validator/TestPriorReceipt.cls covering spec US7 AS1–AS3, with keys computed by `SignalNoir.Core.Canon.EquivalenceKey` on `input.order` and `input.priorReceiptOrder` (mixed-case, unordered codes and a non-UTC `collectedAt` still match)
-- [ ] T039 [US7] Add step 12 to src/SignalNoir/Core/Validator.cls (`prior_receipt_confirmed` with `[EQUIVALENCE_KEY_MATCH]`, `requiresApproval = 0`) until T038 passes
-- [ ] T040 [US7] Run T038 green
+- [x] T038 [P] [US7] Write failing tests/SignalNoir/Tests/Core/Validator/TestPriorReceipt.cls covering spec US7 AS1–AS3, with keys computed by `SignalNoir.Core.Canon.EquivalenceKey` on `input.order` and `input.priorReceiptOrder` (mixed-case, unordered codes and a non-UTC `collectedAt` still match)
+- [x] T039 [US7] Add step 12 to src/SignalNoir/Core/Validator.cls (`prior_receipt_confirmed` with `[EQUIVALENCE_KEY_MATCH]`, `requiresApproval = 0`) until T038 passes
+- [x] T040 [US7] Run T038 green
 
 ---
 

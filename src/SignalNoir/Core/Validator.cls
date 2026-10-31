@@ -45,12 +45,22 @@ Method Evaluate(input As SignalNoir.Core.Dto.ValidationInput, observe As %Boolea
 	; 4 parameters, confidence and the versions the Proposal relied on
 	If '..ParamsValid(proposal) Return ..Block(verdict, "PARAMS_INVALID")
 
-	; REQUEST_REVIEW is always accepted; an ambiguous identity is only reported with it
-	If action = "REQUEST_REVIEW" {
+	; REQUEST_REVIEW is always accepted; an ambiguous identity is only reported with it. One that
+	; names a prior Receipt candidate is the exception: it asks the Validator to confirm
+	; something, so identity and equivalence are decided (9, 12) and nothing is confirmed by inference.
+	Set candidate = ..HasCandidate(proposal)
+	If (action = "REQUEST_REVIEW") && 'candidate {
 		Set verdict.verdict = "accepted"
 		Do verdict.reasons.Insert("REVIEW_ALWAYS_ACCEPTED")
 		If ..IdentityAmbiguous(input) Do verdict.reasons.Insert("IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION")
 		Return verdict
+	}
+	If action = "REQUEST_REVIEW" {
+		Set fails = ""
+		If ..IdentityAmbiguous(input) Set fails = $ListBuild("IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION")
+		Set confirmed = ..KeysMatch(input)
+		If 'confirmed Set fails = fails _ $ListBuild("EQUIVALENCE_KEY_MISMATCH")
+		Return ..Compose(verdict, fails, "", confirmed)
 	}
 
 	Set fails = "", passes = $ListBuild("ACTION_IN_CATALOG"), item = ""
@@ -85,16 +95,53 @@ Method Evaluate(input As SignalNoir.Core.Dto.ValidationInput, observe As %Boolea
 	}
 	; 11 confidence
 	If proposal.confidence = "LOW" Set fails = fails _ $ListBuild("CONFIDENCE_LOW")
+	; 12 prior Receipt, only when the Proposal names a candidate
+	Set confirmed = 0
+	If candidate {
+		Set confirmed = ..KeysMatch(input)
+		If 'confirmed Set fails = fails _ $ListBuild("EQUIVALENCE_KEY_MISMATCH")
+	}
+	Return ..Compose(verdict, fails, passes, confirmed)
+}
 
+/// Any block makes the verdict `blocked`, otherwise any review makes it `review`, and the reasons
+/// are every failed check in pipeline order. With none, a confirmed prior Receipt is
+/// `prior_receipt_confirmed` (reason EQUIVALENCE_KEY_MATCH, no Approval: nothing is sent);
+/// anything else is `accepted` with the pass codes.
+Method Compose(verdict As SignalNoir.Core.Dto.ValidatorVerdict, fails As %List, passes As %List, confirmed As %Boolean) As SignalNoir.Core.Dto.ValidatorVerdict [ Private ]
+{
 	Set codes = passes, verdict.verdict = "accepted"
 	If fails '= "" {
 		Set codes = fails, verdict.verdict = "review"
 		For i = 1 : 1 : $ListLength(fails) {
 			If ##class(SignalNoir.Core.Reasons).Kind($List(fails, i)) = "block" Set verdict.verdict = "blocked"
 		}
+	} ElseIf confirmed {
+		Set codes = $ListBuild("EQUIVALENCE_KEY_MATCH"), verdict.verdict = "prior_receipt_confirmed", verdict.requiresApproval = 0
 	}
 	For i = 1 : 1 : $ListLength(codes) Do verdict.reasons.Insert($List(codes, i))
 	Return verdict
+}
+
+/// The Proposal names a prior Receipt candidate (a receipt or an order id)
+Method HasCandidate(proposal As SignalNoir.Core.Dto.Proposal) As %Boolean [ Private ]
+{
+	Set candidate = proposal.priorReceiptCandidate
+	If '$IsObject(candidate) || 'candidate.%IsA("%Library.DynamicObject") Return 0
+	For key = "receiptId", "orderId" {
+		If (candidate.%GetTypeOf(key) = "string") && (candidate.%Get(key) '= "") Return 1
+	}
+	Return 0
+}
+
+/// Step 12: the canonical equivalence keys of the current Order and of the candidate's Order
+/// snapshot are equal. A key that cannot be built (a missing snapshot, an unreadable collection
+/// time) equals nothing, not even another such key.
+Method KeysMatch(input As SignalNoir.Core.Dto.ValidationInput) As %Boolean [ Private ]
+{
+	Set current = ##class(SignalNoir.Core.Canon).FromSnapshot(input.order)
+	If current = "" Return 0
+	Return (current = ##class(SignalNoir.Core.Canon).FromSnapshot(input.priorReceiptOrder))
 }
 
 /// Whether an Approval by `actor` is admissible within `run` (FR-012). `benchmark` approves only

@@ -54,6 +54,30 @@ Method TestInputForBuildsTheInputFromTheCase()
 	Do $$$AssertEquals(in.reference.policyVersion _ ":" _ in.reference.mappingVersion, inForce.obj.policyVersion _ ":" _ inForce.obj.mappingVersion, "snapshot from Store.For(run)")
 }
 
+Method TestInputForTakesThePriorReceiptOrderFromTheCasesEvidence()
+{
+	Set svc = ##class(SignalNoir.Application.CaseService).Default()
+	Set caseId = ..Investigated(svc, "rv-prior", .cmd, .started)
+	Set row = ##class(SignalNoir.Application.Model.EvidenceRecord).%New()
+	Set row.evidenceId = "evid_prior_" _ $Increment(^SignalNoir.TestSeq)
+	Set row.caseId = caseId
+	Set row.source = "tool.receipts_and_orders_by_patient"
+	Set row.kind = "fact"
+	Set row.observedAt = "2026-10-31T12:00:00Z"
+	Set row.resultJson = {"items": [{"receiptId": "RCP-1", "orderId": "ORD-1", "orderSnapshot": {"patient": {"patientId": "P-1"}}}, {"receiptId": "RCP-2", "orderId": "ORD-2", "orderSnapshot": {"patient": {"patientId": "P-2"}}}]}.%ToJSON()
+	Do $$$AssertTrue($$$ISOK(row.%Save()), "Evidence recorded")
+	Set rec = ##class(SignalNoir.Application.Model.CaseRecord).%OpenId(caseId)
+	Set proposal = ..P8bProposal(started)
+	Set in = ##class(SignalNoir.Application.ResolutionValidator).InputFor(rec, proposal, "2026-10-31T12:00:00Z")
+	Do $$$AssertEquals(in.priorReceiptOrder, "", "no candidate named: no prior Order")
+	Set proposal.priorReceiptCandidate = {"receiptId": "RCP-2", "orderId": "ORD-2"}
+	Set in = ##class(SignalNoir.Application.ResolutionValidator).InputFor(rec, proposal, "2026-10-31T12:00:00Z")
+	Do $$$AssertEquals(in.priorReceiptOrder.patient.patientId, "P-2", "the snapshot of the receipt the Proposal names")
+	Set proposal.priorReceiptCandidate = {"receiptId": "RCP-404", "orderId": "ORD-404"}
+	Set in = ##class(SignalNoir.Application.ResolutionValidator).InputFor(rec, proposal, "2026-10-31T12:00:00Z")
+	Do $$$AssertEquals(in.priorReceiptOrder, "", "a receipt the Evidence does not hold: nothing is invented")
+}
+
 Method TestInvestigationPathRecordsVersions()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
