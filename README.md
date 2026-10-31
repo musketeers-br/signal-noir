@@ -1,234 +1,200 @@
- [![Gitter](https://img.shields.io/badge/Available%20on-Intersystems%20Open%20Exchange-00b2a9.svg)](https://openexchange.intersystems.com/package/intersystems-iris-dev-template)
- [![Quality Gate Status](https://community.objectscriptquality.com/api/project_badges/measure?project=intersystems_iris_community%2Fintersystems-iris-dev-template&metric=alert_status)](https://community.objectscriptquality.com/dashboard?id=intersystems_iris_community%2Fintersystems-iris-dev-template)
- [![Reliability Rating](https://community.objectscriptquality.com/api/project_badges/measure?project=intersystems_iris_community%2Fintersystems-iris-dev-template&metric=reliability_rating)](https://community.objectscriptquality.com/dashboard?id=intersystems_iris_community%2Fintersystems-iris-dev-template)
+# Signal Noir
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat&logo=AdGuard)](LICENSE)
-# intersystems-iris-dev-template
-This is a basic template for a development environment to work with ObjectScript in InterSystems IRIS. It helps you edit, compile, commit/push, debug and test your ObjectScript code. It also aids in packaging your application as a module installable with IPM.
-The template is embedded python compatible.
+AI exception resolution for synthetic lab Orders, on InterSystems IRIS with AI Hub.
 
-## Description
-This repository provides a ready-to-go development environment for coding productively with InterSystems ObjectScript. This template:
-* Runs InterSystems IRIS Community Edition in a docker container
-* Creates a new namespace and database IRISAPP
-* Loads the ObjectScript code into IRISAPP database using Package Manager
-* Promotes development with the 'Package First' paradigm. [Watch the video](https://www.youtube.com/watch?v=havPyPbUj1I)
-* Provides a unit testing environment: sample unit tests, tests module enablement
-* Ready for embedded python development: ENV varialbes are set up, CallIn service is On, all modules in requirements.txt will be installed during docker build.
+When an Order sent to a partner lab fails, Signal Noir opens a **Case**. An Agent investigates it
+with read-only tools and proposes one Action from a closed catalog. Every Proposal passes the same
+deterministic Validator. An Operator approves it, and the effect is executed at most once,
+reconciled against the partner's Receipt. A Case the system cannot settle goes to an Operator with
+a Review Dossier.
 
-## Usage
-Start a new dev repository with InterSystems IRIS using this one as a template.
-Once you clone the new repo to your laptop and open VSCode (with the [InterSystems ObjectScript Extension Pack](https://marketplace.visualstudio.com/items?itemName=intersystems-community.objectscript-pack) installed) you'll be able to start development immediately.
+> **All data is synthetic.** Orders, patients and partners come from the built-in scenario
+> Simulator. Signal Noir makes no clinical decision.
 
-## Prerequisites
-Make sure you have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [Docker desktop](https://www.docker.com/products/docker-desktop) installed.
+## Contents
 
-## Installation
+- [How it works](#how-it-works)
+- [What you need](#what-you-need)
+- [Install](#install)
+- [Start, check, stop](#start-check-stop)
+- [Configuration](#configuration)
+- [Data and reset](#data-and-reset)
+- [Limitations](#limitations)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Team](#team)
 
-Clone/git pull the repo into any local directory
+## How it works
 
-```
-$ git clone https://github.com/intersystems-community/intersystems-iris-dev-template.git
-```
+1. **Intake.** The Simulator's Origin publishes Orders. Signal Noir reads the feed every minute,
+   accepts each Order and delivers it once to the partner lab.
+2. **Case.** A delivery that ends without a valid Receipt is an Exception, and it opens a Case.
+   Every fact lands on the Case's Timeline.
+3. **Investigation.** The Agent runs inside the IRIS Production through AI Hub (`%AI.Agent`). It
+   reads partner health, Order history, Origin status and Receipts, and proposes one of `RETRY`,
+   `APPLY_APPROVED_MAPPING`, `HOLD` or `REQUEST_REVIEW`. The diagnosis cites the Evidence it used.
+   Without a provider, the Case goes straight to review.
+4. **Validation and approval.** The deterministic Validator checks every Proposal, whoever wrote
+   it: Agent, Rules or Operator. An Operator approves or rejects it in the console. An Approval
+   binds that exact Proposal and expires after 15 minutes.
+5. **Execution.** Immediately before the effect, the system checks again that the partner is
+   healthy and the Order is still active. It then sends the Order with an idempotency key derived
+   from the effect. An uncertain answer is reconciled against the partner's Receipts before
+   anything is sent again. Restarts, repeated clicks and late workers never produce a second
+   Receipt.
+6. **Review.** A Case the system cannot settle reaches `ReviewRequired` with a Dossier: what is
+   known, what is missing and why. The Operator then resolves or cancels it.
 
-Open the terminal in this directory and call the command to build and run InterSystems IRIS in container:
-*Note: Users running containers on a Linux CLI, should use "docker compose" instead of "docker-compose"*
-*See [Install the Compose plugin](https://docs.docker.com/compose/install/linux/)*
+The console is at `http://localhost:52773/signalnoir/`, and the API at
+`http://localhost:52773/signalnoir/api/v1` (contract: [`contracts/openapi-signalnoir.yaml`](contracts/openapi-signalnoir.yaml)).
 
+## What you need
 
+- Docker with the `docker compose` plugin, using the **default** builder.
+- The **InterSystems IRIS AI Hub EAP build 154** Docker file for your machine. The build is
+  pre-release and is not in any public registry: request it from the EAP portal,
+  <https://evaluation.intersystems.com/Eval/early-access/AIHub>. **Build 162 is not supported.**
+  - ARM64 (Apple Silicon): `iris_arm64-community-2026.3.0AI.154.0-docker.tar.gz`
+  - x64: `iris-community-2026.3.0AI.154.0-docker.tar.gz`
+- Your own key for an AI provider (see [Configuration](#configuration)). Without one the
+  application still runs, and Cases go to review.
+- Free host ports `1972` and `52773`.
 
-```
-$ docker-compose up -d
-```
+You do not need Node, a front-end toolchain or any InterSystems developer tool. The console is
+built inside the image.
 
-To open IRIS Terminal do:
+## Install
 
-```
-$ docker-compose exec iris iris session iris -U IRISAPP
-IRISAPP>
-```
+From a clone of this repository:
 
-To exit the terminal, do any of the following:
-
-```
-Enter HALT or H (not case-sensitive)
-```
-
-## What does it do
-THe sample repository contains two simplest examples of ObjectScript classes: ObjectScript method that returns value and method that creates a persistent record.
-
-1. Open IRIS terminal and run the ObjectScript Test() method to see if runs the script and returns values from IRIS:
-
-```
-$ docker-compose exec iris iris session iris -U IRISAPP
-IRISAPP>write ##class(dc.sample.ObjectScript).Test()
-It works!
-42
-```
-
-
-
-2. Class `dc.sample.PersistentClass` contains a method `CreateRecord` that creates an object with one property, `Test`, and returns its id.
-
-Open IRIS terminal and run:
-
-```
-IRISAPP>write ##class(dc.sample.PersistentClass).CreateRecord(.id)
-1
-IRISAPP>write id
-1
+```bash
+# 1. Load the build 154 file (it is a plain tar despite the .gz name)
+docker load -i iris_arm64-community-2026.3.0AI.154.0-docker.tar.gz   # or the x64 file
 ```
 
-In your case the value of id could be different. And it will be different with every call of the method.
-
-You can check whether the record exists and try to right the property of the object by its id.
-
-```
-IRISAPP>write ##class(dc.sample.PersistentClass).ReadProperty(id)
-Test string
+```bash
+# 2. Retag it to the project's fixed tag, using the name `docker load` printed
+docker tag docker.iscinternal.com/docker-intersystems/intersystems/iris-community:2026.3.0AI.154.0 signalnoir/iris-aihub:2026.3.0AI.154.0
 ```
 
-## How to start the development
-
-This repository is ready to code in VSCode with the ObjectScript plugin.
-
-Install [VSCode](https://code.visualstudio.com/), [Docker](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-docker) and the [InterSystems ObjectScript Extension Pack](https://marketplace.visualstudio.com/items?itemName=intersystems-community.objectscript-pack) plugin and open the folder in VSCode.
-
-Open the `/src/cls/PackageSample/ObjectScript.cls` class and make changes - it will be compiled in the running IRIS docker container.
-
-![docker_compose](https://user-images.githubusercontent.com/2781759/76656929-0f2e5700-6547-11ea-9cc9-486a5641c51d.gif)
-
-Feel free to delete the PackageSample folder and place your ObjectScript classes in the form
-`/src/organisation/package/Classname.cls`
-
-[Read more about folder setup for InterSystems ObjectScript](https://community.intersystems.com/post/simplified-objectscript-source-folder-structure-package-manager) and here on the [naming convention](https://community.intersystems.com/post/naming-convention-objectscript-packages-classes-and-package-manager-modules-names)
-
-## Running unit tests
-
-The template contains two test classes: `TestObjectScript.cls` and `TestPersistentClass.cls `
-
-To run the unit tests we can use the Package Manager environment.
-
-```
-IRISAPP>zpm
-
-=============================================================================
-|| Welcome to the Package Manager Shell (ZPM).                             ||
-|| Enter q/quit to exit the shell. Enter ?/help to view available commands ||
-=============================================================================
-zpm:IRISAPP>load /home/irisowner/dev
-
-[IRISAPP|dc-sample]     Reload START (/home/irisowner/dev/)
-[IRISAPP|dc-sample]     requirements.txt START
-[IRISAPP|dc-sample]     requirements.txt SUCCESS
-[IRISAPP|dc-sample]     Reload SUCCESS
-[dc-sample]     Module object refreshed.
-[IRISAPP|dc-sample]     Validate START
-[IRISAPP|dc-sample]     Validate SUCCESS
-[IRISAPP|dc-sample]     Compile START
-[IRISAPP|dc-sample]     Compile SUCCESS
-[IRISAPP|dc-sample]     Activate START
-[IRISAPP|dc-sample]     Configure START
-[IRISAPP|dc-sample]     Configure SUCCESS
-[IRISAPP|dc-sample]     Activate SUCCESS
-zpm:IRISAPP>test dc-sample
-
-[IRISAPP|dc-sample]     Reload START (/home/irisowner/dev/)
-[IRISAPP|dc-sample]     Reload SUCCESS
-[dc-sample]     Module object refreshed.
-[IRISAPP|dc-sample]     Validate START
-[IRISAPP|dc-sample]     Validate SUCCESS
-[IRISAPP|dc-sample]     Compile START
-[IRISAPP|dc-sample]     Compile SUCCESS
-[IRISAPP|dc-sample]     Activate START
-[IRISAPP|dc-sample]     Configure START
-[IRISAPP|dc-sample]     Configure SUCCESS
-[IRISAPP|dc-sample]     Activate SUCCESS
-[IRISAPP|dc-sample]     Test STARTHello World!
-This is InterSystems IRIS with version IRIS for UNIX (Ubuntu Server LTS for ARM64 Containers) 2023.2 (Build 221U) Fri Jul 21 2023 15:12:42 EDT
-Current time is: 16 Aug 2023 14:32:10
-Use the following URL to view the result:
-http://172.31.0.2:52773/csp/sys/%25UnitTest.Portal.Indices.cls?Index=2&$NAMESPACE=IRISAPP
-All PASSED
-
-[IRISAPP|dc-sample]     Test SUCCESS
-zpm:IRISAPP>
+```bash
+# 3. Your settings: copy the template, then put your provider, model and key in .env
+cp .env.example .env
 ```
 
-In case of test errors, you can find more details back in the UnitTest portal, which can be easily opened via ObjectScript menu in VSCode:
+```bash
+# 4. Build with the default builder: a docker-container driver cannot see the local image
+docker buildx use default
+docker compose build
+```
 
-![vscvode unittest](https://user-images.githubusercontent.com/2781759/152678943-7d9d9696-e26a-449f-b1d7-f924528c8e3a.png)
+```bash
+# 5. Start
+docker compose up -d
+```
 
-If you have installed the [_InterSystems Testing Manager for VS Code_ extension](https://openexchange.intersystems.com/package/InterSystems-Testing-Manager-for-VS-Code)
-you can also run unit tests directly from VSCode :
-![vscvode unittest](https://raw.githubusercontent.com/intersystems-community/intersystems-testingmanager/main/images/README/Overview-Client.gif)
+The fixed tag `signalnoir/iris-aihub:2026.3.0AI.154.0` is the only base image the
+[`Dockerfile`](Dockerfile) and [`docker-compose.yml`](docker-compose.yml) use, on both
+architectures. The build never pulls it from a registry. Nothing is ever pushed: not the base
+image, and not the product image `signalnoir/app:local`.
 
-## What else is inside the repository
+## Start, check, stop
 
-### .github folder
+```bash
+# health: ready, and whether the AI provider is configured
+curl -s http://localhost:52773/signalnoir/api/v1/health
+```
 
-Contains two GitHub actions workflows:
-1. `github-registry.yml`
-    Once changes pushed to the repo, the action builds the docker image on Github side and pushes the image to Github registry that can be very convenient to further cloud deployement, e.g. kubernetes.
-2. `objectscript-qaulity.yml`
-    with every push to master or main branch the workflow launches the repo test on objectscript issues with Objectscript Quality tool, [see the examples](https://community.objectscriptquality.com/projects?sort=-analysis_date). This works if the repo is open-source only.
+```bash
+# smoke check: one synthetic Order through the Simulator until its Case opens (about 1-2 minutes)
+sh scripts/smoke.sh
+```
 
-Both workflows are repo agnostic: so they work with any repository where they exist.
+The smoke check prints the Case and its state. Open `http://localhost:52773/signalnoir/` to follow
+it in the console. Without a key, the Case is in `ReviewRequired`, and its Dossier says the
+provider is unavailable.
 
-### .vscode folder
-Contains two files to setup vscode environment:
+| Command | What it does |
+|---|---|
+| `docker compose up -d` | Start, building the image if needed |
+| `docker compose ps` | State and health of the `iris` service |
+| `docker compose logs -f iris` | Instance logs |
+| `docker compose restart` | Restart; data kept |
+| `docker compose stop` / `start` | Stop and start again; data kept |
+| `docker compose down` | Remove the container; **the demo starts empty next time** |
 
-#### .vscode/settings.json
+The quick validation (3 reference cases in at most 3 minutes, match or diverged per case) and the
+benchmark commands come with the benchmark feature. They are *pending* and will be listed here
+when they ship.
 
-Settings file to let you immediately code in VSCode with [VSCode ObjectScript plugin](https://marketplace.visualstudio.com/items?itemName=daimor.vscode-objectscript))
+## Configuration
 
-#### .vscode/launch.json
+All settings are environment variables, read from `.env` when the container is **created**. After
+editing `.env`, run `docker compose down` then `up`. Note that `down` also resets the demo data.
 
-Config file if you want to debug with VSCode ObjectScript
+| Variable | Meaning |
+|---|---|
+| `SN_AI_PROVIDER` | AI Hub provider: `openai`, `anthropic`, `gemini` or `bedrock` |
+| `SN_AI_MODEL` | Model name for that provider |
+| `SN_AI_API_KEY` | Your key. Entered only at runtime |
+| `SN_SIM_BASE_URL` | The Simulator, served by the same instance (`http://localhost:52773/sim/api/v1`) |
+| `SN_BACKGROUND_TASKS` | `1` reads the Origin feed and runs the sweeper every minute |
+| `SN_PARTNER_TIMEOUT_SECONDS`, `SN_INVESTIGATION_BUDGET_SECONDS`, `SN_AI_LEASE_SECONDS` | Optional timings (defaults 60, 120, 300) |
 
-### src folder
+**Validated:** IRIS AI Hub build 154 ARM64 Community with OpenAI `gpt-4o-mini`. The other providers
+are the ones AI Hub supports, but this project has not validated them. The x64 build will be listed
+here once it passes the cross-install.
 
-Contains source files.
-src/iris contains InterSystems IRIS Objectscript code
+**Secrets.** The key lives only in `.env`, which git ignores, or in your environment. It is never a
+build argument, never in an image layer, and never written to a Case, the Timeline, a log or an
+export. Without a valid key, the application starts, `/health` reports the provider as
+unavailable with the reason, and Cases that need the provider end in `ReviewRequired` with that
+reason.
 
-### tests folder
-Contains unit tests for the ObjectScript classes
+## Data and reset
 
-### dev.md
+Data lives in the container's writable layer. There is no named volume and no bind mount.
 
-Contains a set of useful commands that will help during the development
+- `docker compose restart` and `stop`/`start` keep every Case, Approval and Timeline event.
+- `docker compose down` removes the container and its data. The next `up` starts an empty demo.
 
-### docker-compose.yml
+## Limitations
 
-A docker engine helper file to manage images building and rule ports mapping an the host to container folders(volumes) mapping
-
-### Dockerfile
-
-The simplest dockerfile which starts IRIS and imports code from /src folder into it.
-Use the related docker-compose.yml to easily setup additional parametes like port number and where you map keys and host folders.
-
-
-### iris.script
-
-Contains objectscript commands that are feeded to iris during the image building
-
-### module.xml
-
-IPM Module's description of the code in the repository.
-It describes what is loaded with the method, how it is being tested and what apps neeed to be created, what files need to be copied.
-
-[Read about all the files in this artilce](https://community.intersystems.com/post/dockerfile-and-friends-or-how-run-and-collaborate-objectscript-projects-intersystems-iris)
-
-
+- **Synthetic data only.** Every Case is labeled synthetic. No real patient, partner or clinical
+  decision is involved.
+- **Replay.** Benchmark and demo runs may use *Replay*, a recorded Agent answer played back through
+  the same path, so that results are reproducible without a key. Replay Cases are labeled as such.
+- Approved mappings and versioned policies are reference data that is still being integrated.
+  Until it lands, the Agent does not propose a mapping, and an approved mapping is held rather than
+  sent.
+- Demo instance: the web applications accept unauthenticated requests on your machine. Do not
+  expose the ports to a network.
 
 ## Troubleshooting
 
-If you have issues with docker image building here are some recipes that could help.
+| Symptom | Cause | Fix |
+|---|---|---|
+| `pull access denied` for `docker.iscinternal.com` or `signalnoir/iris-aihub` | buildx with a `docker-container` driver, or the retag was skipped | `docker buildx use default`; check `docker images signalnoir/iris-aihub` |
+| `env file .env not found` | `.env` was not created | `cp .env.example .env` |
+| Health stays `starting` | the instance is still starting | wait for the 60 s start period; `docker compose logs iris` |
+| `port is already allocated` | 1972 or 52773 is in use | stop the other service |
+| Every Case goes to `ReviewRequired` | no key, or an invalid one | check `.env`, then `down`/`up`; `/health` names the reason |
+| The smoke check times out | `SN_BACKGROUND_TASKS` is not `1` | set it in `.env`, then `down`/`up` |
 
-1. You are out of free space in docker. You can expand the amount of space or clean up maually via docker desktop. Or you can call the following line to clean up:
-```
-docker system prune -f
-```
+## Development
 
-2. We use multi-stage image building which in some cases doesn't work. Switch the target to [builder](https://github.com/intersystems-community/intersystems-iris-dev-template/blob/6ab6791983e5783118efce1777a7671046652e4c/docker-compose.yml#L7) from final in the docker compose and try again.
+Developers use a separate dev container on the same build, with the repository mounted and
+`iris-agentic-dev` for compiling and testing: see [`dev/aihub/README.md`](dev/aihub/README.md).
+That container is not part of the install path. Specifications live in [`specs/`](specs/) and the
+HTTP contracts in [`contracts/`](contracts/). CI runs the contract checks, the console checks, a
+secret scan and the core unit tests on a public IRIS image. No workflow builds, runs or publishes
+an image of the EAP build.
 
+## Team
+
+Musketeers: José Roberto (IRIS and API), Henrique (validation and benchmark), Henry (Agent,
+execution and console). Developer Community profiles: *pending*.
+
+Demo video (at most 5 minutes): *pending*.
+
+Licensed under the [MIT License](LICENSE).
