@@ -82,7 +82,7 @@ Mudanças neles são aplicadas em lote no gate de integração. Exceção: a 012
 | 001 runtime-skeleton-and-seams | concluída | José | 0 | |
 | 002 scenario-simulator | implementada (aguardando gate G1; assumida do Henrique em 28/10; V1–V6 verificados no build 154; inclui o leitor do feed da Origem) | Henry | 1 | no `master` (PR #16) |
 | 003 order-case-lifecycle | implementada (aguardando gate G1) | Henry | 1 | no `master` |
-| 004 validation-and-reference-data | spec/plan/tasks prontos, revisados contra o master; decisões do Henry respondidas e ambiente verificado (V1): pronta para implementar, caminho crítico do G1 e do G2 | Henrique | 2 | branch `004-validation-and-reference-data` |
+| 004 validation-and-reference-data | implementada (aguardando gate G1; Validator v2 com o pipeline completo, dados de referência versionados e fixáveis, `Admit`, `Revalidate` e confirmação de recibo anterior; mock e fixtures regenerados, 13 de 13 vereditos conferem; verificada ao vivo por `Tests.Gates.TestGateG1`; o que resta para 007/008/010 está em `specs/004-validation-and-reference-data/contracts/g1-integration.md`) | Henrique | 2 | no `master` (PR #22 e #23) |
 | 005 operator-console | implementada (aguardando gate G2; decisão/resolução testadas contra fixtures até 007/009) | Henry | 3 | no `master` |
 | 006 investigation-and-proposal | implementada (aguardando gate G2; AI Hub ao vivo verificado, T060; SC-004 medido com gêmeos idênticos, T061) | Henry | 2 | no `master` |
 | 007 approval-and-outbox | implementada (aguardando gate G2; assumida do Henrique em 28/10; política de Aprovação padrão até a 004, handler do `Execute` na 008, sweeper ligado no Bootstrap no gate) | Henry | 3 | no `master` (PR #14) |
@@ -111,7 +111,10 @@ Pendências do gate G1 (aplicadas pelo Henry em 2026-10-29, branch `g1-wiring-an
 - Feito: `OriginFeed.Poll()` agendado a cada minuto (`Tasks.OriginFeedTask`).
 - Feito: sweeper (`Tasks.SweeperTask`) agendado pelo Bootstrap só com `SN_BACKGROUND_TASKS=1`. O banco de dev fica sem a variável, porque guarda requisições de teste (007 R6).
 - Feito: `.env.example` com `SN_SIM_BASE_URL` e `SN_BACKGROUND_TASKS`.
-- Resta para o G1: a 004 (Proposta validada).
+- Feito: a 004 (Proposta validada), PR #22 e #23. O cenário do gate roda ao vivo em `Tests.Gates.TestGateG1`: Pedido do Simulador, aceite, primeira entrega ao Parceiro (a resposta real abre o Caso), investigação com as ferramentas reais, Proposta, veredito v2 com as versões dos dados de referência e Caso em `PendingApproval`. O Caso é roteado para o proposer de regras, como um BenchmarkRun faria (010); sem BenchmarkRun, um Caso novo é do Agente e depende de provedor.
+- Aberto, não bloqueia o G1 (onda 4 do Henry): o baseline de regras ainda compara o tipo de espécime sem os sinônimos. Com um Pedido escrito `soro` ele pede revisão, e o Validator aceitaria o mapeamento de soro. A correção é o `Proposers/Rules` chamar `Core.Conditions.Matches`.
+- Aberto para a 010: gravar as versões de política e de mapeamento que um BenchmarkRun fixa. O Store já as respeita (`Store.For(run)`); `ResolutionValidator.RunFor` devolve `null` até a execução gravá-las.
+- Aberto para a 008 (Henry): `ResolutionValidator.InputFor` passa `attemptCount = 0`. Quando a 008 gravar as Tentativas, é ali que o `RETRY_BUDGET_EXHAUSTED` passa a valer nos Casos reais.
 
 ## Merge
 
