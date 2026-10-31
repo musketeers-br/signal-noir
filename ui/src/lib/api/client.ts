@@ -6,6 +6,7 @@ import type {
 	ApprovedMapping,
 	CaseDetail,
 	CaseListPage,
+	PrecedentSearch,
 	ProposalDecisionResult,
 	ReviewResolutionResult,
 	TimelinePage
@@ -66,6 +67,11 @@ export function getCase(caseId: string): Promise<Read<CaseDetail>> {
 
 export function getTimeline(caseId: string, sinceSeq = 0): Promise<Read<TimelinePage>> {
 	return read<TimelinePage>(`/cases/${encodeURIComponent(caseId)}/timeline?sinceSeq=${sinceSeq}`);
+}
+
+/** Similar closed Cases (contract change 015). A failed search is a status in a 200 body. */
+export function getPrecedents(caseId: string, k = 5): Promise<Read<PrecedentSearch>> {
+	return read<PrecedentSearch>(`/cases/${encodeURIComponent(caseId)}/precedents?k=${k}`);
 }
 
 export interface DecisionRequest {

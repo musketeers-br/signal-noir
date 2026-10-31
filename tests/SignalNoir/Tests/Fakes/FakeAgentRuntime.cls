@@ -15,7 +15,8 @@ Method Complete(systemPrompt As %String, input As %String, sessionTag As %String
 	If fail '= "" Return ##class(SignalNoir.Core.Result).Error($Piece(fail, ":", 1), $Piece(fail, ":", 2, *))
 	Set content = $Get(^SignalNoir.TestScript("agent", "content"))
 	; resolve @ev:<source> against the evidence ids present in the input
-	Set data = {}.%FromJSON($Piece(input, $Char(10), 4, *))
+	; line 4 is the EVIDENCE block (an optional PRECEDENTS block follows, 015)
+	Set data = {}.%FromJSON($Piece(input, $Char(10), 4))
 	For i = 0 : 1 : data.evidence.%Size() - 1 {
 		Set ev = data.evidence.%Get(i)
 		Set content = $Replace(content, """@ev:" _ ev.source _ """", """" _ ev.evidenceId _ """")

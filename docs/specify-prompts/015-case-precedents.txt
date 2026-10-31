@@ -1,0 +1,25 @@
+CONTEXT (apply to this specification):
+
+- Read .specify/memory/constitution.md first. It is normative. If a requirement conflicts with it, stop and report the conflict instead of inventing a workaround.
+- Product: Signal Noir, an AI exception-resolution workflow for synthetic lab Orders in an Interoperability Production. All data is synthetic. UI copy is English.
+- Frozen inputs (read-only): contracts/openapi-signalnoir.yaml, contracts/fixtures/**, docs/seams.md. Do not invent fields, states, actions, endpoints or error codes. A new observable operation is a contract change, handled by its own feature.
+- Plan and rationale: docs/planning/2026-10-31-status-prazo-e-vector-search.md, section 5.
+- Domain vocabulary: Order, Case, Evidence, Diagnosis, Proposal, Approval, Execution, Receipt, Exception, Review Dossier, BenchmarkRun, Precedent.
+- Case states: Open, Investigating, DecisionProposed, PendingApproval, Approved, Rejected, Executing, Held, ReviewRequired, Resolved, ResolvedByPriorReceipt, Cancelled, Failed. Final states: Resolved, ResolvedByPriorReceipt, Cancelled, Failed.
+- Actions (closed catalog): RETRY, APPLY_APPROVED_MAPPING, HOLD, REQUEST_REVIEW.
+- Invariants to preserve: the Agent has read-only tools; every Proposal from any origin passes the same deterministic Validator; an Approval binds an immutable Proposal; the persisted Case is the source of truth; external effects happen at most once; failures cross boundaries as result values; fact, diagnosis and absence of information stay distinct; no new Action can enter by input or configuration; secrets enter only at runtime; the Benchmark uses shared Tools and protections, a frozen setup, and does not count Replay; nothing in the runtime depends on iris-agentic-dev.
+- Behavior only. No language, framework, library, file layout, table layout or index type in the specification. Resolve technology in the plan.
+- Write in English. Use the repository spec template. Maximum 3 [NEEDS CLARIFICATION] markers; prefer a documented assumption.
+- Enums, identifiers and contract values stay in English.
+
+Feature: Case Precedents, a vector search over closed Cases.
+
+Describe the behavior:
+1. Every Case that reaches a final state becomes a precedent exactly once, described only by structured facts (partner, exam code, exception class, Action taken, final state, time to close). Free text from an Order, a partner, an Operator or the Agent is never part of it. Benchmark and Replay Cases are not indexed by default.
+2. An Operator who opens a Case, especially one in ReviewRequired, sees "Similar resolved Cases": up to five precedents by similarity, each with its Action, final state, time to close, similarity and a link. In the Review Dossier it sits next to the next-step box.
+3. Precedents are information for the Operator, never Evidence and never a decision. They do not reach the Validator, do not count towards the minimum Evidence, are not claims of a Diagnosis, do not pre-fill a resolution and are not reasons in an Approval. With the feature on or off, Proposals, verdicts, Approvals and resolutions for the same Cases are identical.
+4. Honest outcomes with distinct messages: no precedents yet, nothing similar enough, lexical mode (no embedding provider key), index rebuilding, index needs rebuild, search unavailable with its reason. Without a provider key the application starts, Case flows are unchanged, and the search runs in a labelled lexical mode that is never presented as semantic.
+5. Every search leaves one Timeline event (requester, mode, model, result count, precedent identifiers, duration, failure reason), rate-limited to one per minute per Case and requester, with no key and no free text.
+6. Records keep the model, mode and dimension that built them; searches never mix models; an administrator can rebuild all precedents idempotently and resumably.
+7. Optional, off by default and off in the frozen reference run: a read-only Agent Tool that returns precedents marked as similarity results, excludes the Case itself and Cases of the same BenchmarkRun, and is never accepted as Evidence. If enabled in any Benchmark run, the report says so and publishes it as a separate variant.
+8. The embedding provider is configured separately from the Agent's provider, because not every AI Hub provider offers embeddings.

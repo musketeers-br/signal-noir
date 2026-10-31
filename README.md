@@ -19,6 +19,7 @@ a Review Dossier.
 - [Start, check, stop](#start-check-stop)
 - [Configuration](#configuration)
 - [Data and reset](#data-and-reset)
+- [Community idea: DPI-I-689](#community-idea-dpi-i-689)
 - [Limitations](#limitations)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
@@ -44,6 +45,14 @@ a Review Dossier.
    Receipt.
 6. **Review.** A Case the system cannot settle reaches `ReviewRequired` with a Dossier: what is
    known, what is missing and why. The Operator then resolves or cancels it.
+7. **Precedents.** Every closed Case becomes a *precedent*: a short description built only from
+   structured codes (partner, exam codes, exception, Action, outcome), stored with a vector in IRIS
+   (`VECTOR(DOUBLE, 1536)` with an HNSW cosine index). When the Operator opens a Case, the console
+   shows **Similar resolved Cases** from IRIS Vector Search: what failed, which Action settled it
+   and how it ended. Precedents are information, never Evidence: they never reach the Validator,
+   never count as Evidence and never pre-fill a resolution. Without an embedding provider the search
+   runs in a labelled **lexical mode** (word overlap, not semantics). Each search is recorded on the
+   Case's Timeline (see [Community idea](#community-idea-dpi-i-689)).
 
 The console is at `http://localhost:52773/signalnoir/`, and the API at
 `http://localhost:52773/signalnoir/api/v1` (contract: [`contracts/openapi-signalnoir.yaml`](contracts/openapi-signalnoir.yaml)).
@@ -140,6 +149,9 @@ editing `.env`, run `docker compose down` then `up`. Note that `down` also reset
 | `SN_SIM_BASE_URL` | The Simulator, served by the same instance (`http://localhost:52773/sim/api/v1`) |
 | `SN_BACKGROUND_TASKS` | `1` reads the Origin feed and runs the sweeper every minute |
 | `SN_PARTNER_TIMEOUT_SECONDS`, `SN_INVESTIGATION_BUDGET_SECONDS`, `SN_AI_LEASE_SECONDS` | Optional timings (defaults 60, 120, 300) |
+| `SN_EMBED_PROVIDER`, `SN_EMBED_MODEL`, `SN_EMBED_API_KEY` | Optional embedding provider for precedents: `openai` with a 1536-dimension model (`text-embedding-3-small`). Separate from the Agent's provider, because Anthropic has no embeddings. Unset: lexical mode |
+| `SN_PRECEDENTS_MIN_SIMILARITY`, `SN_PRECEDENTS_DEFAULT_K`, `SN_PRECEDENTS_MAX_K` | Optional search settings (defaults 0.6, 5, 10) |
+| `SN_PRECEDENTS_AGENT` | `1` adds the precedents to the Agent's input as a labelled block that is not Evidence. Off by default, and off in the reference Benchmark run |
 
 **Validated:** IRIS AI Hub build 154 ARM64 Community with OpenAI `gpt-4o-mini`. The other providers
 are the ones AI Hub supports, but this project has not validated them. The x64 build will be listed
@@ -157,6 +169,27 @@ Data lives in the container's writable layer. There is no named volume and no bi
 
 - `docker compose restart` and `stop`/`start` keep every Case, Approval and Timeline event.
 - `docker compose down` removes the container and its data. The next `up` starts an empty demo.
+
+## Community idea: DPI-I-689
+
+Signal Noir implements part of the InterSystems Ideas Portal idea
+[DPI-I-689, "Use InterSystems Interoperability as a traceability tool for GenAI LLM pipelines"](https://ideas.intersystems.com/ideas/DPI-I-689)
+(status *Community Opportunity*), which mentions IRIS Vector Search.
+
+What is covered:
+
+- Every model call of an Investigation is recorded on the Case with provider, model, prompt
+  version, duration, tool calls, tokens and estimated cost, next to the Evidence it used and the
+  Validator's verdict.
+- Every vector search (precedents) adds a Timeline event with who asked (console or Agent), the
+  mode (provider or lexical), the embedding model, the number of results, the precedent Case ids
+  and the duration. No key and no free text are written.
+
+What is not covered yet: publishing these steps as messages in the Interoperability **Visual
+Trace**. That needs the Case flow to run as an `Ens.Production`, which it does not do today.
+
+The organizers have not confirmed whether this idea counts for the contest bonus, so we only claim
+what is listed above.
 
 ## Limitations
 

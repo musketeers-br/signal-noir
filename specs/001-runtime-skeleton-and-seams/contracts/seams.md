@@ -3,7 +3,10 @@
 **Status**: agreed draft for this feature. The published copy is `docs/seams.md`; this file is the
 spec-side source and the two MUST NOT diverge (a divergence is a contract change).
 
-**Version**: v4 (2026-10-25) — Proposer port, Evidence and Proposal DTOs, the new
+**Version**: v5 (2026-10-31) — optional `InvestigationContext.precedents` and the new `Embedder`
+port added by contract change 015
+(`specs/015-case-precedents/contracts/contract-change-015-precedents.md`).
+v4 (2026-10-25) — Proposer port, Evidence and Proposal DTOs, the new
 `InvestigationContext` DTO and Order `scenarioInstanceId` changed by contract change 006
 (`specs/006-investigation-and-proposal/contracts/contract-change-006-investigation-seam.md`).
 v3 (2026-10-25) — CaseCommands, CaseQueries, DTOs, Result, id prefixes and Timeline
@@ -62,7 +65,7 @@ opening writes `CaseOpened` (`previousCaseId` for a new episode); an Exception w
 | `TimelineEvent` | `seq`, `at`, `type`, `actor`, `refId`, `payload` |
 | `Evidence` | `evidenceId`, `caseId`, `investigationId`, `kind` (`fact` / `absence`), `source` (contract enum), `calledBy`, `params`, `result` (raw, by value; `payload` is a v3 alias), `observedAt`, `durationMs`, `suspicious`, `suspiciousExcerpts[]`, `obsoletedBy?` |
 | `Proposal` | `proposalId`, `caseId`, `origin` (= contract `author`), `createdAt`, `current`, `supersededBy?`, `diagnosis` (`summary`, `claims[]` with `evidenceIds[]`, `hypotheses[]`, `conflicts[]`), `action`, `params`, `scope`, `confidence` (`HIGH`/`MEDIUM`/`LOW`), `preconditions[]` (`check`, `expected`), `versions` (`policy`, `mapping`, `prompt`, `model`, `provider`), `metrics`, `priorReceiptCandidate?` |
-| `InvestigationContext` | `investigationId`, `case`, `order`, `evidence[]`, `tools` (the read-only gateway), `maxToolCalls`, `budgetMs`, `startedAt` |
+| `InvestigationContext` | `investigationId`, `case`, `order`, `evidence[]`, `tools` (the read-only gateway), `maxToolCalls`, `budgetMs`, `startedAt`, `precedents` (v5, optional: similar closed Cases as `PrecedentMatch` objects; absent unless `SN_PRECEDENTS_AGENT=1`; never Evidence, never citable) |
 | `ValidatorVerdict` | `verdict` (`accepted` / `blocked` / `review` / `prior_receipt_confirmed`), `reasons` (ordered closed codes), `requiresApproval`, `versions` (`policy`, `mapping`), `at` |
 | `ValidationInput` | `proposal`, `evidence[]`, `order` (snapshot), `priorReceiptOrder?`, `attemptCount`, `run` (`inRun`, `runId`, `policyVersion`, `mappingVersion`), `reference` (snapshot), `observed?` (Revalidation only), `now` |
 | `PreconditionResult` | `check`, `expected`, `observed`, `passed`, `evidenceId?` |
@@ -159,6 +162,19 @@ Read-only by contract. No write-capable tool may implement this port. The runtim
 (`SignalNoir.Application.ToolGateway`, feature 006) accepts only the reading Tools of the contract's
 Evidence `source` enum, charges the server-side budget (6 calls / 20 s), and returns Evidence that
 is already recorded on the Case.
+
+### Embedder (v5, feature 015)
+
+```
+Embed(text) -> Result<vector>
+Model() -> String
+Mode() -> lexical | provider
+```
+
+`Result.ref` is the vector as a comma list of 1536 numbers; `Result.details`: `model`, `mode`,
+`dimension`. Failures are values: `provider_unavailable`, `unsupported_dimension`. The lexical
+adapter (`SignalNoir.Precedents.LexicalEmbedder`) needs no key and is never presented as semantic;
+the provider adapter reads its key from the runtime environment at call time.
 
 ### PartnerClient
 

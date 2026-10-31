@@ -20,4 +20,9 @@ Property budgetMs As %Integer;
 
 Property startedAt As %String(MAXLEN = 64);
 
+/// Seam v5 (contract change 015), optional: similar closed Cases as
+/// PrecedentMatch objects, only when SN_PRECEDENTS_AGENT=1. Similarity
+/// results, never Evidence: a proposer cannot cite them.
+Property precedents As %Library.DynamicArray;
+
 }

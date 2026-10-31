@@ -1,0 +1,52 @@
+{
+  "caseId": "case_000231",
+  "status": "results",
+  "mode": "lexical",
+  "model": "lexical-hash-v1",
+  "dimension": 1536,
+  "k": 5,
+  "minSimilarity": 0.6,
+  "items": [
+    {
+      "caseId": "case_000118",
+      "orderId": "ORD-SYN-0118",
+      "partnerId": "PARTNER-A",
+      "description": "http_error 422 on GLICJ, HB; APPLY_APPROVED_MAPPING -> Resolved (resolved)",
+      "action": "APPLY_APPROVED_MAPPING",
+      "finalState": "Resolved",
+      "closedAt": "2026-10-30T14:12:09Z",
+      "durationSeconds": 1260,
+      "similarity": 0.9045,
+      "synthetic": true,
+      "replay": false
+    },
+    {
+      "caseId": "case_000097",
+      "orderId": "ORD-SYN-0097",
+      "partnerId": "PARTNER-A",
+      "description": "http_error 422 on GLICJ, HB; review: mapping_ambiguous; Cancelled",
+      "action": null,
+      "finalState": "Cancelled",
+      "closedAt": "2026-10-29T18:40:51Z",
+      "durationSeconds": 5400,
+      "similarity": 0.7385,
+      "synthetic": true,
+      "replay": false
+    },
+    {
+      "caseId": "case_000064",
+      "orderId": "ORD-SYN-0064",
+      "partnerId": "PARTNER-A",
+      "description": "http_error 422 on GLICJ, HB; RETRY -> Failed (failed)",
+      "action": "RETRY",
+      "finalState": "Failed",
+      "closedAt": "2026-10-28T09:03:27Z",
+      "durationSeconds": 240,
+      "similarity": 0.6742,
+      "synthetic": true,
+      "replay": false
+    }
+  ],
+  "recorded": true,
+  "notice": "Similarity search over earlier Cases. Not Evidence about this Case."
+}

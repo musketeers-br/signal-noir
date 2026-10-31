@@ -1,11 +1,12 @@
 Class SignalNoir.Tasks.Sweeper Extends %RegisteredObject
 {
 
-/// The single periodic sweep (AD-8, features 007 and 008). Four passes:
+/// The single periodic sweep (AD-8, features 007, 008 and 015). Five passes:
 /// redelivery of requests still pending after a grace period; expiry of
 /// approvals past their deadline; the lease pass (AD-22: an execution past
 /// its lease gets Reconcile, an investigation past it goes to review); and
-/// the reassessment of Held Cases (AD-7). It only issues commands allowed
+/// the reassessment of Held Cases (AD-7); and the indexing of closed Cases
+/// as precedents (015, unscoped sweeps only). It only issues commands allowed
 /// to the actor sweeper and deliveries to the single entry point; it reads
 /// the Partner's health, never acts on the Partner.
 /// Requests redelivered per run, at most
@@ -17,7 +18,8 @@ Parameter MAXPERRUN = 50;
 /// Execute and Reconcile too unless an executor is given; executor: the
 /// execution path that delivers them and whose Partner and policy the lease
 /// and Held passes use ("" = ExecutionService.Default()).
-/// Returns {redelivered, expired, reconcileRequested, leaseReviews, reassessed}.
+/// Returns {redelivered, expired, reconcileRequested, leaseReviews, reassessed,
+/// precedentsIndexed}.
 ClassMethod Run(now As %String = "", scope As %List = "", async As %Boolean = 1, graceSeconds As %Integer = 30, investigations As %String = "default", executor As SignalNoir.Application.ExecutionService = "") As %DynamicObject
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
@@ -77,7 +79,13 @@ ClassMethod Run(now As %String = "", scope As %List = "", async As %Boolean = 1,
 		Set reassessed = reassessed + 1
 		If r.details.commandId '= "" Do ..Deliver(bus, r.details.commandId, async)
 	}
-	Return {"redelivered": (redelivered), "expired": (expired), "reconcileRequested": (reconcile), "leaseReviews": (reviews), "reassessed": (reassessed)}
+	; 5. closed Cases not yet precedents (feature 015); a scoped sweep (tests) leaves them
+	Set precedents = 0
+	If scope = "" {
+		Set r = ##class(SignalNoir.Application.PrecedentService).Default().IndexPending()
+		Set precedents = +r.ref
+	}
+	Return {"redelivered": (redelivered), "expired": (expired), "reconcileRequested": (reconcile), "leaseReviews": (reviews), "reassessed": (reassessed), "precedentsIndexed": (precedents)}
 }
 
 /// What ended the hold ("" while it holds): a version hold ends at once (the

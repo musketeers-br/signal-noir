@@ -1,0 +1,12 @@
+{
+  "caseId": "case_000231",
+  "status": "no_precedents",
+  "mode": "lexical",
+  "model": "lexical-hash-v1",
+  "dimension": 1536,
+  "k": 5,
+  "minSimilarity": 0.6,
+  "items": [],
+  "recorded": true,
+  "notice": "Similarity search over earlier Cases. Not Evidence about this Case."
+}

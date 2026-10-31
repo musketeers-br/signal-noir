@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Signal Noir API
-  version: 1.0.0-draft.2
+  version: 1.0.0-draft.3
   summary: API REST do produto Signal Noir — Casos, Linha do Tempo, Aprovação, Dossiê e Benchmark.
   description: |
     Contrato normativo de `/signalnoir/api/v1` (AD-16). A SPA (servida em `/signalnoir/`, AD-17)
@@ -215,6 +215,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TimelinePage'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cases/{caseId}/precedents:
+    get:
+      tags: [Cases]
+      operationId: getCasePrecedents
+      summary: Similar closed Cases (similarity search, not Evidence)
+      description: |
+        Contract change 015 (`specs/015-case-precedents/contracts/contract-change-015-precedents.md`).
+        Up to `k` closed Cases most similar to this one, from IRIS vector search. Informational only:
+        never Evidence, never input to the Validator, never a reason in an Approval. A search failure
+        is reported in `status` with HTTP 200, so the Case always opens. Each call may append one
+        Timeline `Annotation` (`payload.kind = precedent_search`), at most one per minute per Case
+        and requester.
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: k
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 5
+      responses:
+        '200':
+          description: The search outcome, with its honest status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrecedentSearch'
         '400':
           $ref: '#/components/responses/ValidationFailed'
         '404':
@@ -1700,6 +1733,78 @@ components:
               type: integer
               minimum: 0
               description: '`seq` do último evento devolvido (ou o `sinceSeq` recebido, se vazio).'
+
+    # ---------- precedentes (contract change 015) ----------
+    PrecedentSearch:
+      type: object
+      required: [caseId, status, mode, model, dimension, k, minSimilarity, items, recorded, notice]
+      properties:
+        caseId:
+          $ref: '#/components/schemas/CaseId'
+        status:
+          type: string
+          enum: [results, no_precedents, nothing_similar, rebuilding, needs_rebuild, unavailable]
+        mode:
+          type: string
+          enum: [lexical, provider]
+          description: '`lexical` is word overlap (no embedding provider), never semantic.'
+        model:
+          type: string
+        dimension:
+          type: integer
+        k:
+          type: integer
+          minimum: 1
+          maximum: 10
+        minSimilarity:
+          type: number
+        items:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/PrecedentMatch'
+        reason:
+          type: string
+          enum: [provider_unavailable, unsupported_dimension, index_error, model_changed]
+        recorded:
+          type: boolean
+          description: Whether this search wrote its Timeline record (false when rate-limited or the Case was busy).
+        notice:
+          type: string
+    PrecedentMatch:
+      type: object
+      required: [caseId, orderId, partnerId, description, action, finalState, closedAt, durationSeconds, similarity, synthetic, replay]
+      description: One similar closed Case. Never carries the vector or the raw embedded text.
+      properties:
+        caseId:
+          $ref: '#/components/schemas/CaseId'
+        orderId:
+          type: string
+        partnerId:
+          type: string
+        description:
+          type: string
+          maxLength: 600
+        action:
+          oneOf:
+            - $ref: '#/components/schemas/Action'
+            - type: 'null'
+        finalState:
+          type: string
+          enum: [Resolved, ResolvedByPriorReceipt, Cancelled, Failed]
+        closedAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        durationSeconds:
+          type: integer
+          minimum: 0
+        similarity:
+          type: number
+          minimum: 0
+          maximum: 1
+        synthetic:
+          type: boolean
+        replay:
+          type: boolean
 
     # ---------- comandos ----------
     ProposalDecisionRequest:
