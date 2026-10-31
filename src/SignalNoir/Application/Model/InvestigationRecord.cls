@@ -50,6 +50,9 @@ Property tokensIn As %Integer;
 
 Property tokensOut As %Integer;
 
+/// Cached input tokens, when the provider reports them (013 FR-010)
+Property tokensCached As %Integer;
+
 Property estCostUsd As %Numeric(SCALE = 6);
 
 Property outcomeReason As %String(MAXLEN = 256);
@@ -127,6 +130,9 @@ Storage Default
 </Value>
 <Value name="23">
 <Value>proposalId</Value>
+</Value>
+<Value name="24">
+<Value>tokensCached</Value>
 </Value>
 </Data>
 <DataLocation>^SignalNoir70AE.Investigati82CDD</DataLocation>

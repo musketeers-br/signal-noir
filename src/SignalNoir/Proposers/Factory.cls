@@ -8,6 +8,7 @@ ClassMethod ClassFor(mode As %String) As %String
 	If mode = "rules" Return "SignalNoir.Proposers.Rules"
 	If mode = "replay" Return "SignalNoir.Proposers.Replay"
 	If mode = "agent" Return "SignalNoir.Proposers.Agent"
+	If mode = "decisions" Return "SignalNoir.Proposers.Decisions"
 	Return "SignalNoir.Proposers.Unavailable"
 }
 
@@ -17,7 +18,17 @@ ClassMethod Ready(mode As %String) As %Boolean
 {
 	If (mode = "rules") || (mode = "replay") Return 1
 	If mode = "agent" Return ##class(SignalNoir.Proposers.AiHubRuntime).Configured()
+	If mode = "decisions" Return ##class(SignalNoir.Proposers.DecisionsHttp).Configured()
 	Return 0
+}
+
+/// The proposer mode of new Cases (013 FR-017): SN_PROPOSER_MODE, one of
+/// agent (default), rules or decisions; anything else is agent. Replay is
+/// chosen by the Benchmark, never by the deployment.
+ClassMethod ConfiguredMode() As %String
+{
+	Set mode = $ZConvert($System.Util.GetEnviron("SN_PROPOSER_MODE"), "L")
+	Return $Select($ListFind($ListBuild("rules", "decisions"), mode): mode, 1: "agent")
 }
 
 }

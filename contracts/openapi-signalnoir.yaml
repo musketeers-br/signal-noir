@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Signal Noir API
-  version: 1.0.0-draft.3
+  version: 1.0.0-draft.4
   summary: API REST do produto Signal Noir — Casos, Linha do Tempo, Aprovação, Dossiê e Benchmark.
   description: |
     Contrato normativo de `/signalnoir/api/v1` (AD-16). A SPA (servida em `/signalnoir/`, AD-17)
@@ -690,7 +690,7 @@ components:
       pattern: '^run_[A-Za-z0-9_-]{4,64}$'
     Actor:
       type: string
-      pattern: '^(system|agent|rules|replay|benchmark|sweeper|operator:[^:]{1,64})$'
+      pattern: '^(system|agent|rules|replay|decisions|benchmark|sweeper|operator:[^:]{1,64})$'
       description: Ator da Linha do Tempo e de comandos (Consistency Conventions).
     OperatorName:
       type: string
@@ -741,7 +741,8 @@ components:
       description: Vocabulário fechado do Core (AD-26).
     ProposerMode:
       type: string
-      enum: [agent, rules, replay]
+      enum: [agent, rules, replay, decisions]
+      description: '`decisions` (contract change 013) is the OpenAI Decisions API proposer, off unless the deployment sets `SN_PROPOSER_MODE=decisions`.'
     ValidatorVerdictValue:
       type: string
       enum: [accepted, blocked, review, prior_receipt_confirmed]

@@ -41,19 +41,7 @@ Method Propose(context As SignalNoir.Core.Dto.InvestigationContext) As SignalNoi
 	}
 	; 3. exactly one applicable approved mapping
 	If ..IsFact(catalog) && $IsObject(context.order) && $IsObject(context.order.snapshot) {
-		Set snapshot = context.order.snapshot
-		Set specimenType = $ZConvert($Select($IsObject(snapshot.specimen): snapshot.specimen.type, 1: ""), "U")
-		Set matches = []
-		Set items = catalog.result.items
-		If $IsObject(items) {
-			For i = 0 : 1 : items.%Size() - 1 {
-				Set m = items.%Get(i)
-				If '..ExamHas(snapshot, m.sourceCode) Continue
-				Set want = $Select($IsObject(m.conditions): $ZConvert(m.conditions.specimenType, "U"), 1: "")
-				If (want '= "") && (want '= specimenType) Continue
-				Do matches.%Push(m)
-			}
-		}
+		Set matches = ##class(SignalNoir.Core.MappingMatch).Candidates(context.order.snapshot, catalog.result.items)
 		If matches.%Size() = 1 {
 			Set m = matches.%Get(0)
 			Set cite = [(catalog.evidenceId)]
@@ -78,16 +66,6 @@ ClassMethod Answer(action, params, confidence, summary, claim, cite As %DynamicA
 ClassMethod IsFact(ev) As %Boolean [ Private ]
 {
 	Return ($IsObject(ev) && (ev.kind = "fact") && $IsObject(ev.result) && ev.result.%IsA("%DynamicObject"))
-}
-
-ClassMethod ExamHas(snapshot As %DynamicObject, code As %String) As %Boolean [ Private ]
-{
-	If '$IsObject(snapshot.exams) Return 0
-	For i = 0 : 1 : snapshot.exams.%Size() - 1 {
-		Set exam = snapshot.exams.%Get(i)
-		If $IsObject(exam) && ($ZConvert(exam.code, "U") = $ZConvert(code, "U")) Return 1
-	}
-	Return 0
 }
 
 }
