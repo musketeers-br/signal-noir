@@ -139,9 +139,9 @@ and agreed with Henry at T002): `Core/Validator.cls`, `Core/Port/Validator.cls`,
 
 **Independent Test**: quickstart §1 (TestApprovalPolicy).
 
-- [ ] T029 [P] [US4] Write failing tests/SignalNoir/Tests/Core/Validator/TestApprovalPolicy.cls covering spec US4 AS1–AS5 plus: `prior_receipt_confirmed` never requires approval; `Admit` refuses `agent`, `rules`, `system`, `sweeper`, `replay` with `ACTOR_NOT_ALLOWED_TO_APPROVE`; the verdict's `requiresApproval` equals `ActionCatalog.RequiresApproval` for every Action
-- [ ] T030 [US4] Implement `Admit(actor, run)` in src/SignalNoir/Core/Validator.cls and confirm `requiresApproval` composition, until T029 passes
-- [ ] T031 [US4] Run T029 green
+- [x] T029 [P] [US4] Write failing tests/SignalNoir/Tests/Core/Validator/TestApprovalPolicy.cls covering spec US4 AS1–AS5 plus: `prior_receipt_confirmed` never requires approval; `Admit` refuses `agent`, `rules`, `system`, `sweeper`, `replay` with `ACTOR_NOT_ALLOWED_TO_APPROVE`; the verdict's `requiresApproval` equals `ActionCatalog.RequiresApproval` for every Action
+- [x] T030 [US4] Implement `Admit(actor, run)` in src/SignalNoir/Core/Validator.cls and confirm `requiresApproval` composition, until T029 passes
+- [x] T031 [US4] Run T029 green
 
 **Checkpoint**: 007 can decide whether to wait for a human and which approver is admissible.
 **MVP (G1-ready)**: Phases 1–6.

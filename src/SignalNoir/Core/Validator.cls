@@ -79,6 +79,41 @@ Method Validate(input As SignalNoir.Core.Dto.ValidationInput) As SignalNoir.Core
 	Return verdict
 }
 
+/// Whether an Approval by `actor` is admissible within `run` (FR-012). `benchmark` approves only
+/// inside a BenchmarkRun (labelled automatic); an operator always (labelled human); anyone else
+/// never. The run is read as given: a run with no run id, or with `inRun` that is not a boolean
+/// true, is not a run.
+Method Admit(actor As %String, run As %DynamicObject) As SignalNoir.Core.Dto.Admission
+{
+	Set admission = ##class(SignalNoir.Core.Dto.Admission).%New()
+	If actor = "benchmark" {
+		If ..InsideRun(run) {
+			Set admission.admissible = 1, admission.label = "automatic"
+		} Else {
+			Set admission.reason = "ACTOR_BENCHMARK_OUTSIDE_RUN"
+		}
+	} ElseIf ..IsOperator(actor) {
+		Set admission.admissible = 1, admission.label = "human"
+	} Else {
+		Set admission.reason = "ACTOR_NOT_ALLOWED_TO_APPROVE"
+	}
+	Return admission
+}
+
+Method InsideRun(run) As %Boolean [ Private ]
+{
+	If '$IsObject(run) || 'run.%IsA("%Library.DynamicObject") Return 0
+	Return (run.%GetTypeOf("inRun") = "boolean") && run.inRun && (run.%GetTypeOf("runId") = "string") && (run.runId '= "")
+}
+
+/// operator:<name>, as the contract's Actor pattern: 1 to 64 characters, no colon
+Method IsOperator(actor As %String) As %Boolean [ Private ]
+{
+	If $Extract(actor, 1, 9) '= "operator:" Return 0
+	Set name = $Extract(actor, 10, *)
+	Return ($Length(name) >= 1) && ($Length(name) <= 64) && (name '[ ":")
+}
+
 /// A blocked verdict carries only the code of the step that failed
 Method Block(verdict As SignalNoir.Core.Dto.ValidatorVerdict, code As %String) As SignalNoir.Core.Dto.ValidatorVerdict [ Private ]
 {
