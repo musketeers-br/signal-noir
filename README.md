@@ -40,7 +40,10 @@ a Review Dossier.
    probability per Evidence item). An indecisive answer (low probability, a tie, `other` or a
    refusal) never becomes a Proposal: the Case goes to review with that reason. Decisions is the one
    proposer that does not run through AI Hub, because AI Hub build 154 has no route to that API
-   ([spike](docs/verification/013-decisions-spike.md)); it is off unless you enable it.
+   ([spike](docs/verification/013-decisions-spike.md)); it is off unless you enable it. The
+   **hybrid** mode combines both: Decisions answers first, and when its answer is not decisive the
+   AI Hub Agent investigates the same Evidence and proposes. Each Proposal is authored by whichever
+   answered, and the Timeline records the route.
 4. **Validation and approval.** The deterministic Validator checks every Proposal, whoever wrote
    it: Agent, Rules or Operator. An Operator approves or rejects it in the console. An Approval
    binds that exact Proposal and expires after 15 minutes.
@@ -155,7 +158,7 @@ editing `.env`, run `docker compose down` then `up`. Note that `down` also reset
 | `SN_SIM_BASE_URL` | The Simulator, served by the same instance (`http://localhost:52773/sim/api/v1`) |
 | `SN_BACKGROUND_TASKS` | `1` reads the Origin feed and runs the sweeper every minute |
 | `SN_PARTNER_TIMEOUT_SECONDS`, `SN_INVESTIGATION_BUDGET_SECONDS`, `SN_AI_LEASE_SECONDS` | Optional timings (defaults 60, 120, 300) |
-| `SN_PROPOSER_MODE` | Proposer of new Cases: `agent` (default), `rules` or `decisions` |
+| `SN_PROPOSER_MODE` | Proposer of new Cases: `agent` (default), `rules`, `decisions` or `hybrid` (Decisions first, AI Hub Agent when Decisions is not decisive) |
 | `SN_DECISIONS_API_KEY`, `SN_DECISIONS_MODEL` | OpenAI key for the Decisions proposer (falls back to `SN_AI_API_KEY` when `SN_AI_PROVIDER=openai`) and its model (default `gpt-6-luna`). Sends synthetic Case data to OpenAI directly, outside AI Hub |
 | `SN_EMBED_PROVIDER`, `SN_EMBED_MODEL`, `SN_EMBED_API_KEY` | Optional embedding provider for precedents: `openai` with a 1536-dimension model (`text-embedding-3-small`). Separate from the Agent's provider, because Anthropic has no embeddings. Unset: lexical mode |
 | `SN_PRECEDENTS_MIN_SIMILARITY`, `SN_PRECEDENTS_DEFAULT_K`, `SN_PRECEDENTS_MAX_K` | Optional search settings (defaults 0.6, 5, 10) |

@@ -3,7 +3,10 @@
 **Status**: agreed draft for this feature. The published copy is `docs/seams.md`; this file is the
 spec-side source and the two MUST NOT diverge (a divergence is a contract change).
 
-**Version**: v6 (2026-10-31) — new `DecisionsRuntime` port, the proposer failure code `uncertain`
+**Version**: v7 (2026-10-31) — proposer mode `hybrid` and the optional `author` and `cascade`
+proposer details, by contract change 016
+(`specs/016-hybrid-proposer/contracts/contract-change-016-hybrid-mode.md`).
+v6 (2026-10-31) — new `DecisionsRuntime` port, the proposer failure code `uncertain`
 and the optional `tokensCached` detail, by contract change 013
 (`specs/013-decisions-proposer/contracts/contract-change-013-decisions-mode.md`).
 v5 (2026-10-31) — optional `InvestigationContext.precedents` and the new `Embedder`
@@ -153,7 +156,9 @@ Propose(context: InvestigationContext) -> Result<ProposerAnswer>
 `tokensCached` (v6), `estCostUsd` when known. Failures are values (`provider_unavailable`,
 `invalid_response`, `refused`, `budget_exceeded`, and in v6 `uncertain`, whose message is the review
 reason) that end in `ReviewRequired`. Only `SignalNoir.Proposers.Factory` reads the proposer mode,
-before the port; the modes are `agent`, `rules`, `replay` and `decisions` (v6). `SignalNoir.Proposers.Unavailable` returns
+before the port; the modes are `agent`, `rules`, `replay`, `decisions` (v6) and `hybrid` (v7:
+Decisions first, the Agent when Decisions is not decisive; `details.author` names the proposer that
+answered and authors the Proposal, `details.cascade` is recorded as a `proposer_cascade` Annotation). `SignalNoir.Proposers.Unavailable` returns
 "provider unavailable" instead of raising.
 
 ### Tools

@@ -106,6 +106,10 @@ ClassMethod Work(investigationId As %String)
 		Set meta = ..Versions(svc, inv.caseId)
 		Set proposer = $ClassMethod(inv.proposerClass, "%New")
 		Set answer = proposer.Propose(context)
+		; 016: a hybrid answer names the proposer that produced it and leaves its route on the Timeline
+		Set author = ..Author(inv.mode, answer)
+		If author '= inv.mode Do meta.%Set("author", author)
+		If $IsObject(answer.details) && $IsObject(answer.details.%Get("cascade")) Do ..RecordCascade(svc, inv.caseId, answer.details.%Get("cascade"))
 		If $IsObject(answer.details) {
 			For key = "provider", "model", "promptVersion", "tokensIn", "tokensOut", "tokensCached", "estCostUsd" {
 				If answer.details.%Get(key) '= "" Do meta.%Set(key, answer.details.%Get(key))
@@ -128,7 +132,7 @@ ClassMethod Work(investigationId As %String)
 		For key = "tokensIn", "tokensOut", "estCostUsd" {
 			If meta.%Get(key) '= "" Do metrics.%Set(key, +meta.%Get(key))
 		}
-		Set converted = ##class(SignalNoir.Core.ProposalShape).Convert(answer.obj, ids, inv.mode, versions, metrics)
+		Set converted = ##class(SignalNoir.Core.ProposalShape).Convert(answer.obj, ids, author, versions, metrics)
 		If 'converted.ok {
 			Do ..CloseOrDiscard(svc, investigationId, "invalid proposer response", meta)
 			Quit
@@ -200,6 +204,27 @@ ClassMethod Versions(svc As SignalNoir.Application.CaseService, caseId As %Strin
 		If (ev.source = "tool.mapping_catalog") && (ev.result.mappingVersion '= "") Do meta.%Set("mappingVersion", ev.result.mappingVersion)
 	}
 	Return meta
+}
+
+/// The author of a Proposal: the mode, or for the hybrid mode the proposer
+/// that actually produced the answer (016 FR-004)
+ClassMethod Author(mode As %String, answer As SignalNoir.Core.Result) As %String
+{
+	If (mode '= "hybrid") || '$IsObject(answer.details) Return mode
+	Set author = answer.details.%Get("author")
+	Return $Select($ListFind($ListBuild("agent", "decisions"), author): author, 1: mode)
+}
+
+/// One proposer_cascade Annotation per hybrid Investigation (016 FR-005):
+/// codes only, never a provider's error text
+ClassMethod RecordCascade(svc As SignalNoir.Application.CaseService, caseId As %String, cascade As %DynamicObject) [ Private ]
+{
+	Set event = ##class(SignalNoir.Core.Dto.TimelineEvent).%New()
+	Set event.type = "Annotation"
+	Set event.actor = "system"
+	Set event.refId = caseId
+	Set event.payload = cascade
+	Do svc.Append(caseId, event)
 }
 
 /// The reason recorded on the Case for a proposer failure (006 FR-018)

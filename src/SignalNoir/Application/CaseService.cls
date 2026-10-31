@@ -642,13 +642,16 @@ Method CompleteInvestigation(investigationId As %String, proposal As SignalNoir.
 			Set result = ..Err("closed", inv.outcomeReason)
 			Quit
 		}
+		; the author is the mode, or for a hybrid Investigation the proposer that answered (016)
+		Set author = inv.mode
+		If (inv.mode = "hybrid") && $IsObject(meta) && $ListFind($ListBuild("agent", "decisions"), meta.%Get("author")) Set author = meta.%Get("author")
 		Set proposalId = ..Ids.New("prop_")
 		Do ..Supersede(rec, proposalId)
 		Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%New()
 		Set pr.proposalId = proposalId
 		Set pr.caseId = rec.caseId
 		Set pr.investigationId = investigationId
-		Set pr.author = inv.mode
+		Set pr.author = author
 		Set pr.createdAt = now
 		Set pr.current = 1
 		Set pr.diagnosisJson = ..Json(proposal.diagnosis)
@@ -663,8 +666,8 @@ Method CompleteInvestigation(investigationId As %String, proposal As SignalNoir.
 		Set pr.priorReceiptCandidateJson = $Select($IsObject(prior) && (prior.%Size() > 0): prior.%ToJSON(), 1: "")
 		$$$ThrowOnError(pr.%Save())
 		Set rec.currentProposalId = proposalId
-		Do ..AppendEvent(rec, "ProposalCreated", inv.mode, proposalId, {"proposalId": (proposalId), "author": (inv.mode), "action": (proposal.action), "confidence": (proposal.confidence), "investigationId": (investigationId)}, now)
-		Set moved = ..ApplyTransition(rec, "DecisionProposed", inv.mode, {"reason": "proposal recorded", "proposalId": (proposalId)}, "", now)
+		Do ..AppendEvent(rec, "ProposalCreated", author, proposalId, {"proposalId": (proposalId), "author": (author), "action": (proposal.action), "confidence": (proposal.confidence), "investigationId": (investigationId)}, now)
+		Set moved = ..ApplyTransition(rec, "DecisionProposed", author, {"reason": "proposal recorded", "proposalId": (proposalId)}, "", now)
 		If 'moved.ok {
 			Set result = moved
 			Quit
