@@ -88,9 +88,22 @@ Method RunOnce(orderId As %String) As %DynamicObject
 	Do out.%Set("getCaseOk", fetched.ok)
 	Do out.%Set("getCaseCode", fetched.code)
 
-	; Validator
-	Set verdict = ..Validator.Validate(##class(SignalNoir.Core.Dto.Proposal).%New())
+	; Validator (seam v2): every input arrives in the ValidationInput
+	Set input = ##class(SignalNoir.Core.Dto.ValidationInput).%New()
+	Set input.proposal = ##class(SignalNoir.Core.Dto.Proposal).%New()
+	Set input.proposal.action = "RETRY"
+	Set input.now = ..Clock.NowUtc()
+	Set verdict = ..Validator.Validate(input)
 	Do out.%Set("verdict", verdict.verdict)
+	Do out.%Set("requiresApproval", verdict.requiresApproval)
+	Do out.%Set("reasons", verdict.ReasonsJson())
+	Do out.%Set("verdictAt", verdict.at)
+	Set revalidated = ..Validator.Revalidate(input, .results)
+	Do out.%Set("revalidated", revalidated.verdict)
+	Do out.%Set("resultCount", results.Count())
+	Set admission = ..Validator.Admit("operator:consumer", {"inRun": false, "runId": null})
+	Do out.%Set("admissible", admission.admissible)
+	Do out.%Set("admissionLabel", admission.label)
 
 	; Proposer (unavailable by default in the fake)
 	Set context = ##class(SignalNoir.Core.Dto.InvestigationContext).%New()

@@ -670,10 +670,11 @@ Method CompleteInvestigation(investigationId As %String, proposal As SignalNoir.
 			Quit
 		}
 		; every Proposal passes the single Validator, whatever its origin (Constitution III)
-		Set verdict = ##class(SignalNoir.Application.ResolutionValidator).Verdict(..Validator, proposal, now)
+		Set validation = ##class(SignalNoir.Application.ResolutionValidator).InputFor(rec, proposal, now)
+		Set verdict = ##class(SignalNoir.Application.ResolutionValidator).Verdict(..Validator, validation)
 		Set pr.verdictJson = verdict.%ToJSON()
 		$$$ThrowOnError(pr.%Save())
-		Do ..AppendEvent(rec, "ValidatorVerdict", "system", proposalId, {"proposalId": (proposalId), "action": (proposal.action), "verdict": (verdict.verdict), "reasons": (verdict.reasons), "requiresApproval": (verdict.requiresApproval)}, now)
+		Do ..AppendEvent(rec, "ValidatorVerdict", "system", proposalId, {"proposalId": (proposalId), "action": (proposal.action), "verdict": (verdict.verdict), "reasons": (verdict.reasons), "requiresApproval": (verdict.requiresApproval), "versions": (verdict.versions)}, now)
 		Set moved = ..RouteProposal(rec, proposal, verdict, now)
 		If 'moved.ok {
 			Set result = moved
@@ -1636,8 +1637,9 @@ Method ResolveReview(caseId As %String, request As %DynamicObject) As SignalNoir
 			Set note = ##class(SignalNoir.Core.Canon).Trim(request.note)
 			Set noteId = $Select(note '= "": ..Ids.New("evid_"), 1: "")
 			Set proposal = ##class(SignalNoir.Core.OperatorProposal).Build(request.action, request.params, operatorName, ids, note, noteId)
-			Set verdict = ##class(SignalNoir.Application.ResolutionValidator).Verdict(..Validator, proposal, now)
-			Do ..AppendEvent(rec, "ValidatorVerdict", actor, caseId, {"proposalAuthor": (actor), "action": (proposal.action), "verdict": (verdict.verdict), "reasons": (verdict.reasons), "requiresApproval": (verdict.requiresApproval)}, now)
+			Set validation = ##class(SignalNoir.Application.ResolutionValidator).InputFor(rec, proposal, now)
+			Set verdict = ##class(SignalNoir.Application.ResolutionValidator).Verdict(..Validator, validation)
+			Do ..AppendEvent(rec, "ValidatorVerdict", actor, caseId, {"proposalAuthor": (actor), "action": (proposal.action), "verdict": (verdict.verdict), "reasons": (verdict.reasons), "requiresApproval": (verdict.requiresApproval), "versions": (verdict.versions)}, now)
 			If verdict.verdict '= "accepted" {
 				; only the verdict is recorded; the refusal is reported after the commit
 				$$$ThrowOnError(rec.%Save())

@@ -67,7 +67,7 @@ Method TestBlockedResolutionRecordsNoNote()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
 	Set fake = ##class(SignalNoir.Tests.Fakes.FakeValidator).%New()
-	Set fake.Verdict = "invalid"
+	Set fake.Verdict = "blocked"
 	Set svc.Validator = fake
 	Set caseId = ..ReviewCase(svc, "res-note-blk")
 	Set c = svc.GetCase(caseId).obj
@@ -93,9 +93,8 @@ Method TestValidatorBlockedRecordsOnlyTheVerdict()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
 	Set fake = ##class(SignalNoir.Tests.Fakes.FakeValidator).%New()
-	Set fake.Verdict = "invalid"
-	Set fake.Reason = "Mapping conditions do not match the order specimen type"
-	Set fake.FailedPreconditions = $ListBuild("MAPPING_CONDITION_MISMATCH")
+	Set fake.Verdict = "blocked"
+	Set fake.Reasons = $ListBuild("MAPPING_CONDITION_MISMATCH")
 	Set svc.Validator = fake
 	Set caseId = ..ReviewCase(svc, "res-block")
 	Set before = svc.GetCase(caseId).obj

@@ -13,12 +13,23 @@ ClassMethod Entries() As %DynamicArray
 		For i = 1 : 1 : $ListLength(params) Do props.%Set($ListGet(params, i), {"type": "string"})
 		Set schema = {"type": "object", "additionalProperties": false, "properties": (props)}
 		If action = "APPLY_APPROVED_MAPPING" Do schema.%Set("required", ["mappingId", "mappingVersion"])
-		Set entry = {"action": (action), "paramsSchema": (schema), "requiredEvidence": []}
+		Set entry = {"action": (action), "paramsSchema": (schema), "requiredEvidence": (..RequiredEvidence(action))}
 		Do entry.%Set("externalEffect", ..ExternalEffect(action), "boolean")
 		Do entry.%Set("requiresApproval", ..RequiresApproval(action), "boolean")
 		Do out.%Push(entry)
 	}
 	Return out
+}
+
+/// Minimum Evidence per Action (PRD FR-15; 004 data-model "Action catalog").
+/// "tool#key" names a key of Evidence.result, "order#field" an Order path,
+/// and "|" joins alternatives where either one is enough.
+ClassMethod RequiredEvidence(action As %String) As %DynamicArray
+{
+	If action = "RETRY" Return ["tool.policies#attempt", "tool.partner_failure_history", "tool.partner_health"]
+	If action = "APPLY_APPROVED_MAPPING" Return ["tool.policies#substitution", "tool.mapping_catalog", "order#<condition field>"]
+	If action = "HOLD" Return ["tool.partner_health|tool.policies#maintenanceWindows"]
+	Return []
 }
 
 ClassMethod ExternalEffect(action As %String) As %Boolean

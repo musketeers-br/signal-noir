@@ -165,8 +165,8 @@ Method TestValidatorBlockedRoutesToReview()
 	Set S = "SignalNoir.Tests.Support"
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
 	Set fake = ##class(SignalNoir.Tests.Fakes.FakeValidator).%New()
-	Set fake.Verdict = "invalid"
-	Set fake.FailedPreconditions = $ListBuild("MAPPING_CONDITION_MISMATCH")
+	Set fake.Verdict = "blocked"
+	Set fake.Reasons = $ListBuild("MAPPING_CONDITION_MISMATCH")
 	Set svc.Validator = fake
 	Set caseId = $ClassMethod(S, "InvestigatingCase", svc, "dos-block", "agent", .cmd, "SERUM")
 	Set started = svc.StartInvestigation(cmd, "SignalNoir.Tests.Fakes.ScriptedProposer", "SignalNoir.Tests.Fakes.ScriptedSource")

@@ -28,4 +28,32 @@ Method TestRules()
 	Do $$$AssertEquals($ClassMethod(C, "AllowedParams", "RETRY"), "", "retry has no params")
 }
 
+/// 004 T009 - requiredEvidence per data-model "Action catalog"; "|" joins alternatives
+Method TestRequiredEvidence()
+{
+	Set items = ##class(SignalNoir.Core.ActionCatalog).Entries()
+	Set expected("RETRY") = "[""tool.policies#attempt"",""tool.partner_failure_history"",""tool.partner_health""]"
+	Set expected("APPLY_APPROVED_MAPPING") = "[""tool.policies#substitution"",""tool.mapping_catalog"",""order#<condition field>""]"
+	Set expected("HOLD") = "[""tool.partner_health|tool.policies#maintenanceWindows""]"
+	Set expected("REQUEST_REVIEW") = "[]"
+	For i = 0 : 1 : items.%Size() - 1 {
+		Set e = items.%Get(i)
+		Do $$$AssertEquals(e.requiredEvidence.%ToJSON(), expected(e.action), e.action _ " requiredEvidence")
+	}
+}
+
+/// 004 T009 - approval exactly when there is an external effect, in the rule and in the entries
+Method TestApprovalFollowsEffect()
+{
+	Set C = "SignalNoir.Core.ActionCatalog"
+	For action = "RETRY", "APPLY_APPROVED_MAPPING", "HOLD", "REQUEST_REVIEW" {
+		Do $$$AssertEquals($ClassMethod(C, "RequiresApproval", action), $ClassMethod(C, "ExternalEffect", action), action _ ": RequiresApproval = ExternalEffect")
+	}
+	Set items = $ClassMethod(C, "Entries")
+	For i = 0 : 1 : items.%Size() - 1 {
+		Set e = items.%Get(i)
+		If (e.action = "HOLD") || (e.action = "REQUEST_REVIEW") Do $$$AssertEquals(e.%GetTypeOf("requiresApproval") _ ":" _ e.requiresApproval, "boolean:0", e.action _ " reports requiresApproval false")
+	}
+}
+
 }

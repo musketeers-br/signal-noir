@@ -69,4 +69,82 @@ Property outcome As %String(MAXLEN = 32) [ InitialExpression = "in_progress" ];
 /// Why it failed or was held
 Property failureReason As %String(MAXLEN = 1024);
 
+Storage Default
+{
+<Data name="ExecutionRecordDefaultData">
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+<Value name="2">
+<Value>caseId</Value>
+</Value>
+<Value name="3">
+<Value>orderId</Value>
+</Value>
+<Value name="4">
+<Value>partnerId</Value>
+</Value>
+<Value name="5">
+<Value>proposalId</Value>
+</Value>
+<Value name="6">
+<Value>approvalId</Value>
+</Value>
+<Value name="7">
+<Value>action</Value>
+</Value>
+<Value name="8">
+<Value>idempotencyKey</Value>
+</Value>
+<Value name="9">
+<Value>payloadJson</Value>
+</Value>
+<Value name="10">
+<Value>mappingRefJson</Value>
+</Value>
+<Value name="11">
+<Value>scenarioInstanceId</Value>
+</Value>
+<Value name="12">
+<Value>runId</Value>
+</Value>
+<Value name="13">
+<Value>authorizedAt</Value>
+</Value>
+<Value name="14">
+<Value>completedAt</Value>
+</Value>
+<Value name="15">
+<Value>leaseOwner</Value>
+</Value>
+<Value name="16">
+<Value>leaseGeneration</Value>
+</Value>
+<Value name="17">
+<Value>stepLeaseUntil</Value>
+</Value>
+<Value name="18">
+<Value>revalidationJson</Value>
+</Value>
+<Value name="19">
+<Value>attemptsJson</Value>
+</Value>
+<Value name="20">
+<Value>reconciliationsJson</Value>
+</Value>
+<Value name="21">
+<Value>outcome</Value>
+</Value>
+<Value name="22">
+<Value>failureReason</Value>
+</Value>
+</Data>
+<DataLocation>^SignalNoir70AE.ExecutionReCD4DD</DataLocation>
+<DefaultData>ExecutionRecordDefaultData</DefaultData>
+<IdLocation>^SignalNoir70AE.ExecutionReCD4DD</IdLocation>
+<IndexLocation>^SignalNoir70AE.ExecutionReCD4DI</IndexLocation>
+<StreamLocation>^SignalNoir70AE.ExecutionReCD4DS</StreamLocation>
+<Type>%Storage.Persistent</Type>
+}
+
 }
