@@ -44,7 +44,9 @@
 		{#if d.collidingRecords?.length}
 			<h3>Colliding records</h3>
 			{#each d.collidingRecords as r (r.recordRef)}
-				<table class="table">
+				<!-- it scrolls inside its own box, so the keyboard must reach it (axe scrollable-region-focusable) -->
+				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+				<table class="table" tabindex="0">
 					<caption class="small mono">{r.recordRef}{#if r.source} · {r.source}{/if}</caption>
 					<tbody>
 						{#each Object.entries(r.fields) as [k, v] (k)}

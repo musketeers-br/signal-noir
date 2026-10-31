@@ -33,17 +33,20 @@
 
 | View or state | Light | Dark | 360 px | 1440 px |
 |---|---|---|---|---|
-| Top bar or rail, theme control, connection note | [ ] | [ ] | [ ] | [ ] |
-| Case list, rows, filters, empty "Needs you" | [ ] | [ ] | [ ] | [ ] |
-| Case header, state banner (every state) | [ ] | [ ] | [ ] | [ ] |
-| Six layers, "not yet" and "no interpretation" copy | [ ] | [ ] | [ ] | [ ] |
-| Evidence cards, conflicts, obsoleted Evidence | [ ] | [ ] | [ ] | [ ] |
-| Diagnosis, Proposal, versions and metrics | [ ] | [ ] | [ ] | [ ] |
-| Approval and Execution, revalidation table | [ ] | [ ] | [ ] | [ ] |
-| Timeline | [ ] | [ ] | [ ] | [ ] |
-| Approval dialog (every server answer of 005 FR-010) | [ ] | [ ] | [ ] | [ ] |
-| Review Dossier and resolution form | [ ] | [ ] | [ ] | [ ] |
-| Toasts, Case not found | [ ] | [ ] | [ ] | [ ] |
+| Top bar or rail, theme control, connection note | [x] | [x] | [x] | [x] |
+| Case list, rows, filters, empty "Needs you" | [x] | [x] | [x] | [x] |
+| Case header, state banner (every state) | [x] | [x] | [x] | [x] |
+| Six layers, "not yet" and "no interpretation" copy | [x] | [x] | [x] | [x] |
+| Evidence cards, conflicts, obsoleted Evidence | [x] | [x] | [x] | [x] |
+| Diagnosis, Proposal, versions and metrics | [x] | [x] | [x] | [x] |
+| Approval and Execution, revalidation table | [x] | [x] | [x] | [x] |
+| Timeline | [x] | [x] | [x] | [x] |
+| Approval dialog (every server answer of 005 FR-010) | [x] | [x] | [x] | [x] |
+| Review Dossier and resolution form | [x] | [x] | [x] | [x] |
+| Toasts, Case not found | [x] | [x] | [x] | [x] |
+
+Coverage checked in Chromium on 2026-10-31 (research.md, Outcome). The empty "Needs you" and the
+dialog's refusal answers are covered by the jsdom suites in both themes.
 
 ## Notes
 

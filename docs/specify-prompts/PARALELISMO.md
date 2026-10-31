@@ -90,7 +90,7 @@ Mudanças neles são aplicadas em lote no gate de integração. Exceção: a 012
 | 010 benchmark-and-reference-run | reservada | Henrique | 5 | |
 | 011 prior-receipt-p9 | condicional | José | 5 | |
 | 012 packaging-and-cross-install | parcial (29/10): imagem, compose, README, `.env.example`, smoke, scan de segredos e CI no repositório, verificados no ARM64; faltam a validação rápida (depende da 010), o cross-install do Henrique, o vídeo e a submissão | Henry | 5 | branch `g1-wiring-and-012` |
-| 014 liquid-console-redesign | no `master` (PR #24; tema claro/escuro, tokens, rail, vidro com fallbacks); falta só a checagem do `theme-init.js` na instância IRIS (T036) | Henry | extra | no `master` |
+| 014 liquid-console-redesign | no `master` (PR #24; tema claro/escuro, tokens, rail, vidro com fallbacks); verificação em navegador real concluída em 31/10 (T030–T041: axe com contraste sem violações, reflow a 320 px, fallbacks, impressão, `theme-init.js` no IRIS) na branch `014-browser-verification` | Henry | extra | no `master` |
 
 Trilhas (002, 007 e 008 passaram para o Henry em 28/10): Henrique = validação e benchmark (004 → 010) e integrador dos gates; Henry = Simulador, Caso, Agente, efeito e console (003 → 006 → 005 → 009 → 007 → 002 → 008 → 012); José = revisão do 010 e 011 condicional, só na onda 5.
 

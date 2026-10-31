@@ -15,7 +15,9 @@
 		<div class="execution">
 			<p><span class="mono">{ex.action}</span> · outcome <span class="mono">{ex.outcome}</span> · authorized {brt(ex.authorizedAt)} · key <span class="mono small">{ex.idempotencyKey}</span></p>
 			{#if ex.revalidation}
-				<table class="table">
+				<!-- it scrolls inside its own box, so the keyboard must reach it (axe scrollable-region-focusable) -->
+				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+				<table class="table" tabindex="0">
 					<caption class="small">Revalidation right before sending ({ex.revalidation.passed ? 'passed' : 'failed'})</caption>
 					<thead><tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Observed</th><th scope="col">Result</th></tr></thead>
 					<tbody>
