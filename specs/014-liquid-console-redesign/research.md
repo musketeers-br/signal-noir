@@ -78,8 +78,11 @@
 - **Claim to verify**: the existing `/signalnoir/ui` static web app serves `theme-init.js` with a JavaScript
   content type, from the same build output as `index.html`.
 - **Prior evidence**: 005 R3 verified static serving on this instance.
-- **Status**: not yet run on the live instance (T036). `npm run build` writes `build/theme-init.js` and
-  `build/index.html` references it; the dev server serves it. Result on IRIS: `<result: pending>`.
+- **Status**: verified on 2026-10-31 (T036) on `signalnoir-iris` (build 154U): after `npm run build`,
+  `GET /signalnoir/ui/theme-init.js` → **200 `application/javascript`**; `index.html` → 200; the 2 CSS and
+  8 JS assets it references → 200. **Result on IRIS: pass.**
+- **Note**: IRIS serves `index.html` and the CSS as `charset=ISO-8859-1`. Harmless today (all three files are
+  pure ASCII, checked byte by byte); a non-ASCII character in either file would be decoded wrongly.
 
 ## R8 — Summary strip
 
@@ -129,3 +132,53 @@ Untouched tree: `npm run check` 0 errors; `npm test` 11 files, 46 tests, all pas
   that widened the page (`minmax(0, 1fr)`), a long unbroken `<code>`, and two links under 44 px.
 - Not yet verified: 640, 768, 1100 px beyond the rail at 1440; reduced motion, reduced transparency, forced
   colors, print preview; zoom 400%; offline; `theme-init.js` on the IRIS instance (T036).
+
+## Outcome (2026-10-31, real-browser pass: T030, T035, T036, T037, T038, T041)
+
+Chromium (Playwright, headless) over `npm run dev:mock` (contract fixtures) for every view and state, and
+over the live IRIS console for serving and network. Every list filter, a Case in every fixture state
+(pending approval, superseded, held, outcome unknown, prior receipt, review after denial, ambiguous
+identity, provider unavailable), "Case not found", the approval dialog, "Versions and metrics", an approval
+and its toast; light and dark; 360, 640, 768, 1100 and 1440 px.
+
+**Found and fixed** (each pinned by `ui/tests/browser-findings.test.ts`):
+
+1. axe `color-contrast` (serious): the `FACT` overline of obsoleted Evidence was 3.5:1 in light because
+   the card used `opacity: 0.75`. The opacity is gone; the dashed border and the "Obsoleted by" tag carry
+   the meaning.
+2. axe `scrollable-region-focusable` (serious): the revalidation and colliding-records tables scroll in
+   their own box but could not be reached by keyboard. They take `tabindex="0"`.
+3. Reflow at 320 px (400% zoom): the conflict pair and `.kv` used `1fr`, and long mono codes did not
+   break, so the page scrolled 20 px. Columns are `minmax(0, 1fr)` and `.mono` may break anywhere.
+4. Print kept the raised shadow of buttons. Print now removes every `box-shadow`.
+5. "Back to cases" on "Case not found" was 95×18 px. It gets the 44 px `.back-link`.
+
+**Results after the fixes**
+
+- **SC-001** pass: every view and state above rendered in both themes; the coverage table is ticked.
+  The empty "Needs you" and the dialog's refusal answers (stale, invalid transition, invalid actor,
+  network) are not reachable with the browser mock and are covered in both themes by `case-list`,
+  `approval-dialog` and `a11y-themes` (jsdom).
+- **SC-002** pass: the 46 tests of 005 run unedited inside 161 passing tests (20 files).
+- **SC-003** pass: axe with contrast enabled, WCAG 2.2 A/AA: **0 violations** on 13 views × 2 themes × 5
+  widths, plus versions, approval and toast at 360 and 1440 in both themes.
+- **SC-004** pass: achromatopsia with all shadows removed: state chips keep glyph and label, fact and
+  interpretation keep their solid and dashed borders, failed and passed checks keep ✕ and ✓.
+- **SC-005** pass: no horizontal page scroll at any width from 360 to 1440, and none at 320 (400% zoom);
+  every control at least 44 px (radios sit in 44 px labels).
+- **SC-006** pass: `token-audit` (no literal color, shadow, radius or font outside the tokens).
+- **SC-007** pass: reduced motion leaves 0 animated elements; reduced transparency and `prefers-contrast:
+  more` make the top bar and dialog opaque with no blur; forced colors drops every shadow and keeps
+  1 px borders; keyboard focus shows a 3 px solid ring (dialog included).
+- **SC-008** pass as specified: with every request outside `localhost` blocked, the live console renders
+  50 rows, loads no web font and makes 0 external requests. A fully offline reload fails
+  (`ERR_INTERNET_DISCONNECTED`): there is no service worker and the data comes from the IRIS API, which the
+  spec does not ask to cache.
+- **SC-009** pass: a chosen theme is on `<html>` before `<body>` exists (no flash), survives a reload,
+  and an invalid stored value (`banana`) is ignored.
+- Text at 200% (1100 and 1440 px) and 400% zoom: no overflow, no clipped control.
+- Print: white page, black text, no blur, no shadow, Timeline expanded, glyphs, labels and `SYNTHETIC`
+  kept; the top bar stays because it carries the `SYNTHETIC` badge (T034).
+
+**T041 full run**: `npm run check` 0 errors, 0 warnings; `npm test` 20 files, 161 tests passing;
+`npm run build` ok.

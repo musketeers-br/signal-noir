@@ -47,7 +47,7 @@
 {#if view.notFound}
 	<section aria-labelledby="nf-title">
 		<h1 id="nf-title" class="page-title">{COPY.caseNotFound}</h1>
-		<a href="#/cases">{COPY.backToCases}</a>
+		<a href="#/cases" class="back-link">{COPY.backToCases}</a>
 	</section>
 {:else if d}
 	<article class="case-detail" aria-labelledby="case-title">

@@ -35,10 +35,11 @@
 @media (max-width: 639px) {
 	.main, .topbar { padding-left: var(--gutter-mobile); padding-right: var(--gutter-mobile); }
 	.case-link { grid-template-columns: minmax(0, 1fr); }
-	.side-by-side, .kv { grid-template-columns: 1fr; }
+	.side-by-side, .kv { grid-template-columns: minmax(0, 1fr); }
 	.layer { padding: var(--sp-3); }
 	.toasts { left: var(--sp-4); }
 }
 .layers, .case-detail { min-width: 0; }
 /* standalone links get a 44 px target (FR-015); links inside running text keep their line */
 .wordmark, .case-header > a.small { display: inline-flex; align-items: center; min-height: var(--target); }
+.back-link { display: inline-flex; align-items: center; min-height: var(--target); }

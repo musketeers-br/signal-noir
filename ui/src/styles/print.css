@@ -6,4 +6,5 @@
 	.detail-grid { grid-template-columns: 1fr; }
 	.timeline { position: static; max-height: none; overflow: visible; }
 	.layer, .dossier { break-inside: avoid; }
+	*, *::before, *::after { box-shadow: none !important; }
 }
