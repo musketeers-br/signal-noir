@@ -177,6 +177,48 @@
       "status": 200,
       "schema": "#/paths/~1reference~1mappings/get/responses/200/content/application~1json/schema",
       "description": "Approved mappings used by the prototype scenarios."
+    },
+    {
+      "file": "precedents.200.results.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "Lexical mode, three similar closed Cases, one Failed and one Cancelled shown with their outcome."
+    },
+    {
+      "file": "precedents.200.no-precedents.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "No closed Case has become a precedent yet."
+    },
+    {
+      "file": "precedents.200.nothing-similar.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "Precedents exist but none reaches the minimum similarity; second open within a minute (not recorded)."
+    },
+    {
+      "file": "precedents.200.rebuilding.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "The index is being rebuilt: no stale results shown."
+    },
+    {
+      "file": "precedents.200.needs-rebuild.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "Only records of another model exist: the search refuses to mix models."
+    },
+    {
+      "file": "precedents.200.unavailable.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "The embedding provider failed; the Case still opens."
     }
   ]
 }

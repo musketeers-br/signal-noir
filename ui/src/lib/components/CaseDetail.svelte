@@ -14,6 +14,7 @@
 	import LayerExecution from './LayerExecution.svelte';
 	import LayerProposal from './LayerProposal.svelte';
 	import LayerWhatFailed from './LayerWhatFailed.svelte';
+	import PrecedentsPanel from './PrecedentsPanel.svelte';
 	import StateBanner from './StateBanner.svelte';
 	import Timeline from './Timeline.svelte';
 
@@ -70,6 +71,8 @@
 				<LayerProposal detail={d} onApprove={openDialog} />
 				<LayerApproval detail={d} />
 				<LayerExecution detail={d} />
+				<!-- in review the Dossier shows them next to the next step (015) -->
+				{#if !(d.dossier && !terminal)}<section class="layer" aria-label="Similar resolved Cases"><PrecedentsPanel caseId={d.caseId} /></section>{/if}
 				{#if d.dossier && terminal}<Dossier detail={d} collapsed onRefresh={refresh} />{/if}
 			</div>
 			<Timeline events={view.events} />

@@ -12,6 +12,7 @@ XData UrlMap [ XMLNamespace = "http://www.intersystems.com/urlmap" ]
 <Route Url="/cases" Method="GET" Call="ListCases"/>
 <Route Url="/cases/:caseid" Method="GET" Call="GetCase"/>
 <Route Url="/cases/:caseid/timeline" Method="GET" Call="GetTimeline"/>
+<Route Url="/cases/:caseid/precedents" Method="GET" Call="GetPrecedents"/>
 <Route Url="/cases/:caseid/resolution" Method="POST" Call="Resolve"/>
 <Route Url="/cases/:caseid/proposals/:proposalid/decision" Method="POST" Call="Decide"/>
 <Route Url="/reference/action-catalog" Method="GET" Call="ActionCatalog"/>
@@ -72,6 +73,27 @@ ClassMethod GetTimeline(caseid As %String) As %Status
 	If 'r.ok Return ..WriteError(r)
 	Write ..TimelinePayload(caseid, r).%ToJSON()
 	Return $$$OK
+}
+
+/// GET /cases/{caseId}/precedents (feature 015, contract getCasePrecedents):
+/// similar closed Cases, never Evidence. A search failure is a status in the
+/// 200 body, so the console always opens the Case.
+ClassMethod GetPrecedents(caseid As %String) As %Status
+{
+	Set %response.ContentType = "application/json"
+	Set r = ##class(SignalNoir.Application.PrecedentService).Default().Search(caseid, $Get(%request.Data("k", 1)), "console")
+	If 'r.ok Return ..WriteError(r)
+	Write ..PrecedentsPayload(r).%ToJSON()
+	Return $$$OK
+}
+
+/// The contract PrecedentSearch
+ClassMethod PrecedentsPayload(r As SignalNoir.Core.Result) As %DynamicObject
+{
+	Set p = r.details
+	Do p.%Set("recorded", ''p.recorded, "boolean")
+	If 'p.%IsDefined("reason") || (p.reason = "") Do p.%Remove("reason")
+	Return p
 }
 
 /// POST /cases/{caseId}/resolution (feature 009, contract resolveReview)

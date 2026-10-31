@@ -44,6 +44,8 @@ export class FixtureServer implements Transport {
 	readonly calls: Call[] = [];
 	/** Cases returned to a `direction=newer` poll (none by default). */
 	newer: CaseSummary[] = [];
+	/** Fixture served to GET /cases/{id}/precedents (015). */
+	precedents = 'precedents.200.results.json';
 
 	constructor() {
 		for (const [id, file] of Object.entries(DEFAULT_DETAIL)) this.details.set(id, fixture<CaseDetail>(file));
@@ -86,6 +88,12 @@ export class FixtureServer implements Transport {
 		if (method === 'GET' && parts[0] === 'cases' && parts.length === 2) {
 			const d = this.details.get(parts[1]);
 			return d ? { status: 200, body: structuredClone(d) } : { status: 404, body: fixture('case.404.json') };
+		}
+		if (method === 'GET' && parts[0] === 'cases' && parts[2] === 'precedents') {
+			if (!this.details.has(parts[1])) return { status: 404, body: fixture('case.404.json') };
+			const body = fixture<{ caseId: string }>(this.precedents);
+			body.caseId = parts[1];
+			return { status: 200, body };
 		}
 		if (method === 'GET' && parts[0] === 'cases' && parts[2] === 'timeline') return this.timeline(parts[1], Number(url.searchParams.get('sinceSeq') ?? 0));
 		if (method === 'POST' && parts[2] === 'proposals' && parts[4] === 'decision') {

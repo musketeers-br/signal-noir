@@ -86,7 +86,26 @@ export const COPY = {
 	server: 'The server could not handle the request. Nothing is assumed.',
 	blocked: 'The validator blocked this. Nothing was executed.',
 	resolvedToast: 'Resolution recorded. The case follows the normal checks before any effect.',
-	cancelledToast: 'Case cancelled. No effect was sent.'
+	cancelledToast: 'Case cancelled. No effect was sent.',
+	precedentsTitle: 'Similar resolved Cases',
+	precedentsNotice: 'Similarity search over earlier Cases. Not Evidence about this Case, and never used to decide.',
+	precedentsLoading: 'Looking for similar resolved Cases…',
+	precedentsLexical: 'Lexical similarity (no embedding provider)',
+	precedentsProvider: (model: string) => `Semantic similarity (${model})`,
+	precedentsStatus: {
+		no_precedents: 'No precedents yet. Closed Cases become precedents by themselves.',
+		nothing_similar: 'Nothing similar enough among the resolved Cases.',
+		rebuilding: 'The precedent index is being rebuilt. Results will be back when it finishes.',
+		needs_rebuild: 'The precedent index was built with another model and needs a rebuild. Results are not mixed.',
+		unavailable: 'Search unavailable.'
+	} as Record<string, string>,
+	precedentsReason: {
+		provider_unavailable: 'The embedding provider did not answer.',
+		unsupported_dimension: 'The configured embedding model has an unsupported size.',
+		index_error: 'The index could not be read.',
+		model_changed: 'The embedding model changed.'
+	} as Record<string, string>,
+	precedentsFailed: 'Search unavailable: the server did not answer. The case itself is not affected.'
 };
 
 /** Plain-language meaning of validator reason codes (local map until the closed enum lands, F-6). */

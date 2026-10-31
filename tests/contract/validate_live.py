@@ -133,6 +133,11 @@ def main() -> int:
     check("mappings", "/reference/mappings?sourceCode=GLIC-J", 200, "#/paths/~1reference~1mappings/get/responses/200/content/application~1json/schema")
     check("unknown case", "/cases/case_doesnotexist", 404, "ErrorEnvelope")
     check("unknown timeline", "/cases/case_doesnotexist/timeline", 404, "ErrorEnvelope")
+    # 015: precedents of a Case (any status validates; failures are 200 with a status)
+    for item in page["items"][:3]:
+        check("precedents", f"/cases/{item['caseId']}/precedents?k=3", 200, "PrecedentSearch")
+    check("precedents k", f"/cases/{page['items'][0]['caseId']}/precedents?k=11", 400, "ErrorEnvelope")
+    check("unknown precedents", "/cases/case_doesnotexist/precedents", 404, "ErrorEnvelope")
     check("bad cursor", "/cases?cursor=not-a-cursor!", 400, "ErrorEnvelope")
     check("bad sinceSeq", f"/cases/{page['items'][0]['caseId']}/timeline?sinceSeq=-1", 400, "ErrorEnvelope")
 

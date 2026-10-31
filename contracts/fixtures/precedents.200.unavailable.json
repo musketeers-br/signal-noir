@@ -1,0 +1,13 @@
+{
+  "caseId": "case_000231",
+  "status": "unavailable",
+  "mode": "provider",
+  "model": "text-embedding-3-small",
+  "dimension": 1536,
+  "k": 5,
+  "minSimilarity": 0.6,
+  "items": [],
+  "recorded": true,
+  "notice": "Similarity search over earlier Cases. Not Evidence about this Case.",
+  "reason": "provider_unavailable"
+}

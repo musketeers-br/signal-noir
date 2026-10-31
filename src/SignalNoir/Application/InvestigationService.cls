@@ -102,6 +102,7 @@ ClassMethod Work(investigationId As %String)
 		Set context.maxToolCalls = ##class(SignalNoir.Core.Budget).#MAXTOOLCALLS
 		Set context.budgetMs = inv.budgetMs
 		Set context.startedAt = inv.startedAt
+		Set context.precedents = ..Precedents(inv.caseId)
 		Set meta = ..Versions(svc, inv.caseId)
 		Set proposer = $ClassMethod(inv.proposerClass, "%New")
 		Set answer = proposer.Propose(context)
@@ -138,6 +139,21 @@ ClassMethod Work(investigationId As %String)
 	Catch ex {
 		Do ..CloseOrDiscard(svc, investigationId, "proposer failed: " _ ex.Name, meta)
 	}
+}
+
+/// The optional precedents for the proposer (015 US6): "" unless
+/// SN_PRECEDENTS_AGENT=1. Not a Tool call (the base package spends the
+/// budget), never Evidence; the search leaves its own Timeline record.
+/// Benchmark Cases are never precedents, so a run never sees its own Cases.
+ClassMethod Precedents(caseId As %String, service As SignalNoir.Application.PrecedentService = "") As %DynamicArray
+{
+	If '$IsObject(service) {
+		If '##class(SignalNoir.Application.PrecedentService).AgentEnabled() Return ""
+		Set service = ##class(SignalNoir.Application.PrecedentService).Default()
+	}
+	Set r = service.Search(caseId, , "agent")
+	If 'r.ok || (r.details.status '= "results") Return ""
+	Return r.details.items
 }
 
 /// The gateway an Investigation's calls go through

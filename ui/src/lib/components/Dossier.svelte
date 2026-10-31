@@ -5,6 +5,7 @@
 	import { COPY } from '../copy';
 	import DiagnosisView from './DiagnosisView.svelte';
 	import EvidenceChip from './EvidenceChip.svelte';
+	import PrecedentsPanel from './PrecedentsPanel.svelte';
 	import ResolutionForm from './ResolutionForm.svelte';
 
 	let { detail, collapsed = false, onRefresh }: { detail: CaseDetail; collapsed?: boolean; onRefresh: () => Promise<void> } = $props();
@@ -72,6 +73,8 @@
 		{/if}
 
 		<div class="next-step"><strong>Suggested next step:</strong> {d.suggestedNextStep}</div>
+
+		{#if !collapsed}<PrecedentsPanel caseId={detail.caseId} />{/if}
 
 		{#if detail.state === 'ReviewRequired'}
 			<ResolutionForm {detail} {onRefresh} />

@@ -311,3 +311,34 @@ export interface ActionCatalogEntry {
 	paramsSchema: Record<string, unknown>;
 	requiredEvidence: string[];
 }
+
+// Contract change 015: similar closed Cases (never Evidence).
+export type PrecedentStatus = 'results' | 'no_precedents' | 'nothing_similar' | 'rebuilding' | 'needs_rebuild' | 'unavailable';
+
+export interface PrecedentMatch {
+	caseId: string;
+	orderId: string;
+	partnerId: string;
+	description: string;
+	action: Action | null;
+	finalState: 'Resolved' | 'ResolvedByPriorReceipt' | 'Cancelled' | 'Failed';
+	closedAt: string;
+	durationSeconds: number;
+	similarity: number;
+	synthetic: boolean;
+	replay: boolean;
+}
+
+export interface PrecedentSearch {
+	caseId: string;
+	status: PrecedentStatus;
+	mode: 'lexical' | 'provider';
+	model: string;
+	dimension: number;
+	k: number;
+	minSimilarity: number;
+	items: PrecedentMatch[];
+	reason?: 'provider_unavailable' | 'unsupported_dimension' | 'index_error' | 'model_changed';
+	recorded: boolean;
+	notice: string;
+}
