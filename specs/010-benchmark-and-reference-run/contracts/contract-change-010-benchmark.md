@@ -46,3 +46,8 @@ must stay green.
 - `ScenarioFamily` is unchanged. P3 and idempotency are not rows of the agent decision part; they feed
   `platformGuarantees` only.
 - No new Action, state, error code or actor.
+
+## Decision record (T002)
+
+**2026-10-31.** Henrique reported that Henry and José approved CC-1…CC-7 as proposed. The contract
+itself is changed only by T011, in one commit with the console types.

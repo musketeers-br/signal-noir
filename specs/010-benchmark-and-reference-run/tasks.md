@@ -60,7 +60,7 @@ Tasks marked **[person]** can be done only by the named person and are not codea
 ## Phase 1: Setup
 
 - [ ] T001 Confirm the baseline on a fresh container from `master`: compile (three passes), create the Simulator web application, run the full recursive suite, and record the count (expected 416 passing, 0 failing) under a new "Baseline" heading in specs/010-benchmark-and-reference-run/research.md; if it is not green, stop
-- [ ] T002 [person: Henrique with Henry and José] Walk specs/010-benchmark-and-reference-run/contracts/coordination-010.md with Henry (E1–E5, and that he does not read the reserved variants before the freeze) and José (E6, the review scope in contracts/scoring.md), and contracts/contract-change-010-benchmark.md (CC-1…CC-7) with both; record each decision, and that Q1–Q3 took their defaults, at the end of those two files. Do not start any **[edit]** task or T011 before this is recorded
+- [x] T002 [person: Henrique with Henry and José] Walk specs/010-benchmark-and-reference-run/contracts/coordination-010.md with Henry (E1–E5, and that he does not read the reserved variants before the freeze) and José (E6, the review scope in contracts/scoring.md), and contracts/contract-change-010-benchmark.md (CC-1…CC-7) with both; record each decision, and that Q1–Q3 took their defaults, at the end of those two files. Do not start any **[edit]** task or T011 before this is recorded
 
 ---
 

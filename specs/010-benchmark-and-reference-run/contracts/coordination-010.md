@@ -39,3 +39,17 @@ review); the data records what actually happened.
 
 See the plan's *Open decisions*: Q1 (what counts as the end of a Case), Q2 (evidence for restart and late
 worker), Q3 (where the used-set declaration lives).
+
+## Decision record (T002)
+
+**2026-10-31.** Henrique reported that Henry and José approved this document. Recorded as approved, with
+no condition stated:
+
+- Henry: E1–E5 (edits in `CaseService`, `ResolutionValidator`, `Replay` and `Dispatch`), the baseline with
+  synonyms (T053), and not reading the reserved variants before the freeze.
+- José: E6 (the `RunDirectory` port), the review of the baseline and of the evaluator (T055) against
+  `contracts/scoring.md`.
+- Q1–Q3 took their defaults (plan, Open decisions).
+
+The approval was given outside the repository (message to Henrique). If either of them attached a
+condition, add it here before the edit it affects starts.
