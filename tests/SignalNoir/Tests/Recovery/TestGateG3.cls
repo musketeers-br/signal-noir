@@ -117,6 +117,7 @@ Method TestLiveOperatorRetry()
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
 	; the Exception opens the Case (Open); its routing is not under test here
 	Set caseId = svc.RecordException(order.orderId, $ClassMethod(..#S, "Exception")).ref
+	Do ##class(SignalNoir.Tests.Support).SeedEvidence(caseId)
 	Do svc.MarkReviewRequired(caseId, 1, "system", "gate G3 live")
 	Do $$$AssertTrue(..Resolve(svc, caseId, "RETRY").ok, "resolved")
 	Do $ClassMethod(..#S, "DeliverLast", $ClassMethod(..#S, "ExecBus", ##class(SignalNoir.Tests.Recovery.TestRecoverySuite).Executor()), caseId)

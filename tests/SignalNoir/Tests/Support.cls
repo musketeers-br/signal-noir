@@ -246,6 +246,27 @@ ClassMethod InvestigatingCase(svc As SignalNoir.Application.CaseService, tag As 
 	Return caseId
 }
 
+/// Test fixture: the Evidence an investigation would have recorded for a Case (policies,
+/// attempt history, partner health, Mapping catalog, in the shapes of
+/// contracts/validation-input.md), written directly on the Case. A Case that reaches a
+/// Validator verdict without an investigation needs it: the minimum-Evidence rule of 004.
+ClassMethod SeedEvidence(caseId As %String)
+{
+	Set inputs = "SignalNoir.Tests.Core.Validator.Inputs"
+	Set now = ##class(SignalNoir.Application.SystemClock).%New().NowUtc()
+	For spec = "tool.policies:PoliciesResult", "tool.partner_failure_history:HistoryResult", "tool.partner_health:HealthResult", "tool.mapping_catalog:CatalogResult" {
+		Set row = ##class(SignalNoir.Application.Model.EvidenceRecord).%New()
+		Set row.evidenceId = "evid_seed_" _ $Increment(^SignalNoir.TestSeq)
+		Set row.caseId = caseId
+		Set row.source = $Piece(spec, ":", 1)
+		Set row.kind = "fact"
+		Set row.calledBy = "system"
+		Set row.resultJson = $ClassMethod(inputs, $Piece(spec, ":", 2)).%ToJSON()
+		Set row.observedAt = now
+		$$$ThrowOnError(row.%Save())
+	}
+}
+
 /// Writes a test script entry for a Case
 ClassMethod Script(caseId As %String, key As %String, value As %String)
 {

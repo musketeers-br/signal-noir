@@ -125,9 +125,9 @@ and agreed with Henry at T002): `Core/Validator.cls`, `Core/Port/Validator.cls`,
 
 **Independent Test**: quickstart §1 (TestEvidenceConfidenceIdentity).
 
-- [ ] T026 [P] [US3] Write failing tests/SignalNoir/Tests/Core/Validator/TestEvidenceConfidenceIdentity.cls covering spec US3 AS1–AS7 including AS3a, and the edge cases: obsolete (`obsoletedBy`), suspicious, `absence` and other-Case Evidence do not count; several failures at once → `blocked` over `review` with every fail code in step order; `REQUEST_REVIEW` with a colliding patient record in `tool.receipts_and_orders_by_patient` Evidence → `accepted` with `[REVIEW_ALWAYS_ACCEPTED, IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION]`; no input field can clear the ambiguity
-- [ ] T027 [US3] Add steps 7 (retry budget from `reference.policies.attempt.maxAttempts` and `input.attemptCount`), 9 (identity via `SignalNoir.Core.Identity.Collisions(evidence, order)`), 10 (minimum Evidence per contracts/validation-input.md, requirements from `ActionCatalog` entries) and 11 (confidence `LOW`) to src/SignalNoir/Core/Validator.cls until T026 passes
-- [ ] T028 [US3] Run T026 green
+- [x] T026 [P] [US3] Write failing tests/SignalNoir/Tests/Core/Validator/TestEvidenceConfidenceIdentity.cls covering spec US3 AS1–AS7 including AS3a, and the edge cases: obsolete (`obsoletedBy`), suspicious, `absence` and other-Case Evidence do not count; several failures at once → `blocked` over `review` with every fail code in step order; `REQUEST_REVIEW` with a colliding patient record in `tool.receipts_and_orders_by_patient` Evidence → `accepted` with `[REVIEW_ALWAYS_ACCEPTED, IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION]`; no input field can clear the ambiguity
+- [x] T027 [US3] Add steps 7 (retry budget from `reference.policies.attempt.maxAttempts` and `input.attemptCount`), 9 (identity via `SignalNoir.Core.Identity.Collisions(evidence, order)`), 10 (minimum Evidence per contracts/validation-input.md, requirements from `ActionCatalog` entries) and 11 (confidence `LOW`) to src/SignalNoir/Core/Validator.cls until T026 passes
+- [x] T028 [US3] Run T026 green
 
 **Checkpoint**: the Dossier path (009) has its trigger reasons from the Validator.
 

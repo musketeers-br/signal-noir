@@ -8,6 +8,8 @@ ClassMethod Investigated(svc, tag, ByRef cmd, ByRef started) As %String
 	Set S = "SignalNoir.Tests.Support"
 	Set caseId = $ClassMethod(S, "InvestigatingCase", svc, tag, "agent", .cmd, "SERUM")
 	Set started = svc.StartInvestigation(cmd, "SignalNoir.Tests.Fakes.ScriptedProposer", "SignalNoir.Tests.Fakes.ScriptedSource")
+	; the investigation itself is not run here: the Case holds the Evidence it would have recorded
+	Do $ClassMethod(S, "SeedEvidence", caseId)
 	Return caseId
 }
 
@@ -37,6 +39,7 @@ Method TestInputForBuildsTheInputFromTheCase()
 	Set in = ##class(SignalNoir.Application.ResolutionValidator).InputFor(rec, proposal, "2026-10-31T12:00:00Z")
 	Do $$$AssertTrue($IsObject(in) && in.%IsA("SignalNoir.Core.Dto.ValidationInput"), "a ValidationInput")
 	Do $$$AssertTrue(in.proposal = proposal, "the Proposal as given")
+	Do $$$AssertEquals(in.proposal.caseId, caseId, "an unrecorded Proposal takes the Case it is validated for")
 	Do $$$AssertEquals(in.now, "2026-10-31T12:00:00Z", "now as given")
 	Set evidence = svc.ListEvidence(caseId)
 	Do $$$AssertTrue(evidence.Count() > 0, "the Case has Evidence")

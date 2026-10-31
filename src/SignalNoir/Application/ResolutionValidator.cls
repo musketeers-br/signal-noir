@@ -8,6 +8,9 @@ Class SignalNoir.Application.ResolutionValidator Extends %RegisteredObject
 ClassMethod InputFor(rec As SignalNoir.Application.Model.CaseRecord, proposal As SignalNoir.Core.Dto.Proposal, now As %String) As SignalNoir.Core.Dto.ValidationInput
 {
 	Set input = ##class(SignalNoir.Core.Dto.ValidationInput).%New()
+	; a Proposal gets its caseId when it is recorded; the Validator tells this Case's Evidence
+	; from another Case's by it, so a Proposal still unrecorded takes the Case it is validated for
+	If proposal.caseId = "" Set proposal.caseId = rec.caseId
 	Set input.proposal = proposal
 	Set input.now = now
 	Set evidence = ##class(SignalNoir.Application.CaseService).%New().ListEvidence(rec.caseId)

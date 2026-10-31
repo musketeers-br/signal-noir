@@ -80,7 +80,7 @@ Method TestAMappingWithoutConditionsAppliesToAnyOrderWithItsCode()
 {
 	Set v = ..Validate("map_tsh_legacy", "2026.10.1", $ClassMethod(..#INPUTS, "LegacyTshOrder"))
 	Do $$$AssertEquals(v.verdict, "accepted", "accepted")
-	Do $$$AssertEquals(..Codes(v), "ACTION_IN_CATALOG,PARAMS_VALID", "no condition reason, because there is no condition")
+	Do $$$AssertEquals(..Codes(v), "ACTION_IN_CATALOG,PARAMS_VALID,REQUIRED_EVIDENCE_PRESENT", "no condition reason, because there is no condition")
 	Set order = $ClassMethod(..#INPUTS, "LegacyTshOrder")
 	Set order.specimen = {}
 	Set v = ..Validate("map_tsh_legacy", "2026.10.1", order)
@@ -92,7 +92,7 @@ Method TestAConditionOnAnAbsentOrderFieldDoesNotMatch()
 	Set order = $ClassMethod(..#INPUTS, "PlasmaOrder")
 	Set order.specimen = {"specimenId": "SP-1"}
 	Set v = ..Validate("map_glicj_plasma", "2026.10.1", order)
-	Do $$$AssertEquals(v.verdict _ " " _ ..Codes(v), "blocked MAPPING_CONDITION_MISMATCH", "no specimen type in the Order")
+	Do $$$AssertEquals(v.verdict _ " " _ ..Codes(v), "blocked MAPPING_CONDITION_MISMATCH,EVIDENCE_MISSING_ORDER_FIELD", "no specimen type in the Order: no match, and the Order-field Evidence is missing")
 }
 
 Method TestExactlyOneOfTheTwoGlicjMappingsAppliesToEachOrder()
