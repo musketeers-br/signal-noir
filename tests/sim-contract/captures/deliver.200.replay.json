@@ -1,7 +1,7 @@
 {
-  "receiptId":"rcp_KXSACAGTCAI7DOQPZZWZXHJYR4_1",
-  "orderId":"ORD-sci_KXSACAGTCAI7DOQPZZWZXHJYR4-0001",
-  "idempotencyKey":"idk_KXSACAGTCAI7DOQP",
-  "receivedAt":"2026-10-28T20:44:13.917Z",
+  "receiptId":"rcp_XQU4S6OVFMI7DOQPZZWZXHJYR4_1",
+  "orderId":"ORD-sci_XQU4S6OVFMI7DOQPZZWZXHJYR4-0001",
+  "idempotencyKey":"idk_XQU4S6OVFMI7DOQP",
+  "receivedAt":"2026-10-31T13:05:24.239Z",
   "partnerId":"labpartner-a"
 }

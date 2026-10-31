@@ -1,0 +1,13 @@
+    // CI only: compiles the product on a public IRIS image and runs the core unit tests.
+    // Build 154 is never used here (feature 012 FR-010). Exit code 0 = all passed.
+    zn "USER"
+    set sc = $system.OBJ.LoadDir("/repo/src", "ck", .errors, 1)
+    set sc2 = $system.OBJ.LoadDir("/repo/tests/SignalNoir/Tests/Core", "ck", .errors2, 1)
+    write !, "load errors: product ", +$get(errors), ", tests ", +$get(errors2), !
+    set ^UnitTestRoot = "/repo/tests"
+    do ##class(%UnitTest.Manager).RunTest("SignalNoir/Tests/Core", "/noload/nodelete/recursive/nodisplay")
+    set id = $order(^UnitTest.Result(""), -1), pass = 0, fail = 0
+    set suite = "" for { set suite = $order(^UnitTest.Result(id, suite)) quit:suite=""  set case = "" for { set case = $order(^UnitTest.Result(id, suite, case)) quit:case=""  set m = "" for { set m = $order(^UnitTest.Result(id, suite, case, m)) quit:m=""  if $listget(^UnitTest.Result(id, suite, case, m)) = 1 { set pass = pass + 1 } else { set fail = fail + 1  write "FAIL ", case, ":", m, ! } } } }
+    write "core tests: pass=", pass, " fail=", fail, !
+    if (fail > 0) || (pass = 0) || (+$get(errors2) > 0) do $system.Process.Terminate(, 1)
+    halt

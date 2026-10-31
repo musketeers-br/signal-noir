@@ -72,7 +72,7 @@ Nenhuma spec edita estes arquivos durante o desenvolvimento:
 - `.github/workflows/**`
 - `README.md`
 
-Mudanças neles são aplicadas em lote no gate de integração.
+Mudanças neles são aplicadas em lote no gate de integração. Exceção: a 012 é dona do empacotamento e reescreveu o `Dockerfile`, o `docker-compose.yml`, o `README.md` e os workflows (branch `g1-wiring-and-012`).
 
 ## Board de claim
 
@@ -85,11 +85,11 @@ Mudanças neles são aplicadas em lote no gate de integração.
 | 005 operator-console | implementada (aguardando gate G2; decisão/resolução testadas contra fixtures até 007/009) | Henry | 3 | no `master` |
 | 006 investigation-and-proposal | implementada (aguardando gate G2; AI Hub ao vivo verificado, T060; SC-004 medido com gêmeos idênticos, T061) | Henry | 2 | no `master` |
 | 007 approval-and-outbox | implementada (aguardando gate G2; assumida do Henrique em 28/10; política de Aprovação padrão até a 004, handler do `Execute` na 008, sweeper ligado no Bootstrap no gate) | Henry | 3 | no `master` (PR #14) |
-| 008 execution-and-recovery | implementada (aguardando gate G3; assumida do Henrique em 28/10; política de execução padrão até a 004, mapeamento só com o catálogo da 004) | Henry | 4 | branch `008-execution-and-recovery` |
-| 009 review-dossier-and-resolution | implementada (aguardando gate G3; Validador v1 até a 004; correção 009b no `master`) | Henry | 4 | no `master` |
+| 008 execution-and-recovery | implementada (aguardando gate G3; assumida do Henrique em 28/10; política de execução padrão até a 004, mapeamento só com o catálogo da 004) | Henry | 4 | no `master` (PR #17) |
+| 009 review-dossier-and-resolution | implementada (aguardando gate G3; Validador v1 até a 004; correção 009b no `master`; integração 008+009 verificada em 29/10 por `Tests.Recovery.TestGateG3`, 5/5, com um caso ao vivo) | Henry | 4 | no `master` |
 | 010 benchmark-and-reference-run | reservada | Henrique | 5 | |
 | 011 prior-receipt-p9 | condicional | José | 5 | |
-| 012 packaging-and-cross-install | reservada | Henry | 5 | |
+| 012 packaging-and-cross-install | parcial (29/10): imagem, compose, README, `.env.example`, smoke, scan de segredos e CI no repositório, verificados no ARM64; faltam a validação rápida (depende da 010), o cross-install do Henrique, o vídeo e a submissão | Henry | 5 | branch `g1-wiring-and-012` |
 
 Trilhas (002, 007 e 008 passaram para o Henry em 28/10): Henrique = validação e benchmark (004 → 010) e integrador dos gates; Henry = Simulador, Caso, Agente, efeito e console (003 → 006 → 005 → 009 → 007 → 002 → 008 → 012); José = revisão do 010 e 011 condicional, só na onda 5.
 
@@ -104,12 +104,13 @@ Lacunas sem dono (registradas em 2026-10-26, resolvidas em 2026-10-28):
 - **Leitor do feed da Origem.** Resolvida: `SignalNoir.Interop.Service.OriginFeed.Poll()` (Henry, entregue com a 002) lê `GET /origin/feed`, chama `OrderIn.Accept`, faz a primeira entrega ao Parceiro e reporta a Exceção que abre o Caso. O agendamento fica para o gate G1 (`specs/002-scenario-simulator/contracts/g1-integration.md`).
 - **Ambiente com iris-agentic-dev.** Resolvida: V1–V6 verificados no AI Hub build 154 (`specs/002-scenario-simulator/research.md`). Kit em `dev/aihub/README.md`.
 
-Pendências do gate G1 (aplicadas pelo integrador):
+Pendências do gate G1 (aplicadas pelo Henry em 2026-10-29, branch `g1-wiring-and-012`):
 
-- `Sim.Setup.EnsureWebApplication()` no Bootstrap (`/sim/api/v1`).
-- Agendar `OriginFeed.Poll()`.
-- Ligar o sweeper (`SweeperTask.Ensure`) num banco limpo.
-- Criar `.env.example` com `SN_SIM_BASE_URL`.
+- Feito: `Sim.Setup.EnsureWebApplication()` no hook de start `boot/%ZSTART.mac` (`/sim/api/v1`), ao lado do Bootstrap e não dentro dele, para manter a fronteira produto↔Simulador (`TestNoCrossReference`).
+- Feito: `OriginFeed.Poll()` agendado a cada minuto (`Tasks.OriginFeedTask`).
+- Feito: sweeper (`Tasks.SweeperTask`) agendado pelo Bootstrap só com `SN_BACKGROUND_TASKS=1`. O banco de dev fica sem a variável, porque guarda requisições de teste (007 R6).
+- Feito: `.env.example` com `SN_SIM_BASE_URL` e `SN_BACKGROUND_TASKS`.
+- Resta para o G1: a 004 (Proposta validada).
 
 ## Merge
 
