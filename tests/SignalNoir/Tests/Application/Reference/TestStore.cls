@@ -122,6 +122,34 @@ Method TestAPinnedRunUsesItsOwnVersions()
 	Do $$$AssertTrue('none.ok && (none.code = "NOT_FOUND"), "an unknown pinned version fails")
 }
 
+/// US6 AS1 and AS2 through the Validator: the same Proposal under each version, and a run that
+/// pinned the older one while the newer is in force
+Method TestTheSameProposalIsValidatedUnderEachVersion()
+{
+	Do ..LoadBoth()
+	Set inputs = "SignalNoir.Tests.Core.Validator.Inputs"
+	Set proposal = $ClassMethod(inputs, "Proposal", "APPLY_APPROVED_MAPPING", $ClassMethod(inputs, "MappingParams", "map_glicj_soro"))
+	Set input = $ClassMethod(inputs, "Input", proposal, "", $ClassMethod(inputs, "SerumOrder"))
+	Set validator = ##class(SignalNoir.Core.Validator).%New()
+
+	Set input.reference = $ClassMethod(..#STORE, "For", ..Pinned("2026.10.1", "2026.10.1")).obj
+	Set a = validator.Validate(input).ToJson()
+	Do $$$AssertEquals(a.verdict _ " " _ a.versions.policy _ ":" _ a.versions.mapping, "accepted 2026.10.1:2026.10.1", "AS1: accepted under A, and it names A")
+
+	Set input.reference = $ClassMethod(..#STORE, "For", ..Pinned("2026.10.2", "2026.10.2")).obj
+	Set b = validator.Validate(input).ToJson()
+	Do $$$AssertEquals(b.verdict _ " " _ b.reasons.%Get(0) _ " " _ b.versions.policy _ ":" _ b.versions.mapping, "blocked MAPPING_NOT_FOUND 2026.10.2:2026.10.2", "AS1: blocked under B, which no longer has the Mapping, and it names B")
+
+	Do $ClassMethod(..#STORE, "SetInForce", "2026.10.2", "2026.10.2")
+	Set run = {"inRun": true, "runId": "run_bench_01", "policyVersion": "2026.10.1", "mappingVersion": "2026.10.1"}
+	Set input.reference = $ClassMethod(..#STORE, "For", run).obj
+	Set pinned = validator.Validate(input).ToJson()
+	Do $$$AssertEquals(pinned.verdict _ " " _ pinned.versions.mapping, "accepted 2026.10.1", "AS2: a Case of the run pinned to A is validated against A while B is in force")
+	Set input.reference = $ClassMethod(..#STORE, "For", {"inRun": false, "runId": null, "policyVersion": null, "mappingVersion": null}).obj
+	Set free = validator.Validate(input).ToJson()
+	Do $$$AssertEquals(free.verdict _ " " _ free.versions.mapping, "blocked 2026.10.2", "and a Case outside any run is validated against B")
+}
+
 Method TestNothingLoadableMakesForFail()
 {
 	Set ^SignalNoir.Reference("defaultPackage") = "No.Such.Package"

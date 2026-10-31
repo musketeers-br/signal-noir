@@ -2,9 +2,12 @@ Class SignalNoir.Tests.Application.TestResolution Extends %UnitTest.TestCase
 {
 
 /// 009 T010, T012 - operator resolution through the same Validator
-ClassMethod ReviewCase(svc, tag) As %String
+/// A Case in ReviewRequired with the Evidence of an investigation; examCode, when given, is
+/// the one exam of its Order
+ClassMethod ReviewCase(svc, tag, examCode As %String = "") As %String
 {
-	Set caseId = ##class(SignalNoir.Tests.Support).OpenCase(svc, ##class(SignalNoir.Tests.Support).Uid(tag))
+	Set caseId = ##class(SignalNoir.Tests.Support).OpenCase(svc, ##class(SignalNoir.Tests.Support).Uid(tag), "", examCode)
+	Do ##class(SignalNoir.Tests.Support).SeedEvidence(caseId)
 	Do svc.MarkReviewRequired(caseId, 1, "system", "moved by test")
 	Return caseId
 }
@@ -17,7 +20,7 @@ ClassMethod Outbox(caseId, type) As %Integer
 Method TestAcceptedMappingIsApprovedByTheSameOperator()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set caseId = ..ReviewCase(svc, "res-ok")
+	Set caseId = ..ReviewCase(svc, "res-ok", "GLIC-J")
 	Set v = svc.GetCase(caseId).obj.caseVersion
 	Set r = svc.ResolveReview(caseId, {"kind": "action", "operator": "Carla", "expectedCaseVersion": (v), "action": "APPLY_APPROVED_MAPPING", "params": {"mappingId": "map_glicj_soro", "mappingVersion": "2026.10.1"}, "note": "phone"})
 	Do $$$AssertTrue(r.ok, "accepted: " _ r.message)
@@ -48,7 +51,7 @@ Method TestNoteIsRecordedAsEvidenceWithoutDossierEvidence()
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
 	Set caseId = ..ReviewCase(svc, "res-note")
 	Set c = svc.GetCase(caseId).obj
-	Do $$$AssertEquals(c.dossier.relevantEvidenceIds.%Size(), 0, "Dossier lists no Evidence")
+	Set listed = c.dossier.relevantEvidenceIds.%Size()
 	Set before = c.evidence.Count()
 	Set r = svc.ResolveReview(caseId, {"kind": "action", "operator": "Carla", "expectedCaseVersion": (c.caseVersion), "action": "RETRY", "note": "partner confirmed by phone"})
 	Do $$$AssertTrue(r.ok, "accepted: " _ r.message)
@@ -60,7 +63,9 @@ Method TestNoteIsRecordedAsEvidenceWithoutDossierEvidence()
 	Do $$$AssertEquals(ev.result.text, "partner confirmed by phone", "the note, by value")
 	Set p = c.proposals.GetAt(c.proposals.Count())
 	Do $$$AssertEquals(p.diagnosis.claims.%Size(), 1, "one claim")
-	Do $$$AssertEquals(p.diagnosis.claims.%Get(0).evidenceIds.%Get(0), ev.evidenceId, "the claim cites the note")
+	Set cited = p.diagnosis.claims.%Get(0).evidenceIds
+	Do $$$AssertEquals(cited.%Size(), listed + 1, "the claim cites what the Dossier lists, plus the note")
+	Do $$$AssertEquals(cited.%Get(cited.%Size() - 1), ev.evidenceId, "the claim cites the note")
 }
 
 Method TestBlockedResolutionRecordsNoNote()

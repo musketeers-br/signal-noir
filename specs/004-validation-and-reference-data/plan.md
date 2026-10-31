@@ -87,9 +87,12 @@ agreed with Henry first; integration files untouched; the code of this feature i
 - [x] **IX. Verifiable Increments** — sliced by the 7 stories, each with its failing tests first;
   dependencies explicit.
 - [x] **Platform Constraints** — build 154, synthetic data, no secrets, no image published.
-- [ ] **iris-agentic-dev** — **blocking before /speckit-implement**. Reused claims are 001-verified;
-  V1 (research.md) MUST be verified with a throwaway probe and logged, and the suites already on
-  `master` run green on the dev container as a baseline, before any task runs. The runtime does not
+- [x] **iris-agentic-dev** — passed (2026-10-30, T001, T044). V1 was verified with a throwaway probe and
+  logged in research.md "Verification log" (passes on 2026.2 build 221; compiling needs three
+  passes). The suites already on `master` were run as the baseline on a second container
+  (`signalnoir-004`, the worktree mounted): 272 passing and 3 failing at first, the three being
+  environmental (no AI provider configured); after PR #19 the baseline is green (300 passing, 0
+  failing). Build 154 was not rerun: the decision is recorded in the same log. The runtime does not
   depend on iris-agentic-dev.
 
 ### Post-design re-check (after Phase 1, revised)
@@ -98,9 +101,10 @@ I–IX and Platform pass. Two explicit contract changes are produced instead of 
 the Validator seam v2 (`identity` removed from the input) and the fixture divergence in
 `resolution.201.action.json`
 ([contracts/contract-change-004-validator-seam.md](./contracts/contract-change-004-validator-seam.md)).
-One finding is passed to Henry: `ActionCatalog.RequiresApproval("REQUEST_REVIEW")` is true against
-PRD FR-16 and the fixtures. The iris-agentic-dev gate stays blocking until V1 and the baseline are
-logged.
+One finding was passed to Henry: `ActionCatalog.RequiresApproval("REQUEST_REVIEW")` was true against
+PRD FR-16 and the fixtures; it was already false on `master` (009b), and the edits were agreed with
+him on 2026-10-31 ([contracts/coordination-004-006-009.md](./contracts/coordination-004-006-009.md)).
+The iris-agentic-dev gate passed (see above).
 
 ## Project Structure
 

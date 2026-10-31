@@ -66,7 +66,7 @@ Method TestOperatorHoldMakesNoCall()
 Method TestOperatorMappingIsHeldUntil004()
 {
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
-	Set caseId = ##class(SignalNoir.Tests.Application.TestResolution).ReviewCase(svc, "g3-mapping")
+	Set caseId = ##class(SignalNoir.Tests.Application.TestResolution).ReviewCase(svc, "g3-mapping", "GLIC-J")
 	Set r = ..Resolve(svc, caseId, "APPLY_APPROVED_MAPPING", {"mappingId": "map_glicj_soro", "mappingVersion": "2026.10.1"})
 	Do $$$AssertTrue(r.ok, "resolved: " _ r.message)
 	Set partner = ##class(SignalNoir.Tests.Fakes.ScriptedPartner).%New()
@@ -117,6 +117,7 @@ Method TestLiveOperatorRetry()
 	Set svc = ##class(SignalNoir.Application.CaseService).Default()
 	; the Exception opens the Case (Open); its routing is not under test here
 	Set caseId = svc.RecordException(order.orderId, $ClassMethod(..#S, "Exception")).ref
+	Do ##class(SignalNoir.Tests.Support).SeedEvidence(caseId)
 	Do svc.MarkReviewRequired(caseId, 1, "system", "gate G3 live")
 	Do $$$AssertTrue(..Resolve(svc, caseId, "RETRY").ok, "resolved")
 	Do $ClassMethod(..#S, "DeliverLast", $ClassMethod(..#S, "ExecBus", ##class(SignalNoir.Tests.Recovery.TestRecoverySuite).Executor()), caseId)

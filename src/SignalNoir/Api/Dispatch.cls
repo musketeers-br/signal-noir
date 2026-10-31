@@ -165,17 +165,38 @@ ClassMethod ResolutionPayload(svc As SignalNoir.Application.CaseService, d As %D
 ClassMethod ActionCatalog() As %Status
 {
 	Set %response.ContentType = "application/json"
-	Write {"items": (##class(SignalNoir.Core.ActionCatalog).Entries()), "serverTime": (..ServerTime())}.%ToJSON()
+	Write ..ActionCatalogPayload().%ToJSON()
 	Return $$$OK
 }
 
-/// GET /reference/mappings: approved mappings are reference data of feature
-/// 004; until it is integrated none is loaded, and the list says so
+ClassMethod ActionCatalogPayload() As %DynamicObject
+{
+	Return {"items": (##class(SignalNoir.Core.ActionCatalog).Entries()), "serverTime": (..ServerTime())}
+}
+
+/// GET /reference/mappings?sourceCode=: the approved Mappings of the version in force (feature 004)
 ClassMethod Mappings() As %Status
 {
 	Set %response.ContentType = "application/json"
-	Write {"mappingVersion": "unloaded", "items": [], "serverTime": (..ServerTime())}.%ToJSON()
+	Write ..MappingsPayload($Get(%request.Data("sourceCode", 1))).%ToJSON()
 	Return $$$OK
+}
+
+/// The Mappings in force, optionally only those of one source code (trimmed, any case, as the
+/// Validator compares codes). With no reference data loaded, none is invented: the version is
+/// `unloaded` and the list is empty.
+ClassMethod MappingsPayload(sourceCode As %String = "") As %DynamicObject
+{
+	Set snapshot = ##class(SignalNoir.Application.Reference.Store).InForce()
+	If 'snapshot.ok Return {"mappingVersion": "unloaded", "items": [], "serverTime": (..ServerTime())}
+	Set wanted = $ZConvert($ZStrip(sourceCode, "<>W"), "U")
+	Set items = []
+	Set each = snapshot.obj.mappings.%GetIterator()
+	While each.%GetNext(.index, .item) {
+		If (wanted '= "") && ($ZConvert($ZStrip(item.sourceCode, "<>W"), "U") '= wanted) Continue
+		Do items.%Push(item)
+	}
+	Return {"mappingVersion": (snapshot.obj.mappingVersion), "items": (items), "serverTime": (..ServerTime())}
 }
 
 /// CaseListPage: items, nextCursor, headCursor and serverTime.
