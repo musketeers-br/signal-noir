@@ -54,16 +54,33 @@
 		}
 	}
 
+	/** In-app links (#/...) are ours. SvelteKit's router would otherwise take them with
+	 *  history.pushState, which fires no hashchange: the URL changed and the view did not.
+	 *  Runs in the capture phase, before the router; modified clicks stay with the browser. */
+	function onLinkClick(e: MouseEvent) {
+		if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+		const a = (e.target as Element | null)?.closest?.('a[href^="#/"]');
+		if (!a || a.getAttribute('target')) return;
+		e.preventDefault();
+		const href = a.getAttribute('href')!;
+		if (location.hash === href) go();
+		else location.hash = href;
+	}
+
 	onMount(() => {
 		stopTheme = theme.listen();
 		if (!location.hash) location.hash = '#/cases';
 		window.addEventListener('hashchange', go);
+		document.addEventListener('click', onLinkClick, true);
 		go();
 		timer = setInterval(poll, pollMs);
 	});
 
 	onDestroy(() => {
-		if (typeof window !== 'undefined') window.removeEventListener('hashchange', go);
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('hashchange', go);
+			document.removeEventListener('click', onLinkClick, true);
+		}
 		clearInterval(timer);
 		stopTheme?.();
 	});
