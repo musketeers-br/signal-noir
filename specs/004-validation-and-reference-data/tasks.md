@@ -154,9 +154,9 @@ and agreed with Henry at T002): `Core/Validator.cls`, `Core/Port/Validator.cls`,
 
 **Independent Test**: quickstart §1 (TestPreconditions).
 
-- [ ] T032 [P] [US5] Write failing tests/SignalNoir/Tests/Core/Validator/TestPreconditions.cls covering spec US5 AS1–AS8 and SC-007 (each observed value changed alone fails exactly its check); every `PreconditionResult` has `expected`, `observed`, `passed`, and `evidenceId` when `observed` carries one
-- [ ] T033 [US5] Add step 5 to `Validate` and implement `Revalidate(input)` with step 8 in src/SignalNoir/Core/Validator.cls per research D12 and FR-021 until T032 passes
-- [ ] T034 [US5] Run T032 green
+- [x] T032 [P] [US5] Write failing tests/SignalNoir/Tests/Core/Validator/TestPreconditions.cls covering spec US5 AS1–AS8 and SC-007 (each observed value changed alone fails exactly its check); every `PreconditionResult` has `expected`, `observed`, `passed`, and `evidenceId` when `observed` carries one
+- [x] T033 [US5] Add step 5 to `Validate` and implement `Revalidate(input)` with step 8 in src/SignalNoir/Core/Validator.cls per research D12 and FR-021 until T032 passes
+- [x] T034 [US5] Run T032 green
 
 **Checkpoint**: 008's Revalidation has its rule; no recording code is added here.
 

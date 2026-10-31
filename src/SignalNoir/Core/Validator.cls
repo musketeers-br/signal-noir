@@ -13,6 +13,19 @@ ClassMethod Preconditions() As %ListOfDataTypes
 
 Method Validate(input As SignalNoir.Core.Dto.ValidationInput) As SignalNoir.Core.Dto.ValidatorVerdict
 {
+	Return ..Evaluate(input, 0, .unused)
+}
+
+/// The whole pipeline plus step 8: the declared preconditions, checked against input.observed,
+/// one PreconditionResult each, returned in results.
+Method Revalidate(input As SignalNoir.Core.Dto.ValidationInput, Output results As %ListOfObjects) As SignalNoir.Core.Dto.ValidatorVerdict
+{
+	Return ..Evaluate(input, 1, .results)
+}
+
+Method Evaluate(input As SignalNoir.Core.Dto.ValidationInput, observe As %Boolean, Output results As %ListOfObjects) As SignalNoir.Core.Dto.ValidatorVerdict [ Private ]
+{
+	Set results = ##class(%ListOfObjects).%New()
 	Set verdict = ##class(SignalNoir.Core.Dto.ValidatorVerdict).%New()
 	Set proposal = "", reference = ""
 	If $IsObject(input) {
@@ -41,6 +54,9 @@ Method Validate(input As SignalNoir.Core.Dto.ValidationInput) As SignalNoir.Core
 	}
 
 	Set fails = "", passes = $ListBuild("ACTION_IN_CATALOG"), item = ""
+	; 5 every declared precondition is in the closed vocabulary
+	Set declared = ..DeclaredChecks(proposal, .unknown)
+	If unknown Set fails = fails _ $ListBuild("PRECONDITION_UNKNOWN")
 	If action = "APPLY_APPROVED_MAPPING" {
 		Set passes = passes _ $ListBuild("PARAMS_VALID")
 		; 6 the Mapping exists, its source code is in the Order, its conditions match
@@ -56,6 +72,8 @@ Method Validate(input As SignalNoir.Core.Dto.ValidationInput) As SignalNoir.Core
 			Set passes = passes _ $ListBuild("RETRY_BUDGET_AVAILABLE")
 		}
 	}
+	; 8 the declared preconditions against the values observed right before the send
+	If observe Set fails = fails _ ..CheckPreconditions(input, declared, results)
 	; 9 identity
 	If ..IdentityAmbiguous(input) Set fails = fails _ $ListBuild("IDENTITY_AMBIGUOUS_NO_AUTOMATIC_ACTION")
 	; 10 minimum Evidence
@@ -112,6 +130,137 @@ Method IsOperator(actor As %String) As %Boolean [ Private ]
 	If $Extract(actor, 1, 9) '= "operator:" Return 0
 	Set name = $Extract(actor, 10, *)
 	Return ($Length(name) >= 1) && ($Length(name) <= 64) && (name '[ ":")
+}
+
+/// Step 5: the known checks the Proposal declares, once each, in the vocabulary's order.
+/// unknown is true when it declares anything else.
+Method DeclaredChecks(proposal As SignalNoir.Core.Dto.Proposal, Output unknown As %Boolean) As %List [ Private ]
+{
+	Set unknown = 0, declared = "", vocabulary = $ListFromString(##class(SignalNoir.Core.Vocab).#PRECONDITIONS, ",")
+	Set list = proposal.preconditions
+	If $IsObject(list) {
+		If 'list.%IsA("%Library.DynamicArray") {
+			Set unknown = 1
+		} Else {
+			Set each = list.%GetIterator()
+			While each.%GetNext(.index, .entry) {
+				Set check = $Select($IsObject(entry) && entry.%IsA("%Library.DynamicObject") && (entry.%GetTypeOf("check") = "string"): entry.check, 1: "")
+				If $ListFind(vocabulary, check) = 0 {
+					Set unknown = 1
+				} Else {
+					Set named(check) = 1
+				}
+			}
+		}
+	}
+	For i = 1 : 1 : $ListLength(vocabulary) {
+		If $Data(named($List(vocabulary, i))) Set declared = declared _ $ListBuild($List(vocabulary, i))
+	}
+	Return declared
+}
+
+/// Step 8. One result per declared check; returns the PRECONDITION_FAILED_<CHECK> codes. What a
+/// check requires is fixed here, not by what the Proposal declares as expected: the declaration
+/// only chooses the checks. Nothing but input.observed (and the snapshot and the clock of the
+/// input) feeds a check, so new Evidence cannot change a result.
+Method CheckPreconditions(input As SignalNoir.Core.Dto.ValidationInput, declared As %List, results As %ListOfObjects) As %List [ Private ]
+{
+	Set fails = ""
+	Set observed = $Select($IsObject(input.observed) && input.observed.%IsA("%Library.DynamicObject"): input.observed, 1: {})
+	For i = 1 : 1 : $ListLength(declared) {
+		Set check = $List(declared, i)
+		Set result = ##class(SignalNoir.Core.Dto.PreconditionResult).%New()
+		Set result.check = check
+		If check = "PARTNER_HEALTHY_WINDOW" Do ..PartnerHealthy(input, observed, result)
+		If check = "ORDER_ACTIVE_AT_ORIGIN" Do ..OrderActive(observed, result)
+		If check = "APPROVAL_VALID" Do ..ApprovalValid(input, observed, result)
+		If check = "POLICY_VERSION_UNCHANGED" Do ..VersionUnchanged(input.proposal.versions.policy, observed, "policyVersionInForce", "", result)
+		If check = "MAPPING_VERSION_UNCHANGED" Do ..VersionUnchanged(input.proposal.versions.mapping, observed, "mappingVersionInForce", "mappingExists", result)
+		Do results.Insert(result)
+		If 'result.passed Set fails = fails _ $ListBuild("PRECONDITION_FAILED_" _ check)
+	}
+	Return fails
+}
+
+/// UP, an error rate within the policy's maximum, no maintenance reported by the Partner and
+/// none of the policy's windows active for the Order's Partner now
+Method PartnerHealthy(input As SignalNoir.Core.Dto.ValidationInput, observed As %DynamicObject, result As SignalNoir.Core.Dto.PreconditionResult) [ Private ]
+{
+	Set result.expectedLiteral = "true"
+	If observed.%GetTypeOf("partnerHealth") '= "object" Quit
+	Set health = observed.partnerHealth
+	If health.%GetTypeOf("evidenceId") = "string" Set result.evidenceId = health.evidenceId
+	Set policies = input.reference.policies
+	Set maximum = $Select($IsObject(policies) && (policies.%GetTypeOf("partnerHealth") = "object") && (policies.partnerHealth.%GetTypeOf("maxErrorRate") = "number"): policies.partnerHealth.maxErrorRate, 1: "")
+	Set healthy = (health.%GetTypeOf("status") = "string") && (health.status = "UP")
+	Set healthy = healthy && (health.%GetTypeOf("errorRate") = "number") && (maximum '= "") && (health.errorRate <= maximum)
+	Set healthy = healthy && (observed.%GetTypeOf("partnerMaintenanceActive") = "boolean") && 'observed.partnerMaintenanceActive
+	Set healthy = healthy && '..WindowActive(input)
+	Set result.observedLiteral = $Select(healthy: "true", 1: "false")
+	Set result.passed = healthy
+}
+
+/// A maintenance window of the policy covers `now` for the Order's Partner. A clock that cannot
+/// be read, with a window in force for the Partner, counts as inside it.
+Method WindowActive(input As SignalNoir.Core.Dto.ValidationInput) As %Boolean [ Private ]
+{
+	Set policies = input.reference.policies
+	If '$IsObject(policies) || (policies.%GetTypeOf("maintenanceWindows") '= "array") Return 0
+	Set now = ##class(SignalNoir.Core.Canon).NormalizeUtc(input.now)
+	Set partner = $Select($IsObject(input.order) && (input.order.%GetTypeOf("partnerId") = "string"): input.order.partnerId, 1: "")
+	Set each = policies.maintenanceWindows.%GetIterator()
+	While each.%GetNext(.index, .window) {
+		If '$IsObject(window) || 'window.%IsA("%Library.DynamicObject") Continue
+		If (window.%GetTypeOf("partnerId") = "string") && (window.partnerId '= "") && (window.partnerId '= partner) Continue
+		If now = "" Return 1
+		Set starts = ##class(SignalNoir.Core.Canon).NormalizeUtc(window.startsAt)
+		Set ends = ##class(SignalNoir.Core.Canon).NormalizeUtc(window.endsAt)
+		If (starts = "") || (ends = "") Return 1
+		If '(starts ] now) && (ends ] now) Return 1
+	}
+	Return 0
+}
+
+Method OrderActive(observed As %DynamicObject, result As SignalNoir.Core.Dto.PreconditionResult) [ Private ]
+{
+	Set result.expectedLiteral = "true"
+	If observed.%GetTypeOf("originStatus") '= "string" Quit
+	Set active = (observed.originStatus = "active")
+	Set result.observedLiteral = $Select(active: "true", 1: "false")
+	Set result.passed = active
+}
+
+/// An Approval of this exact Proposal, before its deadline, and the Proposal still current
+Method ApprovalValid(input As SignalNoir.Core.Dto.ValidationInput, observed As %DynamicObject, result As SignalNoir.Core.Dto.PreconditionResult) [ Private ]
+{
+	Set result.expectedLiteral = "true"
+	If observed.%GetTypeOf("approval") '= "object" Quit
+	Set approval = observed.approval
+	Set now = ##class(SignalNoir.Core.Canon).NormalizeUtc(input.now)
+	Set deadline = $Select(approval.%GetTypeOf("deadline") = "string": ##class(SignalNoir.Core.Canon).NormalizeUtc(approval.deadline), 1: "")
+	Set valid = (approval.%GetTypeOf("proposalId") = "string") && (approval.proposalId = input.proposal.proposalId) && (input.proposal.proposalId '= "")
+	Set valid = valid && (now '= "") && (deadline '= "") && (deadline ] now)
+	Set valid = valid && (observed.%GetTypeOf("proposalCurrent") = "boolean") && observed.proposalCurrent
+	Set result.observedLiteral = $Select(valid: "true", 1: "false")
+	Set result.passed = valid
+}
+
+/// The version in force equals the one the Proposal relied on; for the Mapping (existsKey),
+/// the Mapping must also still exist, and a Mapping that is gone has no version observed
+Method VersionUnchanged(relied As %String, observed As %DynamicObject, versionKey As %String, existsKey As %String, result As SignalNoir.Core.Dto.PreconditionResult) [ Private ]
+{
+	Set result.expectedLiteral = ..Json(relied, "string")
+	If (existsKey '= "") && ((observed.%GetTypeOf(existsKey) '= "boolean") || 'observed.%Get(existsKey)) Quit
+	If observed.%GetTypeOf(versionKey) '= "string" Quit
+	Set result.observedLiteral = ..Json(observed.%Get(versionKey), "string")
+	Set result.passed = (relied '= "") && (observed.%Get(versionKey) = relied)
+}
+
+ClassMethod Json(value, type As %String) As %String [ Private ]
+{
+	Set wrapper = {}
+	Do wrapper.%Set("v", value, type)
+	Return $Extract(wrapper.%ToJSON(), 6, *-1)
 }
 
 /// A blocked verdict carries only the code of the step that failed
