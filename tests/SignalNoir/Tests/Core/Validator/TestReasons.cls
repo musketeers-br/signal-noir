@@ -1,9 +1,9 @@
 Class SignalNoir.Tests.Core.Validator.TestReasons Extends %UnitTest.TestCase
 {
 
-Parameter CONTRACT = "/home/irisowner/dev/specs/004-validation-and-reference-data/contracts/reason-codes.md";
+Parameter CONTRACT = "specs/004-validation-and-reference-data/contracts/reason-codes.md";
 
-Parameter FIXTURES = "/home/irisowner/dev/contracts/fixtures";
+Parameter FIXTURES = "contracts/fixtures";
 
 /// 004 T007 - the closed list of reason codes equals the table of
 /// contracts/reason-codes.md, in table order. The table is read here, never at runtime.
@@ -11,7 +11,7 @@ Parameter FIXTURES = "/home/irisowner/dev/contracts/fixtures";
 ClassMethod Table() As %List
 {
 	Set rows = "", stream = ##class(%Stream.FileCharacter).%New()
-	Do stream.LinkToFile(..#CONTRACT)
+	Do stream.LinkToFile(##class(SignalNoir.Tests.Core.Validator.Repo).Path(..#CONTRACT))
 	While 'stream.AtEnd {
 		Set line = stream.ReadLine()
 		If $Extract(line) '= "|" Continue
@@ -92,7 +92,7 @@ Method TestTheFixtureCodesArePresent()
 /// Every reason in a contract fixture is in the closed list
 Method TestFixtureReasonsAreInTheList()
 {
-	Set rs = ##class(%File).FileSetFunc(..#FIXTURES, "*.json")
+	Set rs = ##class(%File).FileSetFunc(##class(SignalNoir.Tests.Core.Validator.Repo).Path(..#FIXTURES), "*.json")
 	Set seen = 0, unknown = ""
 	While rs.%Next() {
 		Set stream = ##class(%Stream.FileCharacter).%New()

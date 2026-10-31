@@ -1,14 +1,14 @@
 Class SignalNoir.Tests.Application.Reference.TestMappingsMatchContractFixture Extends %UnitTest.TestCase
 {
 
-Parameter FIXTURE = "/home/irisowner/dev/contracts/fixtures/reference.mappings.json";
+Parameter FIXTURE = "contracts/fixtures/reference.mappings.json";
 
 /// 004 T013 - the items of Mappings.V2026101 equal the items of the contract fixture. The
 /// fixture is read here, never at runtime.
 ClassMethod Fixture() As %DynamicObject
 {
 	Set stream = ##class(%Stream.FileCharacter).%New()
-	Do stream.LinkToFile(..#FIXTURE)
+	Do stream.LinkToFile(##class(SignalNoir.Tests.Core.Validator.Repo).Path(..#FIXTURE))
 	Return {}.%FromJSON(stream.Read(2000000))
 }
 
