@@ -40,3 +40,19 @@ listed with the 004 task that carries it.
 
 - `Admit(actor, run)` and the Approval deadline (`policies.approval.deadlineSeconds`) are 004's
   surface for Approval; 007 reuses `ApprovalRecord` from 009.
+
+## Decision (T002, 2026-10-31)
+
+Walked with Henry on 2026-10-31.
+
+- Edits 1–6: **agreed as written**, no adjustments. Order: 6, then 3, then 1 and 2 together, then 4
+  and 5 (US2+).
+- Baseline requests 1 (Rules calls `Core.Conditions.Matches`) and 2 (a test pins `requiresApproval`
+  of `REQUEST_REVIEW` between the catalog endpoint and the verdict): **accepted** for Henry's wave 4.
+- T045 of spec 001 (second member approves the 001 contract change): **approved**.
+
+Applied the same day, in the agreed order (uncommitted on `004-validation-and-reference-data`):
+edit 6 with T003–T006 (seam v2 verdict, port, `FakeValidator`, consumer and seam tests), edit 3 with
+T009–T010 (`requiredEvidence`; `|` joins alternatives, as for `HOLD`), edits 1–2 with T018–T019
+(`InputFor`, `Verdict(validator, input)`, `versions` on the stored verdict and the event). Until T017,
+`Core.Validator` returns the v2 shape with the slice-1 rules. Edits 4–5 wait for US2+ (T037).

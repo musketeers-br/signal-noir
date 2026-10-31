@@ -3,7 +3,7 @@ Class SignalNoir.Tests.Core.Validator.TestDtos Extends %UnitTest.TestCase
 
 /// 004 T004 - the Validator port v2 DTOs (contracts/validation-input.md and the
 /// contract's PreconditionResult). ValidatorVerdict v2 is an [edit] of a file
-/// merged by 006/009 and is covered once Henry agrees (T002).
+/// merged by 006/009, agreed with Henry at T002 (2026-10-31).
 ClassMethod Example() As %DynamicObject
 {
 	Return {
@@ -103,6 +103,20 @@ Method TestReferenceData()
 	Set j = ref.ToJson()
 	Do $$$AssertEquals(j.mappings.%Get(0).mappingId, "map_glicj_plasma", "round trip")
 	Do $$$AssertEquals(j.synonyms.specimenType.SERUM.%Size(), 2, "synonyms")
+}
+
+Method TestValidatorVerdict()
+{
+	Set v = ##class(SignalNoir.Core.Dto.ValidatorVerdict).FromJson({"verdict": "accepted", "reasons": ["ACTION_IN_CATALOG", "PARAMS_VALID"], "requiresApproval": true, "at": "2026-10-29T13:02:11Z", "versions": {"policy": "2026.10.1", "mapping": "2026.10.1"}})
+	Do $$$AssertEquals(v.verdict _ ":" _ v.reasons.Count() _ ":" _ v.requiresApproval, "accepted:2:1", "from json")
+	Set j = v.ToJson()
+	Do $$$AssertEquals(j.verdict, "accepted", "verdict")
+	Do $$$AssertEquals(j.%GetTypeOf("reasons") _ ":" _ j.reasons.%ToJSON(), "array:[""ACTION_IN_CATALOG"",""PARAMS_VALID""]", "reasons in order")
+	Do $$$AssertEquals(j.%GetTypeOf("requiresApproval"), "boolean", "requiresApproval is a boolean")
+	Do $$$AssertEquals(j.at, "2026-10-29T13:02:11Z", "at")
+	Do $$$AssertEquals(j.versions.policy _ ":" _ j.versions.mapping, "2026.10.1:2026.10.1", "versions")
+	Set empty = ##class(SignalNoir.Core.Dto.ValidatorVerdict).%New().ToJson()
+	Do $$$AssertEquals(empty.%GetTypeOf("requiresApproval") _ ":" _ empty.versions.%GetTypeOf("policy"), "boolean:null", "defaults keep the contract types")
 }
 
 }

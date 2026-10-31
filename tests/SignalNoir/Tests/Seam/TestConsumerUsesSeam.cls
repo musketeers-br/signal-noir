@@ -24,7 +24,14 @@ Method TestConsumerUsesEveryPortThroughFakes()
 	Do $$$AssertEquals(out.timeline, 1, "CaseQueries.GetTimeline through the fake")
 
 	; Validator
-	Do $$$AssertEquals(out.verdict, "valid", "Validator.Validate through the fake")
+	Do $$$AssertEquals(out.verdict, "accepted", "Validator.Validate through the fake")
+	Do $$$AssertEquals(out.requiresApproval, 1, "fake default requiresApproval")
+	Do $$$AssertEquals(out.reasons.%ToJSON(), "[""ACTION_IN_CATALOG""]", "fake default reasons")
+	Do $$$AssertEquals(out.verdictAt, "2026-01-01T00:00:00Z", "at comes from the input")
+	Do $$$AssertEquals(out.revalidated, "accepted", "Validator.Revalidate through the fake")
+	Do $$$AssertEquals(out.resultCount, 0, "no PreconditionResult by default")
+	Do $$$AssertEquals(out.admissible, 1, "Validator.Admit through the fake")
+	Do $$$AssertEquals(out.admissionLabel, "human", "admission label")
 
 	; Proposer (unavailable by default: the value that drives ReviewRequired)
 	Do $$$AssertEquals(out.proposerOk, 0, "Proposer.Propose returned a value, not an exception")
