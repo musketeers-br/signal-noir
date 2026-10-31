@@ -23,12 +23,7 @@ ClassMethod Default(toolName As %String) As %DynamicAbstractObject
 	If toolName = "tool.partner_health" Return {"partnerId": "partner-a", "status": "UP", "message": "all systems nominal", "checkedAt": "2026-10-25T10:00:00Z"}
 	If toolName = "tool.partner_failure_history" Return {"partnerId": "partner-a", "window": {"since": "2026-10-25T09:55:00Z", "until": "2026-10-25T10:00:00Z", "total": 3, "delivered": 2, "errors": 1, "timeouts": 0, "errorRate": 0.33}, "items": [{"at": "2026-10-25T09:59:00Z", "httpStatus": 500, "outcome": "rejected", "message": "validation error: unknown exam code GLIC-J"}]}
 	If toolName = "tool.origin_order_status" Return {"status": "ACTIVE"}
-	If toolName = "tool.policies" {
-		; the policy document of the contract, plus the `version` key the investigation reads
-		Set policies = ##class(SignalNoir.Tests.Core.Validator.Inputs).PoliciesResult()
-		Set policies.version = "pol-2026.10.1"
-		Return policies
-	}
+	If toolName = "tool.policies" Return ##class(SignalNoir.Tests.Core.Validator.Inputs).PoliciesResult()
 	If toolName = "tool.mapping_catalog" Return {}.%FromJSON(##class(SignalNoir.Tests.Fakes.ScriptedSource).Catalog())
 	If toolName = "tool.order_timeline" Return {"events": []}
 	Return {}

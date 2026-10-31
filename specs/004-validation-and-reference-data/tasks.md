@@ -168,9 +168,9 @@ and agreed with Henry at T002): `Core/Validator.cls`, `Core/Port/Validator.cls`,
 
 **Independent Test**: quickstart §3 (TestReferenceTools) and §5.
 
-- [ ] T035 [P] [US6] Write failing tests/SignalNoir/Tests/Application/Reference/TestReferenceTools.cls and TestReferenceEndpoints.cls: through `SignalNoir.Tools.LocalSource`, `tool.policies` returns the policy document of contracts/validation-input.md and `tool.mapping_catalog` returns `mappingVersion`, `items` and `synonyms` of the version in force (the run's pinned version for a Case in a run); with nothing loaded both answer `available: false`; through `SignalNoir.Api.Dispatch`, `Mappings()` returns the contract shape with and without `sourceCode` (`mappingVersion` no longer `"unloaded"`) and `ActionCatalog()` lists `requiredEvidence`
-- [ ] T036 [US6] **[edit]** Change src/SignalNoir/Tools/LocalSource.cls (`tool.policies`, `tool.mapping_catalog` from `Store`) and src/SignalNoir/Api/Dispatch.cls (`Mappings()` serves the Store) (coordination items 4–5), until T035 passes
-- [ ] T037 [US6] Run T035 green with the existing tests/SignalNoir/Tests/Api/TestResolutionApi.cls
+- [x] T035 [P] [US6] Write failing tests/SignalNoir/Tests/Application/Reference/TestReferenceTools.cls and TestReferenceEndpoints.cls: through `SignalNoir.Tools.LocalSource`, `tool.policies` returns the policy document of contracts/validation-input.md and `tool.mapping_catalog` returns `mappingVersion`, `items` and `synonyms` of the version in force (the run's pinned version for a Case in a run); with nothing loaded both answer `available: false`; through `SignalNoir.Api.Dispatch`, `Mappings()` returns the contract shape with and without `sourceCode` (`mappingVersion` no longer `"unloaded"`) and `ActionCatalog()` lists `requiredEvidence`
+- [x] T036 [US6] **[edit]** Change src/SignalNoir/Tools/LocalSource.cls (`tool.policies`, `tool.mapping_catalog` from `Store`) and src/SignalNoir/Api/Dispatch.cls (`Mappings()` serves the Store) (coordination items 4–5), until T035 passes
+- [x] T037 [US6] Run T035 green with the existing tests/SignalNoir/Tests/Api/TestResolutionApi.cls
 
 **Checkpoint**: 005 renders real Mappings; proposers and the Validator read the same data.
 

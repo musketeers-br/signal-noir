@@ -179,7 +179,8 @@ ClassMethod Versions(svc As SignalNoir.Application.CaseService, caseId As %Strin
 	For i = 1 : 1 : all.Count() {
 		Set ev = all.GetAt(i)
 		If (ev.kind '= "fact") || '$IsObject(ev.result) || 'ev.result.%IsA("%DynamicObject") Continue
-		If (ev.source = "tool.policies") && (ev.result.version '= "") Do meta.%Set("policyVersion", ev.result.version)
+		If (ev.source = "tool.policies") && (ev.result.policyVersion '= "") Do meta.%Set("policyVersion", ev.result.policyVersion)
+		If (ev.source = "tool.policies") && (ev.result.policyVersion = "") && (ev.result.version '= "") Do meta.%Set("policyVersion", ev.result.version)
 		If (ev.source = "tool.mapping_catalog") && (ev.result.mappingVersion '= "") Do meta.%Set("mappingVersion", ev.result.mappingVersion)
 	}
 	Return meta

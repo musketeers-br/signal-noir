@@ -48,7 +48,7 @@ Method TestP5ProducesEvidenceLinkedProposal()
 	Do $$$AssertTrue(types [ "ToolCalled;ToolCalled;ToolCalled;ToolCalled;ToolCalled;ToolCalled;", "six base Tool calls")
 	Do $$$AssertTrue($Find(types, "ProposalCreated;StateChanged;") > $Find(types, "ToolCalled;"), "Tool calls before the Proposal, then the state change")
 	; versions and metrics
-	Do $$$AssertEquals(p.versions.policy, "pol-2026.10.1", "policy version from the Evidence")
+	Do $$$AssertEquals(p.versions.policy, "2026.10.1", "policy version from the Evidence")
 	Do $$$AssertEquals(p.versions.mapping, "2026.10.1", "mapping version from the Evidence")
 	Do $$$AssertEquals(p.versions.model, "scripted-1", "model")
 	Do $$$AssertEquals(p.metrics.toolCalls, 6, "toolCalls")
