@@ -359,6 +359,11 @@ passing, 0 failing.
 Deviations from the quickstart text: the container is `signalnoir-004` on port 64987, not
 `signalnoir-iris` on 52773; and the Evidence of the fixtures is translated, as noted in item 2.
 
+Update (2026-10-31, fixtures regenerated): the mock's Operator path now follows the rules of 004; the
+exporter reproduced the other 24 fixtures byte for byte and changed `resolution.201.action.json`
+only (it gained `MAPPING_CONDITION_MATCHES` and `REQUIRED_EVIDENCE_PRESENT`). 25 valid, 0 invalid
+against the contract. `TestFixtureVerdicts` agrees on all 13 verdicts.
+
 ### Diff review (2026-10-31, T046)
 
 Against the Constitution, the spec, the plan and the tests, on the changes since PR #21 of `master`

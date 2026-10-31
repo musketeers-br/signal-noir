@@ -35,8 +35,8 @@ scan finds no I/O in the Core validator classes; 1000 validations average ≤ 50
 `SignalNoir.Tests.Core.Validator.TestFixtureVerdicts` rebuilds the input of each verdict found in
 `contracts/fixtures/*.json` and compares reasons and `requiresApproval`.
 
-**Expected**: 12 of the 13 verdicts match; `resolution.201.action.json` is the known divergence until
-the fixtures are regenerated (contract-change §Fixture divergence).
+**Expected**: all 13 verdicts match. (Until the fixtures were regenerated on 2026-10-31,
+`resolution.201.action.json` was the one known divergence: contract-change §Fixture divergence.)
 
 ## 3. Reference data (Story 6)
 

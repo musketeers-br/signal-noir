@@ -12,11 +12,11 @@ Parameter INPUTS = "SignalNoir.Tests.Core.Validator.Inputs";
 /// receipts); the translation below only changes the shape to the one of
 /// contracts/validation-input.md, never what was or was not observed. The reference data is the
 /// Mapping catalog the Case's own Evidence shows, else the 2026.10.1 set.
-/// Twelve of the thirteen verdicts agree. resolution.201.action.json is the known divergence
-/// (research D3): an Operator's conditional Mapping with its Evidence in, whose reasons lack
+/// All thirteen verdicts agree. resolution.201.action.json was the one that did not (research D3):
+/// an Operator's conditional Mapping with its Evidence in, whose reasons lacked
 /// MAPPING_CONDITION_MATCHES and REQUIRED_EVIDENCE_PRESENT. Principle III forbids a lighter rule
-/// for the Operator, so the fixture is wrong (the mock is to be fixed and the fixtures
-/// regenerated). This test then fails on purpose once the fixture is regenerated: flip it.
+/// for the Operator, so the mock was fixed and the fixtures regenerated (2026-10-31; see
+/// contracts/g1-integration.md); the test was an exception until then and is now an equality.
 ClassMethod Load(file As %String) As %DynamicObject
 {
 	Set stream = ##class(%Stream.FileCharacter).%New()
@@ -208,19 +208,15 @@ Method TestReviewAmbiguousIdentity()
 	Do ..Agree("case.review.ambiguous-identity.json")
 }
 
-/// The Operator's conditional Mapping of resolution.201.action.json. KNOWN DIVERGENCE: with the
-/// Case's Evidence in, 004 gives the conditions and the Evidence their reasons; the fixture
-/// lacks them. When the mock is fixed and the fixture regenerated, this assertion fails: change
-/// `divergent` to the fixture's value and call Agree-style equality.
-Method TestResolution201IsTheKnownDivergence()
+/// The Operator's conditional Mapping of resolution.201.action.json, on the Case it resolves
+Method TestResolution201()
 {
 	Set resolution = ..Load("resolution.201.action.json")
 	Set case = ..Load("case.review.provider-unavailable.json")
 	Set p = resolution.proposal
 	Set verdict = ##class(SignalNoir.Core.Validator).%New().Validate(..InputFor(case, p, p.validatorVerdict.at))
-	Do $$$AssertEquals(..Outcome(verdict), "accepted ACTION_IN_CATALOG,PARAMS_VALID,MAPPING_CONDITION_MATCHES,REQUIRED_EVIDENCE_PRESENT approval=1", "what the rules of 004 say")
-	Do $$$AssertEquals(..Recorded(p.validatorVerdict), "accepted ACTION_IN_CATALOG,PARAMS_VALID approval=1", "what the fixture records: it lacks the condition and the Evidence reasons")
-	Do $$$AssertTrue(..Outcome(verdict) '= ..Recorded(p.validatorVerdict), "the divergence is still there")
+	Do $$$AssertEquals(..Outcome(verdict), ..Recorded(p.validatorVerdict), "resolution.201.action.json")
+	Do $$$AssertEquals(..Recorded(p.validatorVerdict), "accepted ACTION_IN_CATALOG,PARAMS_VALID,MAPPING_CONDITION_MATCHES,REQUIRED_EVIDENCE_PRESENT approval=1", "the conditional Mapping and its Evidence are in the reasons, as for any origin")
 }
 
 /// resolution.422: the serum Mapping on the Case's plasma Order
