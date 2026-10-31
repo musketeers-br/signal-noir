@@ -58,6 +58,8 @@ export const ALL_STATES = Object.keys(STATES) as CaseState[];
 export const COPY = {
 	synthetic: 'SYNTHETIC',
 	syntheticData: 'SYNTHETIC DATA',
+	themeToDark: 'Switch to dark theme',
+	themeToLight: 'Switch to light theme',
 	replay: 'REPLAY',
 	emptyNeedsYou: 'No case needs a decision from you right now.',
 	emptyList: 'No cases match this filter.',

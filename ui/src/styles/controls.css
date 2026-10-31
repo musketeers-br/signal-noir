@@ -1,0 +1,35 @@
+/* buttons: raised, never pills (the pill means Case state) */
+.btn { min-height: var(--target); padding: 0 var(--sp-4); border-radius: var(--r-md); font: inherit; font-weight: 600; cursor: pointer; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); box-shadow: var(--e2); display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); transition: transform var(--dur-base), box-shadow var(--dur-base); }
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:active:not(:disabled) { box-shadow: var(--inset); transform: none; }
+.btn-small { min-height: var(--target); padding: 0 var(--sp-3); font-size: var(--fs-small); }
+.btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn-secondary { background: var(--surface); color: var(--ink); }
+.btn-secondary[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); box-shadow: var(--inset); }
+.btn-danger { background: var(--danger); color: var(--danger-ink); border-color: var(--danger); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
+.btn-link { background: none; border: 0; color: inherit; cursor: pointer; min-height: var(--target); min-width: var(--target); font: inherit; }
+
+/* segmented filter: inset track, raised selected segment (DOM unchanged) */
+.filters { display: flex; flex-wrap: wrap; gap: var(--sp-1); padding: 5px; margin-bottom: var(--sp-3); border-radius: var(--r-lg); background: var(--surface-inset); box-shadow: var(--inset); width: fit-content; max-width: 100%; }
+.filters .btn { box-shadow: none; border-color: transparent; background: transparent; color: var(--ink-muted); }
+.filters .btn[aria-pressed='true'] { background: var(--surface); color: var(--ink); border-color: var(--line-strong); box-shadow: var(--e2); }
+
+/* fields: inset, visible boundary */
+.field { display: flex; flex-direction: column; gap: var(--sp-1); margin: 10px 0; font-size: var(--fs-small); }
+.field input, .field textarea, .name-field input { font: inherit; min-height: var(--target); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface-inset); color: var(--ink); box-shadow: var(--inset); }
+.field textarea { min-height: 96px; }
+.field input[aria-invalid='true'], .name-field input[aria-invalid='true'] { border-color: var(--danger); }
+.option { display: flex; gap: var(--sp-2); align-items: center; min-height: var(--target); }
+.inline-error { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); margin: var(--sp-2) 0; }
+.dialog-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
+
+/* the pill is only for Case state chips (FR-011) */
+.chip { display: inline-block; padding: 1px 10px; border: 1px solid currentColor; border-radius: var(--r-chip); font-size: var(--fs-small); white-space: nowrap; background: var(--surface); }
+.badge-synthetic, .tag { display: inline-block; font: 700 11px/1.4 var(--mono); letter-spacing: 0.08em; padding: 2px 6px; border-radius: var(--r-sm); background: var(--accent-soft); color: var(--accent); margin: 0 4px; }
+.tag-replay, .tag-attention { background: var(--attention-soft); color: var(--attention); }
+.tag-danger { background: var(--danger-soft); color: var(--danger); }
+.tag-success { background: var(--success-soft); color: var(--success); }
+.tag-muted { background: var(--code-bg); color: var(--ink-muted); }
+.ev-chip { background: var(--fact-soft); color: var(--fact); border: 1px solid var(--fact); border-radius: var(--r-sm); padding: 2px 8px; min-height: var(--target); min-width: var(--target); cursor: pointer; font: inherit; }
+.theme-toggle { width: var(--target); padding: 0; border-radius: 50%; }

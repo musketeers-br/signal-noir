@@ -1,7 +1,7 @@
 Class SignalNoir.Tests.Core.Validator.TestFixtureVerdicts Extends %UnitTest.TestCase
 {
 
-Parameter DIR = "/home/irisowner/dev/contracts/fixtures/";
+Parameter DIR = "contracts/fixtures/";
 
 Parameter INPUTS = "SignalNoir.Tests.Core.Validator.Inputs";
 
@@ -20,7 +20,7 @@ Parameter INPUTS = "SignalNoir.Tests.Core.Validator.Inputs";
 ClassMethod Load(file As %String) As %DynamicObject
 {
 	Set stream = ##class(%Stream.FileCharacter).%New()
-	Do stream.LinkToFile(..#DIR _ file)
+	Do stream.LinkToFile(##class(SignalNoir.Tests.Core.Validator.Repo).Path(..#DIR _ file))
 	Return {}.%FromJSON(stream)
 }
 

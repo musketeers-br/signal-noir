@@ -1,0 +1,18 @@
+.case-row.changed .case-link { animation: flash var(--dur-flash) ease-out 1; }
+@keyframes flash { from { background: var(--attention-soft); } to { background: var(--surface); } }
+
+@media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* forced colors: system colors, real borders, no shadows, visible focus */
+@media (forced-colors: active) {
+	* { box-shadow: none !important; }
+	.btn, .field input, .field textarea, .name-field input, .layer, .case-link, .evidence-card, .timeline, .dialog, .toast, .banner, .chip { border: 1px solid CanvasText; }
+	.btn:disabled { border-style: dashed; }
+	:focus-visible { outline: 3px solid Highlight; }
+}
+@media (prefers-contrast: more) {
+	:root { --line: var(--line-strong); }
+	.glass, .topbar, .dialog, .toast, .connection-note { background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

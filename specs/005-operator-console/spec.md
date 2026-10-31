@@ -316,3 +316,4 @@ mappings. It keeps only the declared Operator name in the browser.
 - Times are shown in BRT (America/Sao_Paulo) as the UX spine says; the API stays UTC.
 - The approval diff ("GLIC-J → GLIC-S") is built from the reference mappings, as the UX spine says,
   until a preview field exists (prototype finding F-8).
+- The visual system of this console was redesigned by feature 014 (`specs/014-liquid-console-redesign/`): soft surfaces, liquid glass for floating layers, a light and dark theme the Operator can switch. Behavior and copy defined here are unchanged.

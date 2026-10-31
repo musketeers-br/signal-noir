@@ -1,0 +1,114 @@
+/* Signal Noir design tokens (feature 014). The only file with literal colors, shadows, radii and
+   font stacks. Each themed token is light-dark(light, dark); the theme is `color-scheme` on the root:
+   system by default, forced by [data-theme]. Names and roles: specs/014-liquid-console-redesign/contracts/design-tokens.md */
+:root {
+	color-scheme: light dark;
+
+	/* surfaces */
+	--paper: light-dark(#ece5d8, #0a1012);
+	--surface: light-dark(#f5f0e5, #131b1d);
+	--surface-raised: light-dark(#efe8da, #182426);
+	--surface-inset: light-dark(#e6decf, #0d1517);
+	--glass: light-dark(rgb(248 243 233 / 0.62), rgb(24 36 38 / 0.55));
+	--glass-solid: light-dark(#f5f0e5, #182426);
+	--glass-edge: light-dark(rgb(255 255 255 / 0.75), rgb(255 255 255 / 0.13));
+	--code-bg: light-dark(#e6decf, #0d1517);
+	--backdrop: light-dark(rgb(30 24 12 / 0.4), rgb(0 0 0 / 0.6));
+
+	/* text and lines */
+	--ink: light-dark(#172c32, #e8efee);
+	--ink-muted: light-dark(#4f5f63, #9fb1b2);
+	--line: light-dark(#cfc6b3, #26373b);
+	--line-strong: light-dark(#857e70, #5e7478);
+
+	/* semantic roles: one meaning each (DESIGN.md) */
+	--accent: light-dark(#0b5a60, #4fd0c6);
+	--accent-ink: light-dark(#f4fbfa, #04201f);
+	--accent-soft: light-dark(#d9e8e3, #14343a);
+	--fact: light-dark(#285bb0, #8db3f2);
+	--fact-soft: light-dark(#e3ebf8, #1b2a44);
+	--interpretation: light-dark(#6b3fa0, #c6a6f0);
+	--interpretation-soft: light-dark(#ede4f6, #2c2140);
+	--attention: light-dark(#8a4d09, #f0b867);
+	--attention-soft: light-dark(#f8e8cc, #3a2a12);
+	--hold: light-dark(#6a5a2e, #d9c58f);
+	--hold-soft: light-dark(#ede6d2, #2f2a1c);
+	--success: light-dark(#1f6f3a, #7fd39b);
+	--success-soft: light-dark(#ddeedf, #173826);
+	--danger: light-dark(#a03535, #f29a9a);
+	--danger-soft: light-dark(#f6e0dc, #3d1d1d);
+	--danger-ink: light-dark(#ffffff, #2a0d0d);
+	--focus: light-dark(#9a5a00, #f2b544);
+
+	/* elevation: paired soft shadows; e1 is a border only */
+	--shadow-lo: light-dark(rgb(130 112 78 / 0.34), rgb(0 0 0 / 0.7));
+	--shadow-hi: light-dark(rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.05));
+	--e1: none;
+	--e2: 4px 4px 11px var(--shadow-lo), -4px -4px 11px var(--shadow-hi);
+	--e3: 8px 8px 18px var(--shadow-lo), -8px -8px 18px var(--shadow-hi);
+	--e4: 14px 16px 34px var(--shadow-lo), -9px -9px 24px var(--shadow-hi);
+	--e5: 0 24px 48px -14px var(--shadow-lo);
+	--inset: inset 3px 3px 8px var(--shadow-lo), inset -3px -3px 8px var(--shadow-hi);
+	--ring: 0 0 0 3px var(--focus);
+	--blur: 22px;
+
+	/* shape */
+	--r-sm: 8px;
+	--r-md: 12px;
+	--r-lg: 20px;
+	--r-xl: 28px;
+	--r-chip: 9999px;
+
+	/* type */
+	--sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+	--fs-small: 13px;
+	--fs-body: 15px;
+	--fs-title: 19px;
+	--fs-page: 28px;
+	--fs-action: 20px;
+
+	/* space and layout */
+	--sp-1: 4px;
+	--sp-2: 8px;
+	--sp-3: 12px;
+	--sp-4: 16px;
+	--sp-5: 24px;
+	--sp-6: 32px;
+	--gutter: 24px;
+	--gutter-mobile: 16px;
+	--content-max: 1240px;
+	--timeline-w: 330px;
+	--rail-w: 248px;
+	--target: 44px;
+
+	/* motion */
+	--dur-fast: 0.15s;
+	--dur-base: 0.2s;
+	--dur-flash: 1.2s;
+}
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark'] { color-scheme: dark; }
+
+/* a browser without light-dark(): keep a correct light console */
+@supports not (color: light-dark(#000, #fff)) {
+	:root {
+		--paper: #ece5d8; --surface: #f5f0e5; --surface-raised: #efe8da; --surface-inset: #e6decf;
+		--glass: rgb(248 243 233 / 0.9); --glass-solid: #f5f0e5; --glass-edge: rgb(255 255 255 / 0.75); --code-bg: #e6decf;
+		--backdrop: rgb(30 24 12 / 0.4); --ink: #172c32; --ink-muted: #4f5f63; --line: #cfc6b3; --line-strong: #857e70;
+		--accent: #0b5a60; --accent-ink: #f4fbfa; --accent-soft: #d9e8e3; --fact: #285bb0; --fact-soft: #e3ebf8;
+		--interpretation: #6b3fa0; --interpretation-soft: #ede4f6; --attention: #8a4d09; --attention-soft: #f8e8cc;
+		--hold: #6a5a2e; --hold-soft: #ede6d2; --success: #1f6f3a; --success-soft: #ddeedf; --danger: #a03535;
+		--danger-soft: #f6e0dc; --danger-ink: #ffffff; --focus: #9a5a00;
+		--shadow-lo: rgb(130 112 78 / 0.34); --shadow-hi: rgb(255 255 255 / 0.85);
+	}
+}
+
+@media print {
+	:root {
+		color-scheme: light;
+		--paper: #ffffff; --surface: #ffffff; --surface-raised: #ffffff; --surface-inset: #ffffff; --glass: #ffffff; --glass-solid: #ffffff;
+		--ink: #000000; --ink-muted: #333333;
+		--e2: none; --e3: none; --e4: none; --e5: none; --inset: none;
+	}
+}
