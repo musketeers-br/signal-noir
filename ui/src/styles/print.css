@@ -1,0 +1,9 @@
+@media print {
+	.topbar .rail-nav, .topbar .theme-toggle, .topbar .name-field, .toasts, .connection-note { display: none !important; }
+	.glass, .topbar, .dialog, .toast { background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; }
+	.shell { display: block; }
+	.topbar { position: static; min-height: 0; }
+	.detail-grid { grid-template-columns: 1fr; }
+	.timeline { position: static; max-height: none; overflow: visible; }
+	.layer, .dossier { break-inside: avoid; }
+}

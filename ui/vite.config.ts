@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => ({
 	test: {
 		environment: 'jsdom',
 		include: ['tests/**/*.test.ts'],
-		setupFiles: ['tests/setup.ts']
+		setupFiles: ['tests/setup.ts'],
+		// the token tests read the stylesheets as text; vitest empties CSS unless asked
+		css: { include: [/src\/.*\.css/] }
 	}
 }));

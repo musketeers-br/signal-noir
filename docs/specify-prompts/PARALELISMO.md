@@ -28,6 +28,7 @@ Como dividir as 12 specs entre 3 pessoas sem donos fixos e sem conflito de merge
 | 003 order-case-lifecycle | `docs/seams.md` v1 |
 | 004 validation-and-reference-data | `docs/seams.md` v1 (porta do Validator) |
 | 005 operator-console | contratos + fixtures (dia 1) |
+| 014 liquid-console-redesign | implementada no `ui/` (tema claro/escuro, tokens, rail, vidro com fallbacks); falta só a checagem do `theme-init.js` na instância IRIS (T036) | Henry | — | branch `master`, sem commit |
 | 006 investigation-and-proposal | `001` + DTOs de Case do `003` + `002` |
 | 007 approval-and-outbox | `001` + `004`; pode usar fake do Validator |
 | 008 execution-and-recovery | `001` + `002`; pode usar fake de Approval/Execution |

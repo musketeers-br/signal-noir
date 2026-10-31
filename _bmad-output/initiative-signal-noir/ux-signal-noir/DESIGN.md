@@ -2,41 +2,47 @@
 name: Signal Noir
 description: Operator console for resolving interoperability exceptions with an AI agent under deterministic governance. Svelte 5 SPA served statically by IRIS; no component library, so this file is the whole visual system.
 status: final
-updated: 2026-10-20
+updated: 2026-10-31
+revision: 'Feature 014 (liquid console redesign) supersedes Elevation & Depth, Shapes, and the theme rule of Colors. The values in tokens.css are the source of truth.'
 colors:
-  paper: '#F4F2EC'
-  surface: '#FFFEFB'
-  surface-raised: '#F7F6F1'
+  paper: '#ECE5D8'
+  surface: '#F5F0E5'
+  surface-raised: '#EFE8DA'
+  surface-inset: '#E6DECF'
+  code-bg: '#E6DECF'
   ink: '#172C32'
-  ink-muted: '#56686E'
-  line: '#D7DFDC'
-  code-bg: '#EEF1EF'
-  accent: '#006E65'
-  accent-ink: '#FFFFFF'
-  accent-soft: '#E3F1EB'
+  ink-muted: '#4F5F63'
+  line: '#CFC6B3'
+  line-strong: '#857E70'
+  accent: '#0B5A60'
+  accent-ink: '#F4FBFA'
+  accent-soft: '#D9E8E3'
   fact: '#285BB0'
-  fact-soft: '#E9EFFB'
+  fact-soft: '#E3EBF8'
   interpretation: '#6B3FA0'
-  interpretation-soft: '#F1EAFA'
+  interpretation-soft: '#EDE4F6'
   attention: '#8A4D09'
-  attention-soft: '#FFF0D8'
+  attention-soft: '#F8E8CC'
   hold: '#6A5A2E'
-  hold-soft: '#F1ECDC'
+  hold-soft: '#EDE6D2'
   success: '#1F6F3A'
-  success-soft: '#E2F2E7'
+  success-soft: '#DDEEDF'
   danger: '#A03535'
-  danger-soft: '#FBEAEA'
-  focus: '#C57D12'
-  paper-dark: '#0F1A1D'
-  surface-dark: '#16252A'
-  surface-raised-dark: '#1B2D32'
-  ink-dark: '#E5EEEC'
+  danger-soft: '#F6E0DC'
+  danger-ink: '#FFFFFF'
+  focus: '#9A5A00'
+  paper-dark: '#0A1012'
+  surface-dark: '#131B1D'
+  surface-raised-dark: '#182426'
+  surface-inset-dark: '#0D1517'
+  code-bg-dark: '#0D1517'
+  ink-dark: '#E8EFEE'
   ink-muted-dark: '#9FB1B2'
-  line-dark: '#2B4046'
-  code-bg-dark: '#1F3338'
-  accent-dark: '#3FB8A9'
-  accent-ink-dark: '#062320'
-  accent-soft-dark: '#173A37'
+  line-dark: '#26373B'
+  line-strong-dark: '#5E7478'
+  accent-dark: '#4FD0C6'
+  accent-ink-dark: '#04201F'
+  accent-soft-dark: '#14343A'
   fact-dark: '#8DB3F2'
   fact-soft-dark: '#1B2A44'
   interpretation-dark: '#C6A6F0'
@@ -88,10 +94,10 @@ typography:
     fontWeight: '700'
     lineHeight: '1.2'
 rounded:
-  sm: 4px
-  md: 8px
-  lg: 12px
-  xl: 14px
+  sm: 8px
+  md: 12px
+  lg: 20px
+  xl: 28px
   full: 9999px
 spacing:
   '1': 4px
@@ -157,6 +163,11 @@ components:
     maxWidth: 640px
 ---
 
+> **Revised by feature 014 (2026-10-31).** The console now uses soft raised and inset surfaces, liquid-glass
+> layers for what floats, and a light and dark theme the Operator can switch. The color values above are the
+> ones shipped in `ui/src/styles/tokens.css`, which is the source of truth. Sections marked
+> **Superseded by 014** replace the 2026-10-20 text. See `specs/014-liquid-console-redesign/`.
+
 ## Brand & Style
 
 Signal Noir is an operations console, not a chat product. Its premise is that a failure becomes a **verifiable decision**: the operator can see what failed, which facts support the proposal, exactly what will change, and what was confirmed. The visual system serves that premise. It is calm, dense enough for an operator's working day, and strict about one distinction above all: **observed facts look different from interpretation**.
@@ -178,7 +189,9 @@ Every semantic color answers a single question. If a color appears, the operator
 - **Danger (`{colors.danger}`)**: failed checks, validator blocks, server refusals, Failed, low confidence. Never decorative.
 - **Focus (`{colors.focus}`)**: keyboard focus ring and the brief highlight when an evidence chip jumps to its evidence.
 
-Each color has a `-dark` twin. Dark mode follows `prefers-color-scheme`; the same meaning maps to the same role.
+Each color has a `-dark` twin, defined once with it as `light-dark(light, dark)` in `tokens.css`; the same meaning maps to the same role in both themes.
+
+**Theme (014, replaces "dark mode follows `prefers-color-scheme`").** The console starts in the system preference and follows it live. A switch in the top bar changes the theme; the choice is kept in the browser (`signalnoir.theme`) and wins over the system. The theme is applied before first paint. Every state, message and view is designed in both themes, and the contrast pairs are tested (`ui/tests/tokens-contrast.test.ts`): text 4.5:1, boundaries and the focus ring 3:1.
 
 ## Typography
 
@@ -194,17 +207,27 @@ Times show in BRT on screen (`HH:MM:SS BRT`); the API stays in UTC.
 
 A 4-px base scale (`{spacing.1}` to `{spacing.6}`). Content is capped at `{spacing.content-max}`.
 
+- **Shell (014)**: a side rail at 1100 px and up (Cases only: no entry for a screen that does not exist), a compact top bar below. Touch targets are at least 44 px.
 - **Case list**: one row per case, a fixed grid of state, order and last exception, partner, proposal, age. Below 1100 px partner and labels drop; below 640 px each row becomes a stacked card.
 - **Case detail**: two columns above 1100 px: the six numbered layers on the left and the timeline (`{spacing.timeline-width}`) on the right, sticky. Below 1100 px the timeline moves under the layers. The grid column is `minmax(0, 1fr)` so wide tables scroll inside their own container and never widen the page.
 - **Gutters**: `{spacing.gutter-desktop}` on desktop, `{spacing.gutter-mobile}` on phones. No horizontal page scroll at 360 px.
 
 ## Elevation & Depth
 
-Flat. Hierarchy comes from borders and the semantic left-border, not shadows. Shadows exist only on overlays that sit above the page: the approval dialog (with a dark backdrop) and toasts.
+**Superseded by 014.** The 2026-10-20 text said "Flat... shadows only on overlays". The console now has five levels, all from tokens:
+
+- **e1** flat: a border only.
+- **e2** hover and small controls: a soft paired shadow (dark below and right, light above and left).
+- **e3** raised: layers, cards, rows.
+- **e4** modal: the approval dialog.
+- **e5** popover and toast.
+- **Inset**: inputs, the segmented filter and wells.
+
+Floating layers (rail or top bar, dialog, toasts, connection note) are **liquid glass**: a translucent fill, a background blur and a 1 px light edge. Everything the Operator reads to decide (Evidence, Diagnosis, Proposal, Dossier) sits on **opaque** surfaces. Shadows are never the only boundary: every control also has a 3:1 border (`--line-strong`). Without blur support, with reduced transparency, in forced colors or in print, glass becomes opaque and shadows disappear.
 
 ## Shapes
 
-`{rounded.sm}` for tags and chips, `{rounded.md}` for buttons, inputs and evidence cards, `{rounded.lg}` for cards, banners and the dossier, `{rounded.xl}` for the dialog. `{rounded.full}` only for state chips, so a pill always means "case state".
+**Superseded by 014.** Radii are `{rounded.sm}` 8 px for tags and small chips, `{rounded.md}` 12 px for buttons, inputs and evidence cards, `{rounded.lg}` 20 px for layers, banners, rows and the dossier, `{rounded.xl}` 28 px for the dialog. **The pill (`{rounded.full}`) is still only for Case state chips; buttons are not pills**, so a pill still means "case state".
 
 ## Components
 

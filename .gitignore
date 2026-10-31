@@ -6,6 +6,7 @@ iris-main.log
 
 # Claude Code personal settings
 .claude/settings.local.json
+.claude/CLAUDE.md
 
 # iris-agentic-dev workspace config (holds credentials; the repo is public)
 .iris-agentic-dev.toml

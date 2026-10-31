@@ -1,0 +1,23 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 var(--fs-body)/1.55 var(--sans); }
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.mono, code, pre { font-family: var(--mono); font-size: var(--fs-small); }
+.small { font-size: var(--fs-small); }
+.muted { color: var(--ink-muted); }
+.attention { color: var(--attention); }
+.page-title { font-size: var(--fs-page); font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; margin: var(--sp-2) 0 var(--sp-3); }
+.section-title { font-size: var(--fs-title); font-weight: 700; line-height: 1.2; margin: 0 0 var(--sp-2); }
+.overline { font: 700 11px/1.4 var(--mono); letter-spacing: 0.1em; margin-right: 6px; }
+.overline.fact { color: var(--fact); }
+.overline.interpretation { color: var(--interpretation); }
+.action-name { font: 700 var(--fs-action)/1.2 var(--mono); margin: var(--sp-1) 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tone-fact { color: var(--fact); }
+.tone-attention { color: var(--attention); }
+.tone-interpretation { color: var(--interpretation); }
+.tone-hold { color: var(--hold); }
+.tone-success { color: var(--success); }
+.tone-danger { color: var(--danger); }
+.tone-muted { color: var(--ink-muted); }
+code { overflow-wrap: anywhere; }
