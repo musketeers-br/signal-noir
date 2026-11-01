@@ -40,3 +40,7 @@ Re-run both commands after any contract change. A fixture that stops validating 
 | Reference data | `reference.mappings.json` |
 
 Benchmark responses are not covered yet; they depend on API-Q1 (how one command runs both modes).
+
+Precedents (015) are not here: the mock has no precedents, so their hand-written fixtures live in
+`contracts/precedents-fixtures/` with their own manifest. Validate them with
+`uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py contracts/precedents-fixtures`.

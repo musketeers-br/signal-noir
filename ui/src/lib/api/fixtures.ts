@@ -1,10 +1,11 @@
-// A fake server that answers the console's contract operations from contracts/fixtures/**.
+// A fake server that answers the console's contract operations from contracts/fixtures/** and
+// contracts/precedents-fixtures/** (015, kept apart from the exporter's output).
 // It powers the tests and `npm run dev:mock`. Fixtures are read, never edited. Tests can script
 // the next answer to an operation (status + body) or make it fail with no answer.
 import { ACTIONS, type CaseDetail, type CaseListPage, type CaseSummary, type TimelinePage } from './types';
 import { NetworkError, type Answer, type Transport } from './transport';
 
-const files = import.meta.glob('../../../../contracts/fixtures/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
+const files = import.meta.glob(['../../../../contracts/fixtures/*.json', '../../../../contracts/precedents-fixtures/*.json'], { eager: true, import: 'default' }) as Record<string, unknown>;
 
 export function fixture<T = unknown>(name: string): T {
 	const key = Object.keys(files).find((k) => k.endsWith(`/${name}`));

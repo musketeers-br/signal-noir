@@ -1,0 +1,49 @@
+{
+  "contract": "contracts/openapi-signalnoir.yaml",
+  "generatedBy": "written by hand from the contract (feature 015, T015); the prototype mock has no precedents",
+  "note": "Synthetic data only. Kept apart from contracts/fixtures, which holds only what the prototype exporter generates. Validate with: uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py contracts/precedents-fixtures",
+  "fixtures": [
+    {
+      "file": "precedents.200.results.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "Lexical mode, three similar closed Cases, one Failed and one Cancelled shown with their outcome."
+    },
+    {
+      "file": "precedents.200.no-precedents.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "No closed Case has become a precedent yet."
+    },
+    {
+      "file": "precedents.200.nothing-similar.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "Precedents exist but none reaches the minimum similarity; second open within a minute (not recorded)."
+    },
+    {
+      "file": "precedents.200.rebuilding.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "The index is being rebuilt: no stale results shown."
+    },
+    {
+      "file": "precedents.200.needs-rebuild.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "Only records of another model exist: the search refuses to mix models."
+    },
+    {
+      "file": "precedents.200.unavailable.json",
+      "operation": "GET /cases/{caseId}/precedents",
+      "status": 200,
+      "schema": "PrecedentSearch",
+      "description": "The embedding provider failed; the Case still opens."
+    }
+  ]
+}
