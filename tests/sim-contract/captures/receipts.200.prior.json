@@ -1,15 +1,15 @@
 {
   "items":[
     {
-      "receiptId":"rcp_XVYHXBGVFMI7DOQPZZWZXHJYR4_1",
-      "orderId":"ORD-sci_XVYHXBGVFMI7DOQPZZWZXHJYR4-0002",
-      "idempotencyKey":"idk_prior_XVYHXBGVFMI7DOQPZZWZXHJYR4_2",
-      "receivedAt":"2026-10-31T13:02:26.379Z",
+      "receiptId":"rcp_FN7PTGWWCII7DF3RBK2ABFAOSM_1",
+      "orderId":"ORD-sci_FN7PTGWWCII7DF3RBK2ABFAOSM-0002",
+      "idempotencyKey":"idk_prior_FN7PTGWWCII7DF3RBK2ABFAOSM_2",
+      "receivedAt":"2026-11-01T16:31:55.272Z",
       "partnerId":"labpartner-a",
-      "scenarioInstanceId":"sci_XVYHXBGVFMI7DOQPZZWZXHJYR4",
-      "transactionId":"txn_XVYHXBGVFMI7DOQPZZWZXHJYR4_2",
+      "scenarioInstanceId":"sci_FN7PTGWWCII7DF3RBK2ABFAOSM",
+      "transactionId":"txn_FN7PTGWWCII7DF3RBK2ABFAOSM_2",
       "orderSnapshot":{
-        "orderId":"ORD-sci_XVYHXBGVFMI7DOQPZZWZXHJYR4-0002",
+        "orderId":"ORD-sci_FN7PTGWWCII7DF3RBK2ABFAOSM-0002",
         "partnerId":"labpartner-a",
         "originUnit":"UNIT-NORTE",
         "patient":{
@@ -32,8 +32,8 @@
         "notes":"Routine morning collection.",
         "synthetic":true
       },
-      "externalRef":"/sim/api/v1/receipts/rcp_XVYHXBGVFMI7DOQPZZWZXHJYR4_1"
+      "externalRef":"/sim/api/v1/receipts/rcp_FN7PTGWWCII7DF3RBK2ABFAOSM_1"
     }
   ],
-  "serverTime":"2026-10-31T13:05:26.385Z"
+  "serverTime":"2026-11-01T16:34:55.277Z"
 }
