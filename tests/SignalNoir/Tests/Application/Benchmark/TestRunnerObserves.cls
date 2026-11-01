@@ -31,11 +31,12 @@ ClassMethod Reachable() As %Boolean
 	Return ##class(SignalNoir.Application.Benchmark.RunService).%New().LoadCatalog().ok
 }
 
-ClassMethod Start(variants As %DynamicArray) As %String
+ClassMethod Start(variants As %DynamicArray, Output why As %String) As %String
 {
 	Set svc = ##class(SignalNoir.Application.Benchmark.RunService).%New()
 	Set svc.AutoStart = 0
 	Set r = svc.Create({"mode": "rules", "purpose": "benchmark", "repetitions": 1, "seed": 5, "scenarios": [{"family": "P8", "variants": (variants)}]})
+	Set why = $Select(r.ok: "", 1: r.code _ ": " _ r.message)
 	Return $Select(r.ok: r.obj.runId, 1: "")
 }
 
@@ -94,15 +95,19 @@ Method TestAStepTwiceDoesNotDuplicateAnInstance()
 Method TestACaseThatDoesNotDecideInTimeIsNotDecided()
 {
 	If '..Reachable() Do $$$LogMessage("Simulator not reachable: skipped") Quit
-	Set runId = ..Start(["P8b-tune-01"])
+	Set runId = ..Start(["P8b-tune-01"], .why)
+	Do $$$AssertTrue(runId '= "", "run created: " _ why)
+	Quit:(runId = "")
 	Set runner = ##class(SignalNoir.Application.Benchmark.Runner).%New()
 	Set runner.Sweep = 0, runner.ItemSeconds = 0
-	; the deadline is the instant the Case opened: step until the item is past it
-	For i = 1 : 1 : 8 {
+	; the deadline is the instant the Case opened and a time stamp has a resolution of one second:
+	; step until the item is past it, for as long as that takes (at most 20 s)
+	Set until = $ZHorolog + 20
+	While $ZHorolog < until {
 		Do runner.Step(runId)
-		Hang 0.1
 		Set status = ##class(SignalNoir.Application.Model.BenchmarkItemRecord).%OpenId(runId _ "||1").status
 		If (status '= "planned") && (status '= "opened") Quit
+		Hang 0.25
 	}
 	Set item = ##class(SignalNoir.Application.Model.BenchmarkItemRecord).%OpenId(runId _ "||1")
 	Do $$$AssertTrue((item.status = "not_decided") || (item.status = "ended"), "decided or not decided by now: " _ item.status)
