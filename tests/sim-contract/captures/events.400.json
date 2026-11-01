@@ -1,7 +1,7 @@
 {
   "error":{
     "code":"INVALID_REQUEST",
-    "message":"orderId ORD-sci_XD472PGVFMI7DOQPZZWZXHJYR4-0001 does not belong to sci_XD6L27GVFMI7DOQPZZWZXHJYR4",
+    "message":"orderId ORD-sci_E4ACUQOWCII7DF3RBK2ABFAOSM-0001 does not belong to sci_E4CCJT6WCII7DF3RBK2ABFAOSM",
     "details":{
     }
   }

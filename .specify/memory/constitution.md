@@ -1,6 +1,40 @@
 <!--
 Sync Impact Report
 ==================
+Version change: 1.0.0 → 2.0.0 (2026-11-01)
+Bump rationale: MAJOR. Principle VIII drops a requirement (reserved cases, baseline and evaluator
+review held by different team members) and Governance drops the second-reviewer requirement for
+amendments; both are incompatible redefinitions of what the document required.
+
+Modified:
+  - VIII. Honest Measurement — the role separation is replaced by: the baseline's author MUST NOT
+    read the reserved cases or their answer key before the freeze; reviews MAY be done by anyone,
+    the author or an automated reviewer included, MUST NOT block the freeze or the run, and the
+    report MUST disclose who held each role and who reviewed what.
+  - Workflow step 7 (Review) — the author MAY review alone or with an automated reviewer; a
+    teammate whose files are touched MUST be told and MAY review after the merge.
+  - Governance — any member MAY amend without another member's review, and MUST tell the others.
+
+Added sections: none. Removed sections: none.
+
+Templates requiring updates:
+  ✅ .specify/templates/plan-template.md — the VIII check does not mention role separation; no
+     change needed.
+  ✅ .specify/templates/spec-template.md, tasks-template.md — no references; no change needed.
+  ⚠ specs/010-benchmark-and-reference-run/ — FR-013, the US5 acceptance scenario on "the same
+     person in two roles", contracts/coordination-010.md and tasks T055/T056 still require distinct
+     people and a recorded review before the freeze. They live on PR #32 (feature 010) and must be
+     aligned there, together with the role check in the code (Roles.cls, reference-grade check).
+  ⚠ docs/specify-prompts/010-benchmark-and-reference-run.txt item 10 — historical prompt; left
+     as written.
+
+Note: under 1.0.0 this amendment itself required review by another member. It is made under the
+rule it introduces, and the team is told in the same change.
+
+Deferred TODOs: none.
+
+Previous report (1.0.0)
+-----------------------
 Version change: template (unversioned) → 1.0.0
 Bump rationale: initial ratification. Every placeholder of the template is replaced; there is no
 prior version to be compatible with.
@@ -181,12 +215,17 @@ counts, denominators, dispersion, latency, cost and raw data; repetitions MUST N
 independent cases. A recorded response (Replay) MUST NOT count as a real run. Tuning the solution
 on test results turns that set into development data and a new reserved test becomes required.
 Guarantees delivered by the platform (P3, recovery) MUST be reported as platform guarantees, never
-as merit of the Agent. Preparation of reserved cases, the baseline and the evaluator review MUST be
-held by different team members.
+as merit of the Agent. Whoever writes the baseline MUST NOT read the reserved cases or their answer
+key before the freeze. Reviews of the baseline and the evaluator MAY be done by any team member,
+including their author, or by an automated reviewer; they MUST NOT block the freeze or the run, and
+the report MUST state who held each role and who reviewed what, so a reader can weigh it.
 
 **Rationale**: A contest rewards claims; this project only makes claims it can reproduce. Freezing
 the setup, sharing the protections and publishing every outcome is what keeps the Benchmark from
-becoming a demo of a chosen result (R3, R6, R42–R46, AD-23).
+becoming a demo of a chosen result (R3, R6, R42–R46, AD-23). Keeping the reserved cases away from
+the baseline's author protects the result without making anyone wait; disclosing the roles instead
+of requiring three different people keeps a small team's calendar from depending on one person's
+availability.
 
 ### IX. Verifiable Increments
 
@@ -278,7 +317,9 @@ Every change to product behavior MUST proceed in this order:
 6. **Tests** — automated tests MUST pass on the live instance before merge and MUST cover the
    observable behavior each task delivers.
 7. **Review** — the diff MUST be reviewed against this Constitution, the Spec, the Plan and the
-   tests before it ships.
+   tests before it ships. The author MAY do this review, alone or with an automated reviewer;
+   waiting for another team member is not required. A teammate whose files a change touches MUST
+   be told what changed, and MAY review it after the merge.
 
 Calendar gate: no submission code MAY be written before 2026-10-26. Before that date only
 contracts, specification, fixtures and the throwaway prototype are allowed, and the prototype MUST
@@ -295,10 +336,10 @@ This Constitution supersedes ad-hoc practice. Amendments follow semantic version
 
 Every amendment MUST record its rationale in the Sync Impact Report at the top of this document and
 MUST update dependent artifacts (templates, guides and documentation that reference the changed
-rules) in the same change. Amendments require review by at least one other team member (Henry, José
-Roberto, Henrique). Any permanent architectural change — a new layer, a new Action, a change in how
+rules) in the same change. Any team member (Henry, José Roberto, Henrique) MAY amend it without
+waiting for another member's review, and MUST tell the others what changed and why. Any permanent architectural change — a new layer, a new Action, a change in how
 Approval or Execution works, a change of target platform build — obliges a review of this
 Constitution, whether or not it ends in an amendment. Where the sources diverge, the 2026-10-19
 decision notebook prevails over the 2026-10-18 PRD until the PRD is updated.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 2.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-11-01

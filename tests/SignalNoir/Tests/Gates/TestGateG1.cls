@@ -129,9 +129,8 @@ Method TestAPlasmaOrderBecomesACaseWithAValidatedProposal()
 }
 
 /// A serum Order written `soro`. The Validator reads it as SERUM through the synonyms of the
-/// reference data. The rules baseline compares the specimen type without them (wave 4 of Henry:
-/// call Core.Conditions.Matches), so today it asks for review; either way, the Mapping that fits
-/// ends as a validated Proposal.
+/// reference data, and since rules-v2 (010 T053) so does the rules baseline: both use
+/// Core.Conditions.Matches, so the Rules propose the serum Mapping and the Validator accepts it.
 Method TestASoroOrderEndsWithTheSerumMappingValidated()
 {
 	If '..Ready Do $$$LogMessage("skipped: the Simulator is not reachable") Quit
@@ -141,15 +140,7 @@ Method TestASoroOrderEndsWithTheSerumMappingValidated()
 	Set r = ..Investigate(caseId)
 	Do $$$AssertEquals(r.details.status, "proposed", "the investigation proposed: " _ r.details.reason)
 	Set c = svc.GetCase(caseId).obj
-	If c.state = "ReviewRequired" {
-		Do $$$LogMessage("the rules baseline asked for review (no synonyms); the Operator chooses the serum Mapping")
-		Set resolved = svc.ResolveReview(caseId, {"kind": "action", "operator": "Carla", "expectedCaseVersion": (c.caseVersion), "action": "APPLY_APPROVED_MAPPING", "params": {"mappingId": "map_glicj_soro", "mappingVersion": "2026.10.1"}, "note": "gate G1"})
-		Do $$$AssertTrue(resolved.ok, "the Operator's choice is accepted: " _ resolved.message)
-		Set c = svc.GetCase(caseId).obj
-		Do $$$AssertEquals(c.state, "Approved", "approved by the same Operator")
-	} Else {
-		Do $$$AssertEquals(c.state, "PendingApproval", "the Case waits for an Operator")
-	}
+	Do $$$AssertEquals(c.state, "PendingApproval", "the Rules proposed the Mapping; the Case waits for an Operator")
 	Set p = c.proposals.GetAt(c.proposals.Count())
 	Do $$$AssertEquals(p.action _ " " _ p.params.mappingId, "APPLY_APPROVED_MAPPING map_glicj_soro", "the serum Mapping")
 	Set verdict = ..VerdictOf(p.proposalId)
