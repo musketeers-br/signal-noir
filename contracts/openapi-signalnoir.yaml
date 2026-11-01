@@ -2053,6 +2053,15 @@ components:
             - type: 'null'
         failureReason:
           type: ['string', 'null']
+        development:
+          type: boolean
+          description: Dado de desenvolvimento (FR-023, FR-026, FR-027); nunca publicável como referência.
+        developmentReasons:
+          type: array
+          items:
+            type: string
+        freezeId:
+          type: ['string', 'null']
         serverTime:
           $ref: '#/components/schemas/UtcDateTime'
 
@@ -2063,6 +2072,9 @@ components:
         family:
           type: string
           enum: [clean, P1, P5, P8, P9]
+        subtype:
+          type: string
+          description: Subtipo (`P8a`, `P8b`, `P5.injection`, `clean.success`…); as linhas são por (família, subtipo, conjunto, modo) (CC-1).
         set:
           $ref: '#/components/schemas/VariantSet'
         mode:
@@ -2070,6 +2082,10 @@ components:
         variantCount:
           type: integer
           minimum: 0
+        repetitionsCovered:
+          type: integer
+          minimum: 0
+          description: Repetições com pelo menos um Caso pontuado; menor que `repetitions` quando alguma não cobriu a linha (CC-2).
         outcomes:
           type: object
           description: Proporção (0–1) por categoria, como faixa sobre as k repetições.
@@ -2083,14 +2099,67 @@ components:
               $ref: '#/components/schemas/Range'
             incorrect:
               $ref: '#/components/schemas/Range'
+        outcomesWithoutNotDecided:
+          type: object
+          description: As mesmas proporções sobre os Casos que decidiram (denominador sem "não decidido") (CC-2).
+          required: [correct, safe_review, unnecessary_review, incorrect]
+          properties:
+            correct:
+              $ref: '#/components/schemas/Range'
+            safe_review:
+              $ref: '#/components/schemas/Range'
+            unnecessary_review:
+              $ref: '#/components/schemas/Range'
+            incorrect:
+              $ref: '#/components/schemas/Range'
+        counts:
+          type: object
+          description: Contagens por categoria, como faixa sobre as repetições (CC-2).
+          required: [correct, safe_review, unnecessary_review, incorrect, notDecided]
+          properties:
+            correct:
+              $ref: '#/components/schemas/Range'
+            safe_review:
+              $ref: '#/components/schemas/Range'
+            unnecessary_review:
+              $ref: '#/components/schemas/Range'
+            incorrect:
+              $ref: '#/components/schemas/Range'
+            notDecided:
+              $ref: '#/components/schemas/Range'
+        denominator:
+          type: object
+          required: [withNotDecided, withoutNotDecided]
+          properties:
+            withNotDecided:
+              $ref: '#/components/schemas/Range'
+            withoutNotDecided:
+              $ref: '#/components/schemas/Range'
         latencyMsP50:
-          $ref: '#/components/schemas/Range'
+          description: '`null` quando nenhum Caso de uma repetição teve a medida.'
+          oneOf:
+            - $ref: '#/components/schemas/Range'
+            - type: 'null'
         latencyMsP95:
-          $ref: '#/components/schemas/Range'
+          oneOf:
+            - $ref: '#/components/schemas/Range'
+            - type: 'null'
         toolCallsPerCase:
-          $ref: '#/components/schemas/Range'
+          oneOf:
+            - $ref: '#/components/schemas/Range'
+            - type: 'null'
         estCostUsdPerCase:
+          oneOf:
+            - $ref: '#/components/schemas/Range'
+            - type: 'null'
+        blockedWrongProposals:
+          description: Propostas erradas barradas pelo Validator (erro do propositor). Nunca somado a `wrongEffects` (FR-016).
           $ref: '#/components/schemas/Range'
+        wrongEffects:
+          description: Ações erradas enviadas ao Parceiro. Nunca somado a `blockedWrongProposals` (FR-016).
+          $ref: '#/components/schemas/Range'
+        note:
+          type: ['string', 'null']
 
     PlatformGuaranteeRow:
       type: object
@@ -2098,9 +2167,16 @@ components:
       properties:
         guarantee:
           type: string
-          enum: [P3, idempotency, timeout, restart, repeated_approval]
+          enum: [P3, idempotency, timeout, restart, repeated_approval, late_worker]
         passed:
-          type: boolean
+          type: ['boolean', 'null']
+          description: '`null` = **não exercitada** (nunca conta como aprovada) (CC-4, Princípio VII).'
+        source:
+          type: string
+          enum: [run, recovery_suite]
+        evidenceCommit:
+          type: ['string', 'null']
+          description: Commit em que a suíte de recuperação rodou, quando `source = recovery_suite`.
         duplicateReceipts:
           type: integer
           minimum: 0
@@ -2119,9 +2195,14 @@ components:
       required: [caseId, family, variant, set, repetition, finalState, replay, countsInMetrics]
       properties:
         caseId:
-          $ref: '#/components/schemas/CaseId'
+          description: '`null` quando o cenário não levantou exceção e nenhum Caso foi aberto (controle limpo).'
+          oneOf:
+            - $ref: '#/components/schemas/CaseId'
+            - type: 'null'
         family:
           $ref: '#/components/schemas/ScenarioFamily'
+        subtype:
+          type: string
         variant:
           type: string
         set:
@@ -2130,11 +2211,17 @@ components:
           type: integer
           minimum: 1
         finalState:
-          $ref: '#/components/schemas/CaseState'
+          description: '`null` quando nenhum Caso foi aberto.'
+          oneOf:
+            - $ref: '#/components/schemas/CaseState'
+            - type: 'null'
         action:
           oneOf:
             - $ref: '#/components/schemas/Action'
             - type: 'null'
+        actionParams:
+          type: ['object', 'null']
+          description: Parâmetros efetivos da Ação enviada.
         confidence:
           oneOf:
             - $ref: '#/components/schemas/Confidence'
@@ -2161,6 +2248,18 @@ components:
           type: ['integer', 'null']
         estCostUsd:
           type: ['number', 'null']
+        notDecidedReason:
+          type: ['string', 'null']
+          enum: [provider_unavailable, run_failed, deadline, no_case, no_answer_key, null]
+          description: Por que o Caso não decidiu (FR-017); `outcome` é `null` nesse caso.
+        touchedByPerson:
+          type: boolean
+          description: Uma pessoa agiu no Caso durante o run; fora das métricas (FR-018).
+        blockedWrongProposals:
+          type: integer
+          minimum: 0
+        wrongEffect:
+          type: boolean
         replay:
           type: boolean
         countsInMetrics:
@@ -2175,12 +2274,63 @@ components:
           type: string
           description: Identificador do Caso de referência gravado (limpo, P5/P8, P9).
         caseId:
-          $ref: '#/components/schemas/CaseId'
+          oneOf:
+            - $ref: '#/components/schemas/CaseId'
+            - type: 'null'
         status:
           type: string
           enum: [matches_reference, diverged]
         reason:
           type: ['string', 'null']
+
+    BenchmarkSetup:
+      type: object
+      description: Como o run foi montado (CC-6, FR-023, FR-029).
+      required: [promptVersion, baselineVersion, evaluatorVersion, freezeId, variantSet, independence]
+      properties:
+        promptVersion:
+          type: string
+        baselineVersion:
+          type: string
+        evaluatorVersion:
+          type: string
+        freezeId:
+          type: ['string', 'null']
+        variantSet:
+          type: string
+          enum: [tuning, test, mixed]
+        independence:
+          type: object
+          required: [roles, reviews]
+          properties:
+            roles:
+              type: object
+              description: Por família do run, quem fez o gabarito e quem escreveu o baseline.
+              additionalProperties:
+                type: object
+                properties:
+                  answerKeyBy:
+                    type: string
+                  baselineBy:
+                    type: string
+            reviews:
+              type: array
+              items:
+                type: object
+                required: [kind, family, reviewer, commit, date]
+                properties:
+                  kind:
+                    type: string
+                  family:
+                    type: string
+                  author:
+                    type: string
+                  reviewer:
+                    type: string
+                  commit:
+                    type: string
+                  date:
+                    type: string
 
     BenchmarkReport:
       type: object
@@ -2202,9 +2352,10 @@ components:
           description: Provedor e modelo da Execução de Referência e aviso de divergência (FR-40).
           properties:
             provider:
-              type: string
+              type: ['string', 'null']
+              description: '`null` enquanto não há Execução de Referência registrada.'
             model:
-              type: string
+              type: ['string', 'null']
             differsFromReference:
               type: boolean
             warning:
@@ -2219,6 +2370,19 @@ components:
           $ref: '#/components/schemas/UtcDateTime'
         labels:
           $ref: '#/components/schemas/Labels'
+        development:
+          type: boolean
+        developmentReasons:
+          type: array
+          items:
+            type: string
+        freezeId:
+          type: ['string', 'null']
+        publishableAsReference:
+          type: boolean
+          description: Verdadeiro só para um run `reference`, concluído e que não é dado de desenvolvimento (CC-5).
+        setup:
+          $ref: '#/components/schemas/BenchmarkSetup'
         agentDecision:
           type: array
           description: Parte "Decisão do Agente". Só o conjunto `test` entra nas metas (§12).
@@ -2249,6 +2413,34 @@ components:
             $ref: '#/components/schemas/RunId'
         generatedAt:
           $ref: '#/components/schemas/UtcDateTime'
+        sameScenarioSet:
+          type: boolean
+          const: true
+          description: Sempre verdadeiro numa resposta 200; runs de conjuntos diferentes são recusados (CC-7).
+        setups:
+          type: array
+          description: Uma entrada por run comparado (CC-7).
+          items:
+            type: object
+            required: [runId, mode, purpose]
+            properties:
+              runId:
+                $ref: '#/components/schemas/RunId'
+              mode:
+                $ref: '#/components/schemas/ProposerMode'
+              purpose:
+                type: string
+                enum: [benchmark, reference, quick_validation]
+              provider:
+                type: ['string', 'null']
+              model:
+                type: ['string', 'null']
+              development:
+                type: boolean
+              policyVersion:
+                type: string
+              mappingVersion:
+                type: string
         agentDecision:
           type: array
           description: Linhas de todos os runs, uma por (família, conjunto, modo).

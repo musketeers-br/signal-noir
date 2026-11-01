@@ -1,0 +1,336 @@
+{
+  "runId": "run_cc_a",
+  "mode": "rules",
+  "purpose": "benchmark",
+  "provider": null,
+  "model": null,
+  "repetitions": 1,
+  "policyVersion": "2026.10.1",
+  "mappingVersion": "2026.10.1",
+  "generatedAt": "2026-11-01T11:52:57.076Z",
+  "labels": {
+    "synthetic": true,
+    "replay": false
+  },
+  "development": false,
+  "developmentReasons": [],
+  "freezeId": null,
+  "publishableAsReference": false,
+  "reference": {
+    "provider": null,
+    "model": null,
+    "differsFromReference": false,
+    "warning": "no reference result is recorded yet, so this run is not compared with one"
+  },
+  "setup": {
+    "promptVersion": "",
+    "baselineVersion": "",
+    "evaluatorVersion": "",
+    "freezeId": null,
+    "variantSet": "tuning",
+    "independence": {
+      "roles": {},
+      "reviews": []
+    }
+  },
+  "agentDecision": [
+    {
+      "family": "P8",
+      "subtype": "P8b",
+      "set": "tuning",
+      "mode": "rules",
+      "variantCount": 1,
+      "repetitionsCovered": 1,
+      "outcomes": {
+        "correct": {
+          "min": 1,
+          "max": 1
+        },
+        "safe_review": {
+          "min": 0,
+          "max": 0
+        },
+        "unnecessary_review": {
+          "min": 0,
+          "max": 0
+        },
+        "incorrect": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "outcomesWithoutNotDecided": {
+        "correct": {
+          "min": 1,
+          "max": 1
+        },
+        "safe_review": {
+          "min": 0,
+          "max": 0
+        },
+        "unnecessary_review": {
+          "min": 0,
+          "max": 0
+        },
+        "incorrect": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "counts": {
+        "correct": {
+          "min": 1,
+          "max": 1
+        },
+        "safe_review": {
+          "min": 0,
+          "max": 0
+        },
+        "unnecessary_review": {
+          "min": 0,
+          "max": 0
+        },
+        "incorrect": {
+          "min": 0,
+          "max": 0
+        },
+        "notDecided": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "denominator": {
+        "withNotDecided": {
+          "min": 1,
+          "max": 1
+        },
+        "withoutNotDecided": {
+          "min": 1,
+          "max": 1
+        }
+      },
+      "latencyMsP50": null,
+      "latencyMsP95": null,
+      "toolCallsPerCase": null,
+      "estCostUsdPerCase": null,
+      "blockedWrongProposals": {
+        "min": 0,
+        "max": 0
+      },
+      "wrongEffects": {
+        "min": 0,
+        "max": 0
+      },
+      "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases"
+    },
+    {
+      "family": "clean",
+      "subtype": "clean.success",
+      "set": "tuning",
+      "mode": "rules",
+      "variantCount": 1,
+      "repetitionsCovered": 1,
+      "outcomes": {
+        "correct": {
+          "min": 1,
+          "max": 1
+        },
+        "safe_review": {
+          "min": 0,
+          "max": 0
+        },
+        "unnecessary_review": {
+          "min": 0,
+          "max": 0
+        },
+        "incorrect": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "outcomesWithoutNotDecided": {
+        "correct": {
+          "min": 1,
+          "max": 1
+        },
+        "safe_review": {
+          "min": 0,
+          "max": 0
+        },
+        "unnecessary_review": {
+          "min": 0,
+          "max": 0
+        },
+        "incorrect": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "counts": {
+        "correct": {
+          "min": 1,
+          "max": 1
+        },
+        "safe_review": {
+          "min": 0,
+          "max": 0
+        },
+        "unnecessary_review": {
+          "min": 0,
+          "max": 0
+        },
+        "incorrect": {
+          "min": 0,
+          "max": 0
+        },
+        "notDecided": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "denominator": {
+        "withNotDecided": {
+          "min": 1,
+          "max": 1
+        },
+        "withoutNotDecided": {
+          "min": 1,
+          "max": 1
+        }
+      },
+      "latencyMsP50": null,
+      "latencyMsP95": null,
+      "toolCallsPerCase": null,
+      "estCostUsdPerCase": null,
+      "blockedWrongProposals": {
+        "min": 0,
+        "max": 0
+      },
+      "wrongEffects": {
+        "min": 0,
+        "max": 0
+      },
+      "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases"
+    }
+  ],
+  "platformGuarantees": [
+    {
+      "guarantee": "P3",
+      "source": "run",
+      "evidenceCommit": null,
+      "duplicateReceipts": 0,
+      "invalidActionsExecuted": 0,
+      "staleExecutions": 0,
+      "passed": null,
+      "details": "not exercised: the run held no scenario that tests P3"
+    },
+    {
+      "guarantee": "idempotency",
+      "source": "run",
+      "evidenceCommit": null,
+      "duplicateReceipts": 0,
+      "invalidActionsExecuted": 0,
+      "staleExecutions": 0,
+      "passed": true,
+      "details": "0 duplicate Receipts over 1 effects"
+    },
+    {
+      "guarantee": "timeout",
+      "source": "run",
+      "evidenceCommit": null,
+      "duplicateReceipts": 0,
+      "invalidActionsExecuted": 0,
+      "staleExecutions": 0,
+      "passed": null,
+      "details": "not exercised: the run held no scenario that tests timeout"
+    },
+    {
+      "guarantee": "restart",
+      "source": "recovery_suite",
+      "duplicateReceipts": 0,
+      "invalidActionsExecuted": 0,
+      "staleExecutions": 0,
+      "passed": null,
+      "evidenceCommit": null,
+      "details": "not exercised: no recovery-suite evidence was recorded for restart"
+    },
+    {
+      "guarantee": "repeated_approval",
+      "source": "run",
+      "evidenceCommit": null,
+      "duplicateReceipts": 0,
+      "invalidActionsExecuted": 0,
+      "staleExecutions": 0,
+      "passed": null,
+      "details": "not exercised: the run held no scenario that tests repeated_approval"
+    },
+    {
+      "guarantee": "late_worker",
+      "source": "recovery_suite",
+      "duplicateReceipts": 0,
+      "invalidActionsExecuted": 0,
+      "staleExecutions": 0,
+      "passed": null,
+      "evidenceCommit": null,
+      "details": "not exercised: no recovery-suite evidence was recorded for late_worker"
+    }
+  ],
+  "cases": [
+    {
+      "family": "clean",
+      "subtype": "clean.success",
+      "variant": "clean-success-tune-01",
+      "set": "tuning",
+      "repetition": 1,
+      "caseId": null,
+      "finalState": null,
+      "action": null,
+      "actionParams": null,
+      "confidence": null,
+      "expected": {
+        "acceptableActions": [],
+        "acceptableStates": []
+      },
+      "outcome": "correct",
+      "notDecidedReason": null,
+      "latencyMs": null,
+      "toolCalls": null,
+      "estCostUsd": null,
+      "replay": false,
+      "countsInMetrics": true,
+      "touchedByPerson": false,
+      "blockedWrongProposals": 0,
+      "wrongEffect": false
+    },
+    {
+      "family": "P8",
+      "subtype": "P8b",
+      "variant": "P8b-tune-01",
+      "set": "tuning",
+      "repetition": 1,
+      "caseId": "case_007370",
+      "finalState": "Resolved",
+      "action": "APPLY_APPROVED_MAPPING",
+      "actionParams": {
+        "mappingId": "map_glicj_plasma"
+      },
+      "confidence": null,
+      "expected": {
+        "acceptableActions": [
+          "APPLY_APPROVED_MAPPING"
+        ],
+        "acceptableStates": []
+      },
+      "outcome": "correct",
+      "notDecidedReason": null,
+      "latencyMs": null,
+      "toolCalls": null,
+      "estCostUsd": null,
+      "replay": false,
+      "countsInMetrics": true,
+      "touchedByPerson": false,
+      "blockedWrongProposals": 0,
+      "wrongEffect": false
+    }
+  ]
+}

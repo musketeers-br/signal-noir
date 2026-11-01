@@ -76,7 +76,7 @@ Tasks marked **[person]** can be done only by the named person and are not codea
 - [x] T008 Create src/SignalNoir/Application/Model/BenchmarkRunRecord.cls and BenchmarkItemRecord.cls per specs/010-benchmark-and-reference-run/data-model.md (indexes: `runId` unique; item `(runId, itemNo)` unique, `caseId`, `scenarioInstanceId`); compile in a fresh container (three passes) and commit the generated Storage blocks of these two classes only (verification B5)
 - [x] T009 Write tests/SignalNoir/Tests/Application/Benchmark/TestRunStore.cls: `Find` returns `{runId, mode, status, purpose, policyVersion, mappingVersion}` for a stored run, `""` for an unknown, empty or null id, and reflects a status change immediately
 - [x] T010 Create src/SignalNoir/Application/Benchmark/RunStore.cls implementing `Core.Port.RunDirectory` over `BenchmarkRunRecord` (read-only, SQL by `runId`); T004 and T009 pass
-- [ ] T011 [person: Henrique] After T002: apply CC-1…CC-7 to contracts/openapi-signalnoir.yaml and the matching types in ui/src/lib/api/types.ts in one commit, then run `uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py` (still 25 valid) and `npm test` in ui/ (still green); no fixture is edited by hand
+- [x] T011 [person: Henrique] After T002: apply CC-1…CC-7 to contracts/openapi-signalnoir.yaml and the matching types in ui/src/lib/api/types.ts in one commit, then run `uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py` (still 25 valid) and `npm test` in ui/ (still green); no fixture is edited by hand
 
 **Checkpoint**: the port, the records and the directory exist; the guard tests are in place.
 

@@ -1,6 +1,6 @@
 # Contract change proposal: Benchmark report and run (010)
 
-**Status**: proposed, not applied. `contracts/openapi-signalnoir.yaml` is frozen; nothing in it changes
+**Status**: applied by T011 (2026-11-01, PR #32); the points under *Applied (T011)* wait for Henry's confirmation in the review. `contracts/openapi-signalnoir.yaml` is frozen; nothing in it changes
 until the people named below accept. Every item is **additive** (new optional fields, one enum value,
 one type widened to allow `null`), so the fixtures and the console types keep working.
 
@@ -64,3 +64,29 @@ Also at implementation: a scenario that raises no exception (a clean control) op
 an empty `caseId` and `finalState` is `null`; `BenchmarkCaseResult.finalState` must allow `null` (CC-3). Rows of
 the platform families (P3, idempotency) are kept as raw data with `countsInMetrics = false`: they feed the
 platform guarantees only.
+
+## Applied (T011, 2026-11-01)
+
+CC-1 to CC-7 are in `contracts/openapi-signalnoir.yaml`, with the refinement above. The contract was checked
+against what the implementation returns, not only against the proposal: a report, a comparison and a run
+captured from IRIS are now fixtures (`benchmark-run.created.json`, `benchmark-report.rules.json`,
+`benchmark-reports.compare.json`), and `contracts/tools/validate_fixtures.py` validates them (34 valid).
+
+**`ui/src/lib/api/types.ts` is unchanged.** It holds only the types the console uses, and the console reads no
+benchmark endpoint (FR-031: no entry point). Types for these schemas would be dead code.
+
+**Where the contract follows the implementation instead of the proposal (Henry to confirm):**
+
+1. `setup.independence` is `{roles: {<family>: {answerKeyBy, baselineBy}}, reviews: [{kind, family, author,
+   reviewer, commit, date}]}`: the same names as CC-6, per family, with the review records of T055 in place of
+   `reviewedBy[]`. The new `BenchmarkSetup` schema describes it, and `variantSet` can also be `mixed`.
+2. The comparison carries `setups`, one short entry per run (runId, mode, purpose, provider, model,
+   development, versions), not the whole `setup` of each report.
+3. `notDecidedReason` also takes `no_case` (no Case where the key expected one) and `no_answer_key`.
+4. `BenchmarkCaseResult.caseId` and `QuickValidationResult.caseId` are `null` for a control that opened no Case.
+5. A measure that no Case had (`latencyMsP50`, `latencyMsP95`, `toolCallsPerCase`, `estCostUsdPerCase`) is
+   `null`; `reference.provider` and `reference.model` are `null` until a reference result is recorded.
+
+**Found while checking, fixed in the implementation:** a control's `finalState` and `caseId` were written as
+the string `NoCase` and `""`; missing measures as `""`; `labels.replay` (report and run) as a number; the
+comparison's `setups[].development` as a string. Tests now pin these types.
