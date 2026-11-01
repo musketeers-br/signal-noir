@@ -14,9 +14,22 @@ Parameter SIM = "SignalNoir.Tests.Interop.TestOriginFeed";
 
 Property Ready As %Boolean;
 
+Property SavedBase As %String;
+
+/// The gate expects the Mapping of the reference data alone: with the Simulator's base URL set, the
+/// Simulator Tools take part in the investigation and the expected Mapping no longer comes out (010
+/// research, baseline). The URL is emptied for this class and put back after it.
 Method OnBeforeAllTests() As %Status
 {
+	Set ..SavedBase = $Get(^SignalNoir.Config("simBaseUrl"))
+	Set ^SignalNoir.Config("simBaseUrl") = ""
 	Set ..Ready = ##class(SignalNoir.Tests.Recovery.TestRecoverySuite).Partner().SearchReceipts({"idempotencyKey": "bek_probe"}).ok
+	Return $$$OK
+}
+
+Method OnAfterAllTests() As %Status
+{
+	Set ^SignalNoir.Config("simBaseUrl") = ..SavedBase
 	Return $$$OK
 }
 
