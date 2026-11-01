@@ -401,3 +401,37 @@ Findings worth the reviewers' time:
   in a combined run did not repeat in 3 further runs and has no known cause; it is noted here, not explained.
 - **The reference run needs test-set variants for the clean controls and the Dossier case too** (a reference run
   takes test variants only): added to T054.
+
+### Quickstart walked (T074, 2026-11-01, container `signalnoir-010`, over real HTTP)
+
+- Steps 1 and 7 (Core suites, Replay) and 3 to 5 (Cases outside a run, automatic Approval, scoring) are pinned by
+  the suites above. Steps 2, 8 and the error paths were walked with `curl` against the running application.
+- `POST /benchmark-runs` (rules, one control and `P8b-tune-01`) answered `202` with the run; a second `POST` while it
+  ran answered `409`; `GET /benchmark-runs/{id}` followed it to `completed`; `GET …/report` answered `200` with
+  both parts; `GET /benchmark-reports?runId=&runId=` over two completed runs answered `200` with 4 agent-decision
+  rows and 12 guarantee rows (6 per run, tagged by run), one id answered `400`, an unknown one `404`.
+- **Time.** The first run took about two minutes because its first read of the Origin feed worked through the
+  backlog this container's Simulator holds from earlier tests; the second, identical run took **6 s**. A fresh
+  installation has an empty feed. The quick validation (three Cases) therefore fits its three minutes with room
+  (B7 still wants a measurement with a real key, T069).
+- `scripts/quick-validate.sh` against the real application chose `replay` (no provider configured), created
+  nothing and failed at once with the application's own message, because the reserved variants its request names
+  do not exist yet. That is the right failure.
+- The agent-decision part of that run shows the baseline's `HOLD` for `P8b-tune-01` (scored incorrect, no wrong
+  effect); see the finding above.
+
+### Review of the diff against the Constitution (T075)
+
+Checked by search over the new code, and by the suites: **I** `Core.Benchmark` references nothing outside the Core and is
+scanned for I/O by `TestCoreHasNoIo`; the Simulator is reached only through `Interop.SimulatorHttp`, and
+`TestNoCrossReference` passes. **II** no Tool and no Action added; the answer key is data compared by canonical value.
+**III** the run only pins the versions the one Validator uses. **IV** the actor `benchmark` is admitted only for a Case
+whose run is `running`, on both paths (`TestAutomaticApproval`); the runner and the report builder reference no
+approval or transition (scanned). **V** the runner writes only run and item records; the one thing it causes in a Case
+is the product's own intake opening it. **VI** untouched. **VII** "not decided" and "not exercised" are values with a
+reason; a refusal is a 400/404/409. **VIII** same Tools for both modes, freeze checked at creation, at the first step and
+in CI, Replay and touched Cases outside every metric, roles recorded and enforced. **Platform constraints**: no
+`api_key`, password or secret in any new runtime file, report or script; every datum is labelled synthetic;
+nothing in the runtime names iris-agentic-dev. No violation found. Two caveats stay open and are named above: the
+heuristics behind `staleExecutions` and `resentBeforeReconcile` have no failure-data test, and the one unexplained
+flake.

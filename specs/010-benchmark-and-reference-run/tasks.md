@@ -76,7 +76,7 @@ Tasks marked **[person]** can be done only by the named person and are not codea
 - [x] T008 Create src/SignalNoir/Application/Model/BenchmarkRunRecord.cls and BenchmarkItemRecord.cls per specs/010-benchmark-and-reference-run/data-model.md (indexes: `runId` unique; item `(runId, itemNo)` unique, `caseId`, `scenarioInstanceId`); compile in a fresh container (three passes) and commit the generated Storage blocks of these two classes only (verification B5)
 - [x] T009 Write tests/SignalNoir/Tests/Application/Benchmark/TestRunStore.cls: `Find` returns `{runId, mode, status, purpose, policyVersion, mappingVersion}` for a stored run, `""` for an unknown, empty or null id, and reflects a status change immediately
 - [x] T010 Create src/SignalNoir/Application/Benchmark/RunStore.cls implementing `Core.Port.RunDirectory` over `BenchmarkRunRecord` (read-only, SQL by `runId`); T004 and T009 pass
-- [x] T011 [person: Henrique] After T002: apply CC-1…CC-7 to contracts/openapi-signalnoir.yaml and the matching types in ui/src/lib/api/types.ts in one commit, then run `uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py` (still 25 valid) and `npm test` in ui/ (still green); no fixture is edited by hand
+- [ ] T011 [person: Henrique] After T002: apply CC-1…CC-7 to contracts/openapi-signalnoir.yaml and the matching types in ui/src/lib/api/types.ts in one commit, then run `uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py` (still 25 valid) and `npm test` in ui/ (still green); no fixture is edited by hand
 
 **Checkpoint**: the port, the records and the directory exist; the guard tests are in place.
 
@@ -242,8 +242,8 @@ controls and the Dossier case — with ranges, counts and recomputable raw data.
 - [x] T071 Run the full recursive suite in a fresh container (three compile passes, Simulator web application, base URL set); record the count and zero failures in research.md; confirm no Storage-block diff of an unrelated class is staged
 - [x] T072 Update the 010 row, the independence line and the open items of docs/specify-prompts/PARALELISMO.md; write docs/benchmark/README.md if T061 has not
 - [x] T073 Request, in one batch for the integration gate and with Henry: a CI step running `sh scripts/benchmark/check-freeze.sh` and `python -I scripts/benchmark/test_recompute.py` (.github/workflows/ci.yml), and the README line for `scripts/quick-validate.sh` (with 012); record the request in specs/010-benchmark-and-reference-run/contracts/coordination-010.md
-- [ ] T074 Walk specs/010-benchmark-and-reference-run/quickstart.md end to end on the fresh container and record each step's result in research.md "Verification log"; fix any step that fails
-- [ ] T075 Review the whole diff against the Constitution (I, III, IV, VII, VIII above all), the spec and the plan; check that no secret appears in any report, raw file or log, that every datum is labelled synthetic, and that nothing in the runtime depends on iris-agentic-dev; record the result in research.md
+- [x] T074 Walk specs/010-benchmark-and-reference-run/quickstart.md end to end on the fresh container and record each step's result in research.md "Verification log"; fix any step that fails
+- [x] T075 Review the whole diff against the Constitution (I, III, IV, VII, VIII above all), the spec and the plan; check that no secret appears in any report, raw file or log, that every datum is labelled synthetic, and that nothing in the runtime depends on iris-agentic-dev; record the result in research.md
 
 ---
 
