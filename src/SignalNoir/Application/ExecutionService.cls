@@ -22,7 +22,7 @@ ClassMethod Default() As SignalNoir.Application.ExecutionService
 	Set svc = ..%New()
 	Set svc.Service = ##class(SignalNoir.Application.CaseService).Default()
 	Set svc.Partner = ##class(SignalNoir.Interop.PartnerHttp).%New()
-	Set policy = ##class(SignalNoir.Core.ExecutionPolicy).%New()
+	Set policy = ##class(SignalNoir.Application.ReferenceExecutionPolicy).%New()
 	Set policy.Lease = ##class(SignalNoir.Interop.Bootstrap).EnvSeconds("SN_AI_LEASE_SECONDS", ##class(SignalNoir.Interop.Bootstrap).#LEASESECONDS)
 	Set svc.Policy = policy
 	Return svc
