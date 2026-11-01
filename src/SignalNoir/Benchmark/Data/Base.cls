@@ -51,6 +51,12 @@ ClassMethod Duplicates() As %DynamicArray
 	Return dup
 }
 
+/// The JSON of the named XData of the class this is called on (Freeze.Load("Record")), or ""
+ClassMethod Load(xdata As %String) As %DynamicAbstractObject
+{
+	Return ..Read($ClassName(), xdata)
+}
+
 /// The JSON of one XData of a class, or "" when the class has none by that name
 ClassMethod Read(class As %String, xdata As %String) As %DynamicAbstractObject
 {

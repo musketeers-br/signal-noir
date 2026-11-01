@@ -53,7 +53,8 @@ ClassMethod Score(key As %DynamicObject, facts As %DynamicObject) As %DynamicObj
 			Set out.outcome = "correct"
 		} Else {
 			Set out.outcome = "incorrect"
-			Do out.%Set("wrongEffect", 1, "boolean")
+			; a wrong effect is something sent to the Partner: a wrong HOLD is incorrect but sent nothing
+			Do out.%Set("wrongEffect", ''##class(SignalNoir.Core.ActionCatalog).ExternalEffect(facts.effect.action), "boolean")
 		}
 		Return out
 	}

@@ -1,0 +1,12 @@
+{
+  "mode": "__MODE__",
+  "purpose": "quick_validation",
+  "repetitions": 1,
+  "seed": 2026,
+  "label": "quick validation",
+  "scenarios": [
+    {"family": "clean", "variants": ["clean-success-test-01"]},
+    {"family": "P8", "variants": ["P8b-test-01"]},
+    {"family": "clean", "variants": ["clean-ambiguous-identity-test-01"]}
+  ]
+}

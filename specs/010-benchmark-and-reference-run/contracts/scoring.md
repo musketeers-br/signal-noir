@@ -34,7 +34,7 @@ touched by a person.
 | Effect | Key says | Outcome |
 |---|---|---|
 | an Action whose action and parameters are in `acceptable` | — | **correct** |
-| an Action not in `acceptable`, or in it with parameters that do not match | — | **incorrect** (and `wrongEffect += 1`) |
+| an Action not in `acceptable`, or in it with parameters that do not match | — | **incorrect** (and a wrong effect, if the Action has an external effect: a wrong `HOLD` is incorrect but sent nothing) |
 | review | `reviewIsAcceptable = true` | **safe review** |
 | review | `reviewIsAcceptable = false` | **unnecessary review** |
 | none (failed Revalidation, cancelled at the Origin) | the key lists the matching state | **correct** |

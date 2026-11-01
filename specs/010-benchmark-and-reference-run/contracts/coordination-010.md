@@ -56,3 +56,28 @@ no condition stated:
 
 The approval was given outside the repository (message to Henrique). If either of them attached a
 condition, add it here before the edit it affects starts.
+
+## Request for the integration gate (T073)
+
+Integration files are not edited by a feature (PARALELISMO.md), so these are asked for in one batch, to be
+applied with Henry at the gate. Nothing here is needed to run the tests locally.
+
+1. **CI** (`.github/workflows/ci.yml`), a step that needs only the repository and Python, in the job that
+   does not start IRIS (or a new small job):
+
+   ```yaml
+   - name: Benchmark freeze, recomputation and quick validation scripts
+     run: |
+       sh tests/benchmark/test-check-freeze.sh
+       sh tests/benchmark/test-quick-validate.sh
+       python -I scripts/benchmark/test_recompute.py
+       sh scripts/benchmark/check-freeze.sh
+   ```
+
+   The first three prove the scripts; the last compares each frozen source file with the freeze record (it
+   says "no freeze yet" and passes until T056). After the freeze, a change to a frozen file fails the build,
+   which is the point.
+2. **README.md** (with 012): one line for `sh scripts/quick-validate.sh` next to the smoke check, and one for
+   `docs/benchmark/README.md` (how the published reference result is reproduced and what it does and does not
+   show).
+3. **Console types** (`ui/src/lib/api/types.ts`) are in T011 with the contract change, not here.

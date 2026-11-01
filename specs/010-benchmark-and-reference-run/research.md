@@ -378,3 +378,26 @@ Full recursive suite: **541 methods, 541 passed, 0 failed**. New: `ReportBuilder
 comparison), `TestReport` (7), `TestScoringEndToEnd` (1), the report and comparison cases of `TestBenchmarkApi`
 (2). The runner now stores the final report before it marks the run completed, and fails the run with
 `report_error` if the report cannot be built.
+
+### Suite at the end of the code that does not wait for people (2026-11-01)
+
+Full recursive suite on the fresh container: **599 methods, 599 passed, 0 failed** (baseline 436). Scripts:
+`tests/benchmark/test-check-freeze.sh`, `tests/benchmark/test-quick-validate.sh` and
+`scripts/benchmark/test_recompute.py` pass; the console's `no-replay-entry` test passes (3).
+
+Findings worth the reviewers' time:
+
+- **The rules baseline, live.** In the gate (`TestGateG4`), the baseline run against the Simulator-backed Tools chose
+  `HOLD` ("partner unstable") for `P8b-tune-01`, where with local Tools (`TestGateG1`) it chose the plasma Mapping.
+  The Partner's failure history in this throwaway container is long, so part of it is the environment, but it is
+  also what the baseline does with a noisy history, which is what its review (T055) is for. The gate therefore
+  checks that the Case was decided and scored, not what the baseline chose.
+- **A wrong HOLD is incorrect but sent nothing**, so it is not a wrong effect (`Scorer`, `contracts/scoring.md`).
+- **Replay** resolves `@ev:<source>` references only for recordings by reference case; the older recording by
+  Order id (006) is played as it is, because `TestProposerModes` pins that an answer with unresolved tokens is
+  refused.
+- **One flaky test was found and fixed:** `TestRunnerObserves.TestACaseThatDoesNotDecideInTimeIsNotDecided`
+  assumed two steps were enough. One earlier failure of `TestReport.TestRepetitionsGiveARangeAndAVariantCountsOnce`
+  in a combined run did not repeat in 3 further runs and has no known cause; it is noted here, not explained.
+- **The reference run needs test-set variants for the clean controls and the Dossier case too** (a reference run
+  takes test variants only): added to T054.

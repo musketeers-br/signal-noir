@@ -88,7 +88,7 @@ Mudanças neles são aplicadas em lote no gate de integração. Exceção: a 012
 | 007 approval-and-outbox | implementada (aguardando gate G2; assumida do Henrique em 28/10; política de Aprovação padrão até a 004, handler do `Execute` na 008, sweeper ligado no Bootstrap no gate) | Henry | 3 | no `master` (PR #14) |
 | 008 execution-and-recovery | implementada (aguardando gate G3; assumida do Henrique em 28/10; política de execução padrão até a 004, mapeamento só com o catálogo da 004) | Henry | 4 | no `master` (PR #17) |
 | 009 review-dossier-and-resolution | implementada (aguardando gate G3; Validador v1 até a 004; correção 009b no `master`; integração 008+009 verificada em 29/10 por `Tests.Recovery.TestGateG3`, 5/5, com um caso ao vivo) | Henry | 4 | no `master` |
-| 010 benchmark-and-reference-run | reservada | Henrique | 5 | |
+| 010 benchmark-and-reference-run | em implementação (01/11): spec, plano e tarefas no PR #31; código pronto de runs, pins de versão, runner, pontuação, relatório em duas partes, comparação, aprovação automática só em run `running`, congelamento (checagem e script), Replay por caso de referência e validação rápida; falta o que só as pessoas fazem: variantes reservadas e gabaritos (Henrique), baseline com sinônimos (Henry), revisão (José), congelamento, execução de referência | Henrique | 5 | PR #31 (`010-benchmark-and-reference-run`) |
 | 011 prior-receipt-p9 | condicional | José | 5 | |
 | 012 packaging-and-cross-install | parcial (29/10): imagem, compose, README, `.env.example`, smoke, scan de segredos e CI no repositório, verificados no ARM64; faltam a validação rápida (depende da 010), o cross-install do Henrique, o vídeo e a submissão | Henry | 5 | branch `g1-wiring-and-012` |
 
@@ -113,7 +113,7 @@ Pendências do gate G1 (aplicadas pelo Henry em 2026-10-29, branch `g1-wiring-an
 - Feito: `.env.example` com `SN_SIM_BASE_URL` e `SN_BACKGROUND_TASKS`.
 - Feito: a 004 (Proposta validada), PR #22 e #23. O cenário do gate roda ao vivo em `Tests.Gates.TestGateG1`: Pedido do Simulador, aceite, primeira entrega ao Parceiro (a resposta real abre o Caso), investigação com as ferramentas reais, Proposta, veredito v2 com as versões dos dados de referência e Caso em `PendingApproval`. O Caso é roteado para o proposer de regras, como um BenchmarkRun faria (010); sem BenchmarkRun, um Caso novo é do Agente e depende de provedor.
 - Aberto, não bloqueia o G1 (onda 4 do Henry): o baseline de regras ainda compara o tipo de espécime sem os sinônimos. Com um Pedido escrito `soro` ele pede revisão, e o Validator aceitaria o mapeamento de soro. A correção é o `Proposers/Rules` chamar `Core.Conditions.Matches`.
-- Aberto para a 010: gravar as versões de política e de mapeamento que um BenchmarkRun fixa. O Store já as respeita (`Store.For(run)`); `ResolutionValidator.RunFor` devolve `null` até a execução gravá-las.
+- Feito na 010 (PR #31): o BenchmarkRun grava as versões de política e de mapeamento que fixa, e `ResolutionValidator.RunFor` as devolve. Um Caso só guarda o `runId` de um run que existe e está `running`.
 - Aberto para a 008 (Henry): `ResolutionValidator.InputFor` passa `attemptCount = 0`. Quando a 008 gravar as Tentativas, é ali que o `RETRY_BUDGET_EXHAUSTED` passa a valer nos Casos reais.
 
 ## Merge

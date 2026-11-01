@@ -16,6 +16,10 @@ Property AutoStart As %Boolean [ InitialExpression = 1 ];
 /// A catalog to use instead of the Simulator's (array of {family, subtype, variant, set})
 Property Catalog As %DynamicArray;
 
+/// The committed records the freeze check reads ({freeze, roles, reviews, usage}); tests set it, otherwise the
+/// records of SignalNoir.Benchmark.Data are used
+Property Data As %DynamicObject;
+
 Parameter LOCKTIMEOUT = 5;
 
 Parameter LOCKNAME = "^SignalNoir.BenchmarkRun";
@@ -50,6 +54,7 @@ Method Create(request As %DynamicObject) As SignalNoir.Core.Result
 	Set plan = valid.obj
 	Set refusal = ..Complete(plan)
 	If $IsObject(refusal) Return refusal
+	Do ..Judge(plan, catalog.obj)
 	Set lockName = ..#LOCKNAME
 	Lock +@lockName:..#LOCKTIMEOUT
 	If '$Test Return ##class(SignalNoir.Core.Result).Error("INVALID_TRANSITION", "another run is being created")
@@ -71,6 +76,27 @@ Method Create(request As %DynamicObject) As SignalNoir.Core.Result
 	Lock -@lockName
 	If result.ok && ..AutoStart Job ##class(SignalNoir.Application.Benchmark.Runner).Drive(runId)
 	Return result
+}
+
+/// Whether the run is development data (FreezeCheck), with the freeze it ran under and the inputs it saw
+Method Judge(plan As %DynamicObject, catalog As %DynamicArray) [ Private ]
+{
+	Set data = ..Records()
+	; the model is an input of an agent run only: a rules run has none, so it matches the freeze's
+	Set model = $Select(plan.mode = "rules": data.freeze.%Get("model"), 1: plan.model)
+	Set inputs = ##class(SignalNoir.Application.Benchmark.Inputs).Current(model, plan.policyVersion, plan.mappingVersion, catalog)
+	Set verdict = ##class(SignalNoir.Core.Benchmark.FreezeCheck).Evaluate(data.freeze, inputs, data.roles, data.reviews, data.usage, {"purpose": (plan.purpose), "variants": (plan.variants)})
+	Do plan.%Set("inputs", inputs)
+	Do plan.%Set("freeze", data.freeze)
+	Do plan.%Set("verdict", verdict)
+}
+
+/// The freeze record, roles, reviews and declarations of used sets
+Method Records() As %DynamicObject
+{
+	If $IsObject(..Data) && ..Data.%IsDefined("freeze") Return ..Data
+	Set D = "SignalNoir.Benchmark.Data."
+	Return {"freeze": ($ClassMethod(D _ "Freeze", "Load", "Record")), "roles": ($ClassMethod(D _ "Roles", "Load", "Record")), "reviews": ($ClassMethod(D _ "Reviews", "Load", "Records")), "usage": ($ClassMethod(D _ "SetUsage", "Load", "Records"))}
 }
 
 /// Provider and model defaults for an agent run, and the pinned versions. Returns a
@@ -105,6 +131,11 @@ Method Persist(plan As %DynamicObject) As SignalNoir.Application.Model.Benchmark
 	Set rec.policyVersion = plan.policyVersion, rec.mappingVersion = plan.mappingVersion
 	Set rec.scenariosJson = plan.variants.%ToJSON()
 	Set rec.casesPlanned = plan.variants.%Size() * plan.repetitions
+	Set rec.development = plan.verdict.development
+	Set rec.developmentReasonsJson = plan.verdict.reasons.%ToJSON()
+	Set rec.freezeId = plan.freeze.%Get("freezeId")
+	Set rec.freezeJson = plan.freeze.%ToJSON()
+	Set rec.inputsDigestJson = plan.inputs.%ToJSON()
 	Set rec.createdAt = now
 	TSTART
 	Try {

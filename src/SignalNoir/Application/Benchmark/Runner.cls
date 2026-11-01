@@ -89,6 +89,8 @@ Method Step(runId As %String) As SignalNoir.Core.Result
 	If '$IsObject(rec) Return ##class(SignalNoir.Core.Result).Error("NOT_FOUND", "no such BenchmarkRun: " _ runId)
 	If rec.status '= "running" Return ..Result(1, rec.status)
 	Set now = ..Clock.NowUtc()
+	; the first step: a frozen input that changed since the run was created makes it development data
+	If (rec.purpose = "reference") && (rec.heartbeatAt = rec.startedAt) Do ..CheckInputs(rec)
 	Set total = ##class(%SQL.Statement).%ExecDirect(, "SELECT COUNT(*) AS n FROM SignalNoir_Application_Model.BenchmarkItemRecord WHERE runId = ?", runId)
 	Do total.%Next()
 	Set budget = (total.%Get("n") * ..SecondsFor(rec)) + ..#RUNEXTRA
@@ -107,6 +109,26 @@ Method Step(runId As %String) As SignalNoir.Core.Result
 	Set rec.heartbeatAt = ..Clock.NowUtc()
 	$$$ThrowOnError(rec.%Save())
 	Return ..Result(0, rec.status)
+}
+
+/// Compares the frozen inputs as they are now with those read at creation; a difference marks the run
+/// development (never cleared) and records why
+Method CheckInputs(rec As SignalNoir.Application.Model.BenchmarkRunRecord) [ Private ]
+{
+	Set catalog = ..Service.LoadCatalog()
+	If 'catalog.ok Quit
+	Set before = {}.%FromJSON(rec.inputsDigestJson)
+	Set now = ##class(SignalNoir.Application.Benchmark.Inputs).Current(before.model, rec.policyVersion, rec.mappingVersion, catalog.obj)
+	Set changed = ""
+	Set it = before.%GetIterator()
+	While it.%GetNext(.field, .value) {
+		If now.%Get(field) '= value Set changed = changed _ $Select(changed = "": "", 1: ", ") _ field
+	}
+	If changed = "" Quit
+	Set reasons = $Select(rec.developmentReasonsJson = "": [], 1: [].%FromJSON(rec.developmentReasonsJson))
+	Do reasons.%Push("a frozen input changed between the creation of the run and its start: " _ changed)
+	Set rec.development = 1, rec.developmentReasonsJson = reasons.%ToJSON()
+	$$$ThrowOnError(rec.%Save())
 }
 
 /// Creates the instance (once), emits its Orders, lets the intake read the feed, and

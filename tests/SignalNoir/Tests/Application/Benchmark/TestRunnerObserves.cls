@@ -97,10 +97,13 @@ Method TestACaseThatDoesNotDecideInTimeIsNotDecided()
 	Set runId = ..Start(["P8b-tune-01"])
 	Set runner = ##class(SignalNoir.Application.Benchmark.Runner).%New()
 	Set runner.Sweep = 0, runner.ItemSeconds = 0
-	Do runner.Step(runId)
-	; the deadline is the instant the Case opened: let the clock move past it
-	Hang 0.1
-	Do runner.Step(runId)
+	; the deadline is the instant the Case opened: step until the item is past it
+	For i = 1 : 1 : 8 {
+		Do runner.Step(runId)
+		Hang 0.1
+		Set status = ##class(SignalNoir.Application.Model.BenchmarkItemRecord).%OpenId(runId _ "||1").status
+		If (status '= "planned") && (status '= "opened") Quit
+	}
 	Set item = ##class(SignalNoir.Application.Model.BenchmarkItemRecord).%OpenId(runId _ "||1")
 	Do $$$AssertTrue((item.status = "not_decided") || (item.status = "ended"), "decided or not decided by now: " _ item.status)
 	If item.status = "not_decided" Do $$$AssertEquals(item.notDecidedReason, "deadline", "the reason is the deadline")

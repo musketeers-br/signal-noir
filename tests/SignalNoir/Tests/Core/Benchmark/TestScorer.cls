@@ -90,6 +90,13 @@ Method TestReviewIsSafeOrUnnecessaryByTheKey()
 	Do $$$AssertEquals(r.wrongEffect, 0, "and nothing was sent either")
 }
 
+Method TestAWrongHoldIsIncorrectButSentNothing()
+{
+	Set r = $ClassMethod(..#S, "Score", ..SerumKey(), ..Facts("Held", {"action": "HOLD", "params": {}}))
+	Do $$$AssertEquals(r.outcome, "incorrect", "a HOLD where a Mapping was needed")
+	Do $$$AssertEquals(r.wrongEffect, 0, "but a HOLD sends nothing to the Partner: not a wrong effect")
+}
+
 Method TestAHoldInTheKeyIsCorrect()
 {
 	Set key = {"acceptable": [{"action": "HOLD", "params": {}}], "reviewIsAcceptable": false}

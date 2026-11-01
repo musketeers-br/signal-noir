@@ -29,6 +29,9 @@ ClassMethod Build(runId As %String) As SignalNoir.Core.Result
 	Do report.%Set("developmentReasons", $Select(run.developmentReasonsJson = "": [], 1: [].%FromJSON(run.developmentReasonsJson)))
 	Do report.%Set("freezeId", run.freezeId, $Select(run.freezeId = "": "null", 1: "string"))
 	Do report.%Set("publishableAsReference", ((run.purpose = "reference") && 'run.development && (run.status = "completed")), "boolean")
+	Set report.reference = ..Reference(run, ##class(SignalNoir.Benchmark.Data.ReferenceResult).Load("Record"))
+	Set report.setup = ..Setup(run, cases)
+	If run.purpose = "quick_validation" Set report.quickValidation = ##class(SignalNoir.Application.Benchmark.QuickValidation).Results(cases, ##class(SignalNoir.Benchmark.Data.ReferenceResult).Load("Record"), report.reference.differsFromReference)
 	Set report.agentDecision = ##class(SignalNoir.Core.Benchmark.Stats).Rows(cases, run.mode)
 	Set report.platformGuarantees = ##class(SignalNoir.Core.Benchmark.Guarantees).Evaluate(..Finish(evidence))
 	Set report.cases = cases
@@ -157,6 +160,56 @@ ClassMethod CaseRow(run As SignalNoir.Application.Model.BenchmarkRunRecord, item
 	Do row.%Set("wrongEffect", score.wrongEffect, "boolean")
 	Do ..Collect(item, evidence)
 	Return row
+}
+
+/// The provider and model of the published reference run, and whether this run used others (FR-023):
+/// a report from another provider or model says so. record: the committed ReferenceResult. A rules run
+/// has no provider to compare. With no reference recorded yet the report says there is none.
+ClassMethod Reference(run As SignalNoir.Application.Model.BenchmarkRunRecord, record) As %DynamicObject
+{
+	Set out = {}
+	Set recorded = $IsObject(record) && (record.%GetTypeOf("provider") = "string") && (record.%GetTypeOf("model") = "string") && (record.provider '= "") && (record.model '= "")
+	If 'recorded {
+		Do out.%Set("provider", "", "null")
+		Do out.%Set("model", "", "null")
+		Do out.%Set("differsFromReference", 0, "boolean")
+		Set out.warning = "no reference result is recorded yet, so this run is not compared with one"
+		Return out
+	}
+	Set out.provider = record.provider, out.model = record.model
+	Set differs = (run.mode '= "rules") && ((run.provider '= record.provider) || (run.model '= record.model))
+	Do out.%Set("differsFromReference", ''differs, "boolean")
+	If differs {
+		Set out.warning = "this run used provider " _ run.provider _ " and model " _ run.model _ ", not the reference's " _ record.provider _ " and " _ record.model _ ": its numbers are not comparable with the published reference"
+	} Else {
+		Do out.%Set("warning", "", "null")
+	}
+	Return out
+}
+
+/// How the run was set up (CC-6): the versions it ran with, the freeze, the sets it covered and who held
+/// which role (FR-023, FR-029). The roles and reviews are those committed in SignalNoir.Benchmark.Data.
+ClassMethod Setup(run As SignalNoir.Application.Model.BenchmarkRunRecord, cases As %DynamicArray) As %DynamicObject [ Private ]
+{
+	Set inputs = $Select(run.inputsDigestJson = "": {}, 1: {}.%FromJSON(run.inputsDigestJson))
+	Set sets = "", fams = {}
+	For i = 0 : 1 : cases.%Size() - 1 {
+		Set c = cases.%Get(i)
+		If (","_sets_",") '[ ("," _ c.set _ ",") Set sets = sets _ $Select(sets = "": "", 1: ",") _ c.set
+		Do fams.%Set(c.family, 1)
+	}
+	Set roles = ##class(SignalNoir.Benchmark.Data.Roles).Load("Record"), shown = {}
+	If $IsObject(roles) && (roles.%GetTypeOf("families") = "object") {
+		Set it = fams.%GetIterator()
+		While it.%GetNext(.family) {
+			If roles.families.%GetTypeOf(family) = "object" Do shown.%Set(family, roles.families.%Get(family))
+		}
+	}
+	Set setup = {"promptVersion": (inputs.%Get("promptVersion")), "baselineVersion": (inputs.%Get("baselineVersion")), "evaluatorVersion": (inputs.%Get("evaluatorVersion"))}
+	Do setup.%Set("freezeId", run.freezeId, $Select(run.freezeId = "": "null", 1: "string"))
+	Set setup.variantSet = $Select(sets = "tuning": "tuning", sets = "test": "test", 1: "mixed")
+	Set setup.independence = {"roles": (shown), "reviews": (##class(SignalNoir.Benchmark.Data.Reviews).Load("Records"))}
+	Return setup
 }
 
 /// Latency, tool calls and estimated cost of the Case's last Investigation (null when it had none).
