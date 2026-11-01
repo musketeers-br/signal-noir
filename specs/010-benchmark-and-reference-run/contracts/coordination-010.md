@@ -91,10 +91,11 @@ applied with Henry at the gate. Nothing here is needed to run the tests locally.
        sh tests/benchmark/test-check-freeze.sh
        sh tests/benchmark/test-quick-validate.sh
        python -I scripts/benchmark/test_recompute.py
+       python -I scripts/benchmark/test_freeze_record.py
        sh scripts/benchmark/check-freeze.sh
    ```
 
-   The first three prove the scripts; the last compares each frozen source file with the freeze record (it
+   The first four prove the scripts; the last compares each frozen source file with the freeze record (it
    says "no freeze yet" and passes until T056). After the freeze, a change to a frozen file fails the build,
    which is the point.
 2. **README.md** (with 012): one line for `sh scripts/quick-validate.sh` next to the smoke check, and one for
