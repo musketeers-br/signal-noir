@@ -12,6 +12,13 @@ Method OnBeforeOneTest(testname As %String) As %Status
 	Return $$$OK
 }
 
+/// The runs are created and never started (AutoStart 0): left behind, one would block the next
+/// run of the namespace ("a BenchmarkRun is already created or running")
+Method OnAfterOneTest(testname As %String) As %Status
+{
+	Return ..OnBeforeOneTest(testname)
+}
+
 ClassMethod Catalog() As %DynamicArray
 {
 	Return [
