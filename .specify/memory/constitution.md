@@ -1,6 +1,23 @@
 <!--
 Sync Impact Report
 ==================
+Version change: 2.0.0 → 2.0.1 (2026-11-01)
+Bump rationale: PATCH. Principle VIII already requires the report to state who reviewed what; it
+now says how a review done only by its author is named (a self-review), as Henrique asked on PR #36.
+No rule is added or removed.
+
+Modified:
+  - VIII. Honest Measurement — a review done only by its author MUST be reported as a self-review.
+
+Templates requiring updates:
+  ✅ .specify/templates/*.md — no references; no change needed.
+  ✅ specs/010-benchmark-and-reference-run/ — PR #37 reports each review's status in
+     setup.independence.reviewStatus, with "self" when the reviewer is the author.
+
+Deferred TODOs: none.
+
+Previous report (2.0.0)
+-----------------------
 Version change: 1.0.0 → 2.0.0 (2026-11-01)
 Bump rationale: MAJOR. Principle VIII drops a requirement (reserved cases, baseline and evaluator
 review held by different team members) and Governance drops the second-reviewer requirement for
@@ -218,7 +235,8 @@ Guarantees delivered by the platform (P3, recovery) MUST be reported as platform
 as merit of the Agent. Whoever writes the baseline MUST NOT read the reserved cases or their answer
 key before the freeze. Reviews of the baseline and the evaluator MAY be done by any team member,
 including their author, or by an automated reviewer; they MUST NOT block the freeze or the run, and
-the report MUST state who held each role and who reviewed what, so a reader can weigh it.
+the report MUST state who held each role and who reviewed what, so a reader can weigh it. A review
+done only by its author MUST be reported as a self-review, never as a review.
 
 **Rationale**: A contest rewards claims; this project only makes claims it can reproduce. Freezing
 the setup, sharing the protections and publishing every outcome is what keeps the Benchmark from
@@ -342,4 +360,4 @@ Approval or Execution works, a change of target platform build — obliges a rev
 Constitution, whether or not it ends in an amendment. Where the sources diverge, the 2026-10-19
 decision notebook prevails over the 2026-10-18 PRD until the PRD is updated.
 
-**Version**: 2.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-11-01
+**Version**: 2.0.1 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-11-01
