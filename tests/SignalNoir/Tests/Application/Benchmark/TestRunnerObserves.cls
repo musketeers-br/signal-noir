@@ -95,14 +95,22 @@ Method TestAStepTwiceDoesNotDuplicateAnInstance()
 Method TestACaseThatDoesNotDecideInTimeIsNotDecided()
 {
 	If '..Reachable() Do $$$LogMessage("Simulator not reachable: skipped") Quit
+	; this test is about the item's deadline, not the Origin feed: Orders that earlier tests left in the
+	; feed are read first, or the first step spends the run's whole budget on them
+	Set feed = ##class(SignalNoir.Interop.Service.OriginFeed).%New()
+	For n = 1 : 1 : 40 {
+		Set read = feed.Poll()
+		Quit:'read.ok
+		Quit:(read.obj.read = 0)
+	}
 	Set runId = ..Start(["P8b-tune-01"], .why)
 	Do $$$AssertTrue(runId '= "", "run created: " _ why)
 	Quit:(runId = "")
 	Set runner = ##class(SignalNoir.Application.Benchmark.Runner).%New()
 	Set runner.Sweep = 0, runner.ItemSeconds = 0
 	; the deadline is the instant the Case opened and a time stamp has a resolution of one second:
-	; step until the item is past it, for as long as that takes (at most 20 s)
-	Set until = $ZHorolog + 20
+	; step until the item is past it, for as long as that takes (at most 60 s)
+	Set until = $ZHorolog + 60
 	While $ZHorolog < until {
 		Do runner.Step(runId)
 		Set status = ##class(SignalNoir.Application.Model.BenchmarkItemRecord).%OpenId(runId _ "||1").status
@@ -110,6 +118,7 @@ Method TestACaseThatDoesNotDecideInTimeIsNotDecided()
 		Hang 0.25
 	}
 	Set item = ##class(SignalNoir.Application.Model.BenchmarkItemRecord).%OpenId(runId _ "||1")
+	Do $$$AssertTrue(item.status '= "planned", "the item opened within the time allowed")
 	Do $$$AssertTrue((item.status = "not_decided") || (item.status = "ended"), "decided or not decided by now: " _ item.status)
 	If item.status = "not_decided" Do $$$AssertEquals(item.notDecidedReason, "deadline", "the reason is the deadline")
 }
