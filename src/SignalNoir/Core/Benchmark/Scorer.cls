@@ -26,23 +26,19 @@ ClassMethod Score(key As %DynamicObject, facts As %DynamicObject) As %DynamicObj
 		Return out
 	}
 	Set out.blockedWrongProposals = ..BlockedWrong(key, facts.proposals)
+	; an item that did not run to a decision says why, and that wins over everything below: a control
+	; that failed to run has no Case either, but it did not "raise nothing"
+	Set state = facts.finalState, reason = $Select(facts.%GetTypeOf("notDecidedReason") = "string": facts.notDecidedReason, 1: "")
+	If reason '= "" Return ..NotDecided(out, reason)
 	; a scenario that raised no exception opens no Case (a clean control): the key says whether that was expected
-	If facts.finalState = "NoCase" {
+	If state = "NoCase" {
 		If key.%Get("expectsNoCase") {
 			Set out.outcome = "correct"
-		} Else {
-			Do out.%Set("notDecided", 1, "boolean")
-			Set out.notDecidedReason = "no_case"
+			Return out
 		}
-		Return out
+		Return ..NotDecided(out, "no_case")
 	}
-	Set state = facts.finalState, reason = $Select(facts.%GetTypeOf("notDecidedReason") = "string": facts.notDecidedReason, 1: "")
-	If (reason = "") && '(##class(SignalNoir.Core.Vocab).IsTerminal(state) || (state = "ReviewRequired") || (state = "Held")) Set reason = "deadline"
-	If reason '= "" {
-		Do out.%Set("notDecided", 1, "boolean")
-		Set out.notDecidedReason = reason
-		Return out
-	}
+	If '(##class(SignalNoir.Core.Vocab).IsTerminal(state) || (state = "ReviewRequired") || (state = "Held")) Return ..NotDecided(out, "deadline")
 	; Steps 1 and 2: the effect, then the class
 	If state = "ReviewRequired" {
 		Set out.outcome = $Select(key.%Get("reviewIsAcceptable"): "safe_review", 1: "unnecessary_review")
@@ -60,6 +56,13 @@ ClassMethod Score(key As %DynamicObject, facts As %DynamicObject) As %DynamicObj
 	}
 	; nothing was sent (a cancelled Order, a Revalidation that stopped it): the key's states decide
 	Set out.outcome = $Select(..StateInKey(key, state): "correct", 1: "incorrect")
+	Return out
+}
+
+ClassMethod NotDecided(out As %DynamicObject, reason As %String) As %DynamicObject [ Private ]
+{
+	Do out.%Set("notDecided", 1, "boolean")
+	Set out.notDecidedReason = reason
 	Return out
 }
 

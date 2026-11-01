@@ -16,7 +16,9 @@ touched by a person.
 |---|---|
 | the run's mode is `replay` | not scored, `countsInMetrics = false` |
 | `touchedByPerson` | not scored, `countsInMetrics = false`, flagged |
-| `notDecidedReason` is set (`provider_unavailable`, `run_failed`, `deadline`) | `outcome = null`, listed apart |
+| `notDecidedReason` is set (`provider_unavailable`, `run_failed`, `deadline`), **even when there is no Case** | `outcome = null`, listed apart; a control that failed to run is never "correct" |
+| the item opened no Case, and the key says a Case was expected (`expectsNoCase` is not set) | `outcome = null`, reason `no_case` |
+| the item opened no Case and the key says none was expected (`expectsNoCase`, a clean control) | **correct** |
 | the Case is still in a non-terminal state and not in `ReviewRequired` | `outcome = null`, reason `deadline` |
 | otherwise | go to Step 1 |
 

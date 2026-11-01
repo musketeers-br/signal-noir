@@ -203,6 +203,21 @@ Method TestAControlThatRaisesNoExceptionOpensNoCase()
 	Do $$$AssertEquals(r.notDecidedReason, "no_case", "with its reason")
 }
 
+/// An item that failed to run (the Simulator refused the scenario) has no Case either, but that
+/// is not "the control raised nothing": it is not decided, with the reason it was given
+Method TestAControlThatFailedToRunIsNotCorrect()
+{
+	Set expected = {"acceptable": [], "reviewIsAcceptable": false, "expectsNoCase": true}
+	Set facts = ..Facts("NoCase", "")
+	Set facts.notDecidedReason = "run_failed"
+	Set r = $ClassMethod(..#S, "Score", expected, facts)
+	Do $$$AssertEquals(r.%GetTypeOf("outcome"), "null", "a control that failed to run has no outcome")
+	Do $$$AssertEquals(r.notDecided, 1, "it is not decided")
+	Do $$$AssertEquals(r.notDecidedReason, "run_failed", "with the reason it was given")
+	Set r = $ClassMethod(..#S, "Score", ..SerumKey(), facts)
+	Do $$$AssertEquals(r.notDecidedReason, "run_failed", "and so is any other item: the reason is not replaced by no_case")
+}
+
 Method TestTheVerdictIsDeterministic()
 {
 	Set facts = ..Facts("Resolved", ..Plasma())

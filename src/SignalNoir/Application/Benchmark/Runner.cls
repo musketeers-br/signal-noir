@@ -33,27 +33,29 @@ Method %OnNew() As %Status
 	Return $$$OK
 }
 
-/// Runs a run to its end (one process per run, started by RunService.Create)
+/// Runs a run to its end (one process per run, started by RunService.Create). The loop is left
+/// through a flag, never with a Quit inside the Try or the Catch: there a Quit leaves only that
+/// block and the process would go on for ever.
 ClassMethod Drive(runId As %String)
 {
 	Set lockName = "^SignalNoir.BenchmarkDrive"
 	Lock +@lockName@(runId):0
 	If '$Test Quit
-	Set runner = ..%New(), failures = 0
+	Set runner = ..%New(), failures = 0, over = 0
 	For {
 		Try {
 			Set r = runner.Step(runId)
 			Set failures = 0
-			Quit:'r.ok
-			Quit:r.details.done
+			If 'r.ok || r.details.done Set over = 1
 		}
 		Catch ex {
 			Set failures = failures + 1
 			If failures > 20 {
 				Do runner.Service.Move(runId, "fail", "runner_error")
-				Quit
+				Set over = 1
 			}
 		}
+		Quit:over
 		Hang 1
 	}
 	Lock -@lockName@(runId)
