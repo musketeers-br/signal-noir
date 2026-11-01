@@ -47,7 +47,7 @@ check of `status IN ('created','running')`.
 | `caseId` | string \| empty | set when the Case opens |
 | `status` | `planned` \| `opened` \| `ended` \| `not_decided` | |
 | `notDecidedReason` | string \| empty | `provider_unavailable`, `run_failed`, `deadline` |
-| `deadlineAt` | UTC ISO-8601 | when an `opened` item with no decision becomes `not_decided` |
+| `deadlineAt` | UTC ISO-8601 | when an `opened` item with no decision becomes `not_decided` (a Case `Approved` or `Executing` by then gets the execution lease more) |
 
 An item never changes a Case. The Case is read by `caseId` through the existing read side.
 

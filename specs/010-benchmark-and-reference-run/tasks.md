@@ -45,8 +45,9 @@ Tasks marked **[person]** can be done only by the named person and are not codea
   `CaseService` command (T003 pins it).
 - Services return `SignalNoir.Core.Result`; refusals are values. API errors: 400 `VALIDATION_FAILED`,
   404 `NOT_FOUND`, 409 `INVALID_TRANSITION` (plan D13).
-- Open decisions Q1–Q3 take their defaults (plan): item deadline 180 s agent / 60 s rules and replay, run
-  deadline = items × deadline + 120 s; restart and late-worker evidence from the recovery suite; used sets
+- Open decisions Q1–Q3 take their defaults (plan): item deadline 180 s agent / 60 s rules and replay (to
+  decide; a Case executing its decision gets the lease more, T077), run deadline = items × (deadline + lease)
+  + 120 s; restart and late-worker evidence from the recovery suite; used sets
   declared by commit in `Benchmark.Data.SetUsage`.
 - After each **[edit]** task the whole suite on `master` stays green
   (`RunTest("SignalNoir","/noload/nodelete/recursive")`).
@@ -243,6 +244,7 @@ controls and the Dossier case — with ranges, counts and recomputable raw data.
 - [x] T072 Update the 010 row, the independence line and the open items of docs/specify-prompts/PARALELISMO.md; write docs/benchmark/README.md if T061 has not
 - [x] T073 Request, in one batch for the integration gate and with Henry: a CI step running `sh scripts/benchmark/check-freeze.sh` and `python -I scripts/benchmark/test_recompute.py` (.github/workflows/ci.yml), and the README line for `scripts/quick-validate.sh` (with 012); record the request in specs/010-benchmark-and-reference-run/contracts/coordination-010.md
 - [x] T074 Walk specs/010-benchmark-and-reference-run/quickstart.md end to end on the fresh container and record each step's result in research.md "Verification log"; fix any step that fails
+- [x] T077 The item deadline is for deciding: `Runner.Observe` gives a Case that is `Approved` or `Executing` past its deadline the execution lease more (`Runner.ExecutionSeconds`, default `SN_AI_LEASE_SECONDS`), so a RETRY into timeouts that ends Failed is scored incorrect, not `deadline` (found in the agent rehearsal on tuning, P8a-tune-01); tests/SignalNoir/Tests/Application/Benchmark/TestItemDeadline.cls
 - [x] T076 Align with Constitution 2.0.0 (PR #36): `FreezeCheck` no longer marks a run development for a missing, incomplete or self review (the answer key and the baseline held by one person still does); `FreezeCheck.ReviewStatus` and `setup.independence.reviewStatus` in src/SignalNoir/Application/Benchmark/ReportBuilder.cls show how each review was done; contracts/openapi-signalnoir.yaml, the capture, FR-013, FR-029, US5 and T055/T056 follow
 - [x] T075 Review the whole diff against the Constitution (I, III, IV, VII, VIII above all), the spec and the plan; check that no secret appears in any report, raw file or log, that every datum is labelled synthetic, and that nothing in the runtime depends on iris-agentic-dev; record the result in research.md
 
