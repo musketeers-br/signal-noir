@@ -1,7 +1,10 @@
 """Validate contracts/fixtures/*.json against contracts/openapi-signalnoir.yaml.
 
 Usage (from the repo root):
-    uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py
+    uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py [DIR]
+
+DIR defaults to contracts/fixtures; another directory with its own manifest.json (such as the
+responses captured from the implementation in tests/benchmark/contract-captures) is checked the same way.
 
 Each manifest entry names a schema: either a component name (``CaseDetail``) or a JSON
 pointer into the OpenAPI document (``#/paths/...``). OpenAPI 3.1 schemas are JSON Schema
@@ -25,15 +28,16 @@ BASE_URI = "urn:signalnoir:openapi"
 
 
 def main() -> int:
+    fixtures = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else FIXTURES
     spec = yaml.safe_load(CONTRACT.read_text(encoding="utf-8"))
     registry = Registry().with_resource(BASE_URI, Resource.from_contents(spec, default_specification=DRAFT202012))
-    manifest = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
+    manifest = json.loads((fixtures / "manifest.json").read_text(encoding="utf-8"))
     failures = 0
     for entry in manifest["fixtures"]:
         schema = entry["schema"]
         ref = schema if schema.startswith("#") else f"#/components/schemas/{schema}"
         validator = Draft202012Validator({"$ref": f"{BASE_URI}{ref}"}, registry=registry)
-        body = json.loads((FIXTURES / entry["file"]).read_text(encoding="utf-8"))
+        body = json.loads((fixtures / entry["file"]).read_text(encoding="utf-8"))
         errors = sorted(validator.iter_errors(body), key=lambda e: list(e.absolute_path))
         if errors:
             failures += 1
