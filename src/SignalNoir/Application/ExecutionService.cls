@@ -46,7 +46,7 @@ Method Execute(commandId As %String) As SignalNoir.Core.Result
 	Set health = ..Partner.Health(rec.partnerId, orderRec.scenarioInstanceId)
 	Set origin = ..Partner.OriginStatus(rec.orderId)
 	Set approval = ..Service.ApprovalJson(rec.currentApprovalId)
-	Set input = {"now": (..Service.Clock.NowUtc()), "versions": ($Select($IsObject(proposal.versions): proposal.versions, 1: {})), "current": (..Policy.CurrentVersions())}
+	Set input = {"now": (..Service.Clock.NowUtc()), "versions": ($Select($IsObject(proposal.versions): proposal.versions, 1: {})), "current": (..Policy.CurrentVersions(##class(SignalNoir.Application.ResolutionValidator).RunFor(rec)))}
 	Do input.%Set("health", $Select(health.ok: health.obj, 1: ""), $Select(health.ok: "", 1: "null"))
 	Do input.%Set("origin", $Select(origin.ok: origin.obj, 1: ""), $Select(origin.ok: "", 1: "null"))
 	Set input.approval = {"required": true, "status": ($Select($IsObject(approval): approval.status, 1: "missing")), "expiresAt": ($Select($IsObject(approval): approval.expiresAt, 1: ""))}
