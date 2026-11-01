@@ -107,7 +107,7 @@ Method TestACaseThatDoesNotDecideInTimeIsNotDecided()
 	Do $$$AssertTrue(runId '= "", "run created: " _ why)
 	Quit:(runId = "")
 	Set runner = ##class(SignalNoir.Application.Benchmark.Runner).%New()
-	Set runner.Sweep = 0, runner.ItemSeconds = 0
+	Set runner.Sweep = 0, runner.ItemSeconds = 0, runner.ExecutionSeconds = 0
 	; the deadline is the instant the Case opened and a time stamp has a resolution of one second:
 	; step until the item is past it, for as long as that takes (at most 60 s)
 	Set until = $ZHorolog + 60

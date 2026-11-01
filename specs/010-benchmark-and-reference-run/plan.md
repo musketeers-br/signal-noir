@@ -195,7 +195,7 @@ and 004's fixtures (XData, loaded by class); the API follows the thin-dispatch s
 
 | # | Question | Default taken in this plan | Who |
 |---|---|---|---|
-| Q1 | How long may a Case of a run stay undecided before it is *not decided* (per item deadline)? | agent 180 s, rules/replay 60 s, counted from the Case opening; a run's own deadline is items × deadline + 120 s | Henrique |
+| Q1 | How long may a Case of a run stay undecided before it is *not decided* (per item deadline)? | agent 180 s, rules/replay 60 s, counted from the Case opening, to decide; a Case that decided in time and is Approved or Executing gets the execution lease more (`SN_AI_LEASE_SECONDS`, 300 s) so its effect is scored (amended 2026-11-01, agent rehearsal); a run's own deadline is items × (deadline + lease) + 120 s | Henrique |
 | Q2 | Evidence for `restart` and `late worker`: a scenario cannot restart IRIS or race a worker. | the recovery suite of 008, recorded with its commit in `ReferenceResult` and shown as `source: recovery_suite`; `not exercised` when absent | Henrique + Henry |
 | Q3 | Where is a set declared *used*? | a committed line in `Benchmark.Data.SetUsage` (auditable, not undoable silently), not an endpoint | Henrique + José |
 

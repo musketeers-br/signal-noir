@@ -21,6 +21,10 @@ Property Sweep As %Boolean [ InitialExpression = 1 ];
 /// 180 for an agent run and 60 otherwise
 Property ItemSeconds As %Integer;
 
+/// Seconds more a Case that decided in time may take to carry out its effect (Approved or
+/// Executing) before the item is "not decided"; empty = the execution lease (SN_AI_LEASE_SECONDS)
+Property ExecutionSeconds As %Integer;
+
 /// Seconds a request must have been pending before the sweep redelivers it
 Parameter SWEEPGRACE = 3;
 
@@ -95,7 +99,7 @@ Method Step(runId As %String) As SignalNoir.Core.Result
 	If (rec.purpose = "reference") && (rec.heartbeatAt = rec.startedAt) Do ..CheckInputs(rec)
 	Set total = ##class(%SQL.Statement).%ExecDirect(, "SELECT COUNT(*) AS n FROM SignalNoir_Application_Model.BenchmarkItemRecord WHERE runId = ?", runId)
 	Do total.%Next()
-	Set budget = (total.%Get("n") * ..SecondsFor(rec)) + ..#RUNEXTRA
+	Set budget = (total.%Get("n") * (..SecondsFor(rec) + ..ExecutionSecondsFor())) + ..#RUNEXTRA
 	If ##class(SignalNoir.Core.ApprovalPolicy).Seconds(now) > ##class(SignalNoir.Core.ApprovalPolicy).Seconds(##class(SignalNoir.Core.ApprovalPolicy).Plus(rec.createdAt, budget)) {
 		Do ..Service.Move(runId, "fail", "deadline")
 		Return ..Result(1, "failed")
@@ -173,7 +177,9 @@ Method Open(rec As SignalNoir.Application.Model.BenchmarkRunRecord, item As Sign
 }
 
 /// Reads the Case: ended when the automation is over (terminal, Held or ReviewRequired);
-/// "not decided" when it has not decided by the deadline
+/// "not decided" when it has not decided by the deadline. A Case that decided in time and is
+/// carrying out its effect is given the execution time too: the effect it chose is scored, so a
+/// wrong Action that only takes long (a RETRY into timeouts) counts as incorrect, not undecided.
 Method Observe(rec As SignalNoir.Application.Model.BenchmarkRunRecord, item As SignalNoir.Application.Model.BenchmarkItemRecord, now As %String) [ Private ]
 {
 	If ..Sweep {
@@ -189,7 +195,10 @@ Method Observe(rec As SignalNoir.Application.Model.BenchmarkRunRecord, item As S
 		$$$ThrowOnError(item.%Save())
 		Quit
 	}
-	If ##class(SignalNoir.Core.ApprovalPolicy).Seconds(now) > ##class(SignalNoir.Core.ApprovalPolicy).Seconds(item.deadlineAt) Do ..Undecided(item, "deadline")
+	Set late = ##class(SignalNoir.Core.ApprovalPolicy).Seconds(now) - ##class(SignalNoir.Core.ApprovalPolicy).Seconds(item.deadlineAt)
+	If late <= 0 Quit
+	If $IsObject(case) && ((case.state = "Approved") || (case.state = "Executing")) && (late <= ..ExecutionSecondsFor()) Quit
+	Do ..Undecided(item, "deadline")
 }
 
 Method Undecided(item As SignalNoir.Application.Model.BenchmarkItemRecord, reason As %String) [ Private ]
@@ -227,6 +236,12 @@ ClassMethod Count(runId As %String, where As %String) As %Integer [ Private ]
 	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT COUNT(*) AS n FROM SignalNoir_Application_Model.BenchmarkItemRecord WHERE runId = ?" _ $Select(where = "": "", 1: " AND " _ where), runId)
 	Do rs.%Next()
 	Return rs.%Get("n")
+}
+
+Method ExecutionSecondsFor() As %Integer [ Private ]
+{
+	If ..ExecutionSeconds '= "" Return ..ExecutionSeconds
+	Return ##class(SignalNoir.Interop.Bootstrap).EnvSeconds("SN_AI_LEASE_SECONDS", ##class(SignalNoir.Interop.Bootstrap).#LEASESECONDS)
 }
 
 Method SecondsFor(rec As SignalNoir.Application.Model.BenchmarkRunRecord) As %Integer [ Private ]

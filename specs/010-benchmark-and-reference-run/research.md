@@ -125,7 +125,9 @@ items and does the next thing that is missing:
    intake once (`OriginFeed.Poll`) so the Case opens now instead of at the next scheduled read;
 2. an item `opened` → read the Case (read-only) and mark `ended` when it is terminal or in
    `ReviewRequired` (the contract's `casesTerminal`); mark `not_decided` when the Case sits in a
-   non-terminal state past the item deadline;
+   non-terminal state past the item deadline, unless it decided in time and is `Approved` or
+   `Executing`: then it gets the execution lease more, so a wrong Action that only takes long (a
+   RETRY into timeouts) is scored incorrect, not undecided (amended 2026-11-01);
 3. all items ended → build and store the report, `completed`.
 
 `RunService.Create` persists the run and the plan, then `JOB`s `Runner.Drive(runId)`, which loops `Step`
