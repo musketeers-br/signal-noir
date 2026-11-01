@@ -2,7 +2,8 @@
 
 - **Spec:** [`specs/010-benchmark-and-reference-run/spec.md`](../../specs/010-benchmark-and-reference-run/spec.md), FR-012 e FR-013 (T053)
 - **Código:** [`src/SignalNoir/Proposers/Rules.cls`](../../src/SignalNoir/Proposers/Rules.cls), `Parameter VERSION = "rules-v2"`
-- **Autor:** Henry. **Revisão:** José (T055), registrada em `Benchmark.Data.Reviews`.
+- **Autor:** Henry. **Revisão:** qualquer membro da equipe, ou revisão automatizada (Constitution 2.0.0,
+  Princípio VIII). Ela não bloqueia o congelamento e fica registrada em `Benchmark.Data.Reviews`.
 - **Independência:** o autor deste baseline não leu as variantes reservadas de teste (`P5Test`, `P8Test`) nem
   os gabaritos de teste antes do congelamento (05/11/2026). As regras abaixo foram escritas a partir do
   catálogo de ações, do conjunto de Mappings `2026.10.1` e das variantes de *tuning*.
