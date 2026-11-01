@@ -10,14 +10,14 @@
 .banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border: 1px solid currentColor; border-radius: var(--r-lg); margin-bottom: var(--sp-4); box-shadow: var(--e2); }
 .banner p { margin: 0; color: var(--ink); }
 
-.evidence-card { border-left: 4px solid var(--fact); border-radius: var(--r-md); padding: 10px var(--sp-3); margin: var(--sp-2) 0; }
-.evidence-card.obsolete { opacity: 0.75; border-left-style: dashed; }
+.evidence-card { min-width: 0; overflow-wrap: anywhere; border-left: 4px solid var(--fact); border-radius: var(--r-md); padding: 10px var(--sp-3); margin: var(--sp-2) 0; }
+.evidence-card.obsolete { border-left-style: dashed; }
 .evidence-card.highlight { box-shadow: var(--ring); }
 .ev-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
 .ev-head h4 { margin: 0; font-size: var(--fs-small); }
 .conflict { border: 1px solid var(--interpretation); background: var(--interpretation-soft); border-radius: var(--r-md); padding: var(--sp-2); margin: var(--sp-2) 0; }
 .conflict-head { margin: 0 0 var(--sp-1); }
-.side-by-side { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.side-by-side { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
 .interpretation-card { border: 1px dashed var(--interpretation); border-radius: var(--r-lg); padding: var(--sp-3); }
 
 .dossier { border: 2px solid var(--attention); border-radius: var(--r-lg); padding: var(--sp-4); margin-bottom: var(--sp-4); box-shadow: var(--e3); }
@@ -27,8 +27,8 @@
 .timeline { border-radius: var(--r-lg); padding: var(--sp-3); box-shadow: var(--e3); }
 .timeline ol { padding-left: 0; list-style: none; display: grid; gap: var(--sp-2); }
 
-.kv { display: grid; grid-template-columns: max-content 1fr; gap: var(--sp-1) var(--sp-3); margin: var(--sp-2) 0; }
-.kv dt { color: var(--ink-muted); }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--sp-1) var(--sp-3); margin: var(--sp-2) 0; }
+.kv dt { color: var(--ink-muted); overflow-wrap: anywhere; }
 .kv dd { margin: 0; overflow-wrap: anywhere; }
 .table { border-collapse: collapse; width: 100%; margin: var(--sp-2) 0; display: block; overflow-x: auto; }
 .table th, .table td { border-bottom: 1px solid var(--line); padding: var(--sp-1) var(--sp-2); text-align: left; }

@@ -78,7 +78,7 @@ web fonts, summary strip or extra navigation.
 - [X] T027 [US4] `ui/src/styles/layout.css`: the three bands of 005. 1100+: rail (`--rail-w`) beside the content, `.detail-grid` as layers + sticky Timeline (`--timeline-w`), `.case-link` as a grid. 640 to 1099: compact bar, Timeline under the layers, partner column dropped (labels stay). Under 640: stacked card rows, wrapping bar that keeps the name field and the `SYNTHETIC` label, `--gutter-mobile`. `minmax(0, 1fr)` on grid columns; wide tables, raw bodies and long identifiers scroll or wrap in their own box
 - [X] T028 [US4] Touch targets: every interactive control is at least 44 × 44 px (buttons, toggle, filter segments, row link, Evidence chips, dialog actions, toast close if any). Evidence chips keep their visual size with padding or a pseudo-element hit area
 - [X] T029 [US4] Dialog on a phone: the `<dialog>` scrolls inside itself (`max-height`, `overflow: auto`) and both decisions stay reachable
-- [ ] T030 [US4] Quickstart steps 6 and 8 in a real browser at 360, 640, 1100 and 1440 px, then at 200% text size and 400% zoom. Tick the coverage table columns "360 px" and "1440 px"
+- [X] T030 [US4] Quickstart steps 6 and 8 in a real browser at 360, 640, 1100 and 1440 px, then at 200% text size and 400% zoom. Tick the coverage table columns "360 px" and "1440 px"
 
 **Checkpoint**: the console is usable from a phone to a wide desktop.
 
@@ -90,7 +90,7 @@ web fonts, summary strip or extra navigation.
 - [X] T032 [US5] `ui/src/styles/surfaces.css`, glass: apply `.glass` to the rail or top bar, the approval dialog (with its backdrop), `.toasts` and the connection note, **only** those (FR-012). At most three blurred layers on screen at once. Add the `@supports` and `prefers-reduced-transparency` fallbacks
 - [X] T033 [US5] `ui/src/styles/motion.css`: tokens for durations, the row flash, the spinner, toast entry; `prefers-reduced-motion: reduce` removes all of it and a busy state stays visible as text. A row change never moves a control under the focus or pointer (FR-019). `@media (forced-colors: active)`: system colors, 1 px borders, no shadows, focus ring visible; `@media (prefers-contrast: more)`: stronger `--line-strong` and opaque glass
 - [X] T034 [US5] `ui/src/styles/print.css`: hide the rail, theme toggle, toasts and connection note; remove glass, blur and shadows; black on white; expand the Timeline; keep state glyphs and labels and `SYNTHETIC`
-- [ ] T035 [US5] Quickstart steps 5 and 7 in a real browser: color-blind emulation with shadows off, reduced motion, reduced transparency or blur off, forced colors, `prefers-contrast: more`, print preview. Fix findings in the styles
+- [X] T035 [US5] Quickstart steps 5 and 7 in a real browser: color-blind emulation with shadows off, reduced motion, reduced transparency or blur off, forced colors, `prefers-contrast: more`, print preview. Fix findings in the styles
 
 **Checkpoint**: every effect degrades to a legible, usable console.
 
@@ -98,12 +98,12 @@ web fonts, summary strip or extra navigation.
 
 ## Phase 7: Documentation, serving check and polish
 
-- [ ] T036 Build and verify on the live instance with iris-agentic-dev (quickstart step 9): `cd ui && npm run build`; request `/signalnoir/ui/theme-init.js` and confirm 200 and a JavaScript content type; confirm `index.html` and the assets still 200. Record the result in `research.md` R7 (replace `pending`)
-- [ ] T037 Offline check (quickstart step 10): load once, block the network, reload; the console renders fully. Search the built output for any `http://` or `https://` URL that is not the console itself and confirm none loads a font, style, script or image (FR-021, SC-008)
-- [ ] T038 Real-browser accessibility (quickstart step 12): axe with contrast enabled on the list, a Case, the dialog and the Dossier, light and dark, at 360, 768 and 1440 px. Record the result (SC-003)
+- [X] T036 Build and verify on the live instance with iris-agentic-dev (quickstart step 9): `cd ui && npm run build`; request `/signalnoir/ui/theme-init.js` and confirm 200 and a JavaScript content type; confirm `index.html` and the assets still 200. Record the result in `research.md` R7 (replace `pending`)
+- [X] T037 Offline check (quickstart step 10): load once, block the network, reload; the console renders fully. Search the built output for any `http://` or `https://` URL that is not the console itself and confirm none loads a font, style, script or image (FR-021, SC-008)
+- [X] T038 Real-browser accessibility (quickstart step 12): axe with contrast enabled on the list, a Case, the dialog and the Dossier, light and dark, at 360, 768 and 1440 px. Record the result (SC-003)
 - [X] T039 Update `_bmad-output/initiative-signal-noir/ux-signal-noir/DESIGN.md`: the new frontmatter tokens, a "Theme" section (system default, override, remembered), and mark **superseded by 014** the previous Elevation & Depth, Shapes, the dark-mode sentence in Colors while keeping the semantic meanings, the system-font rule, the mono-for-literals rule and the Do's and Don'ts (FR-020). Link `specs/014-liquid-console-redesign/`
 - [X] T040 [P] Update `specs/005-operator-console/spec.md` Assumptions with one line pointing to 014 for the visual system, and `docs/specify-prompts/PARALELISMO.md` with the 014 row
-- [ ] T041 Full run: `cd ui && npm run check && npm test && npm run build`. Record counts. Tick every box of the coverage table in `checklists/requirements.md`; confirm SC-001 to SC-009 one by one in `research.md` ("Outcome")
+- [X] T041 Full run: `cd ui && npm run check && npm test && npm run build`. Record counts. Tick every box of the coverage table in `checklists/requirements.md`; confirm SC-001 to SC-009 one by one in `research.md` ("Outcome")
 
 ## Dependencies & Execution Order
 

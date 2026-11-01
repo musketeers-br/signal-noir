@@ -3,6 +3,8 @@ body { margin: 0; background: var(--paper); color: var(--ink); font: 400 var(--f
 a { color: var(--accent); }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .mono, code, pre { font-family: var(--mono); font-size: var(--fs-small); }
+/* literals are ids and codes: they may break anywhere rather than push the page sideways at 320 px */
+.mono { overflow-wrap: anywhere; }
 .small { font-size: var(--fs-small); }
 .muted { color: var(--ink-muted); }
 .attention { color: var(--attention); }

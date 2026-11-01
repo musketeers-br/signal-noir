@@ -646,13 +646,16 @@ Method CompleteInvestigation(investigationId As %String, proposal As SignalNoir.
 			Set result = ..Err("closed", inv.outcomeReason)
 			Quit
 		}
+		; the author is the mode, or for a hybrid Investigation the proposer that answered (016)
+		Set author = inv.mode
+		If (inv.mode = "hybrid") && $IsObject(meta) && $ListFind($ListBuild("agent", "decisions"), meta.%Get("author")) Set author = meta.%Get("author")
 		Set proposalId = ..Ids.New("prop_")
 		Do ..Supersede(rec, proposalId)
 		Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%New()
 		Set pr.proposalId = proposalId
 		Set pr.caseId = rec.caseId
 		Set pr.investigationId = investigationId
-		Set pr.author = inv.mode
+		Set pr.author = author
 		Set pr.createdAt = now
 		Set pr.current = 1
 		Set pr.diagnosisJson = ..Json(proposal.diagnosis)
@@ -667,8 +670,8 @@ Method CompleteInvestigation(investigationId As %String, proposal As SignalNoir.
 		Set pr.priorReceiptCandidateJson = $Select($IsObject(prior) && (prior.%Size() > 0): prior.%ToJSON(), 1: "")
 		$$$ThrowOnError(pr.%Save())
 		Set rec.currentProposalId = proposalId
-		Do ..AppendEvent(rec, "ProposalCreated", inv.mode, proposalId, {"proposalId": (proposalId), "author": (inv.mode), "action": (proposal.action), "confidence": (proposal.confidence), "investigationId": (investigationId)}, now)
-		Set moved = ..ApplyTransition(rec, "DecisionProposed", inv.mode, {"reason": "proposal recorded", "proposalId": (proposalId)}, "", now)
+		Do ..AppendEvent(rec, "ProposalCreated", author, proposalId, {"proposalId": (proposalId), "author": (author), "action": (proposal.action), "confidence": (proposal.confidence), "investigationId": (investigationId)}, now)
+		Set moved = ..ApplyTransition(rec, "DecisionProposed", author, {"reason": "proposal recorded", "proposalId": (proposalId)}, "", now)
 		If 'moved.ok {
 			Set result = moved
 			Quit
@@ -987,7 +990,6 @@ Method ExpireApproval(approvalId As %String, now As %String = "") As SignalNoir.
 	Return ..Finish(result, .locks)
 }
 
-/// The approval policy in use (the default when none was injected)
 /// Whether this actor may act on a Case of this run. The policy decides who (007); the
 /// benchmark actor also needs the run to exist and be running right now (feature 010
 /// FR-008, FR-009), so a run that ended, failed or never was approves nothing.
@@ -1005,6 +1007,7 @@ Method Directory() As SignalNoir.Core.Port.RunDirectory
 	Return ..Runs
 }
 
+/// The approval policy in use (the default when none was injected)
 Method Policy() As SignalNoir.Core.Port.ApprovalPolicy
 {
 	If '$IsObject(..Approvals) Set ..Approvals = ##class(SignalNoir.Core.ApprovalPolicy).%New()
@@ -1854,7 +1857,7 @@ Method ApplyMeta(inv As SignalNoir.Application.Model.InvestigationRecord, meta A
 {
 	Set inv.durationMs = ..NowMs() - inv.startedMs
 	If '$IsObject(meta) Return
-	For key = "provider", "model", "promptVersion", "policyVersion", "mappingVersion", "tokensIn", "tokensOut", "estCostUsd" {
+	For key = "provider", "model", "promptVersion", "policyVersion", "mappingVersion", "tokensIn", "tokensOut", "tokensCached", "estCostUsd" {
 		If meta.%Get(key) '= "" Set $Property(inv, key) = meta.%Get(key)
 	}
 }
@@ -2053,8 +2056,9 @@ Method NewCase(orderRec As SignalNoir.Application.Model.OrderRecord, previousCas
 	Set rec.state = "Open"
 	Set rec.caseVersion = 1
 	Set rec.lastEventSeq = 0
-	; the Case belongs to a run only if the run exists and is running; otherwise it is
-	; the Agent's and carries no benchmark mark (feature 010 FR-003)
+	; the Case belongs to a run only if the run exists and is running, and then the run chooses
+	; the mode (feature 010 FR-003); otherwise it carries no benchmark mark and has the mode the
+	; deployment configured (Proposers.Factory.ConfiguredMode)
 	Set run = ..Directory().Find(orderRec.runId)
 	If $IsObject(run) && (run.status = "running") {
 		Set rec.runId = run.runId
@@ -2062,7 +2066,7 @@ Method NewCase(orderRec As SignalNoir.Application.Model.OrderRecord, previousCas
 		Set rec.replay = (run.mode = "replay")
 	} Else {
 		Set rec.runId = ""
-		Set rec.proposerMode = "agent"
+		Set rec.proposerMode = ##class(SignalNoir.Proposers.Factory).ConfiguredMode()
 		Set rec.replay = 0
 	}
 	Set rec.synthetic = 1

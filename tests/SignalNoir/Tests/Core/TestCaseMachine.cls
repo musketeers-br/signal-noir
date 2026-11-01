@@ -9,7 +9,7 @@ ClassMethod Rows() As %DynamicArray
 		["", "Open", "system", ""],
 		["Open", "Investigating", "system", "Investigate"],
 		["Open", "ReviewRequired", "system", ""],
-		["Investigating", "DecisionProposed", "agent,rules,replay", ""],
+		["Investigating", "DecisionProposed", "agent,rules,replay,decisions", ""],
 		["Investigating", "ReviewRequired", "system", ""],
 		["Investigating", "ResolvedByPriorReceipt", "system", ""],
 		["DecisionProposed", "ResolvedByPriorReceipt", "system", ""],

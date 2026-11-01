@@ -9,7 +9,7 @@ Parameter ACTIONS = "RETRY,APPLY_APPROVED_MAPPING,HOLD,REQUEST_REVIEW";
 
 /// Actor vocabulary (contract Actor pattern); operator actors carry the
 /// operator:<name> shape
-Parameter ACTORS = "system,agent,rules,replay,benchmark,sweeper";
+Parameter ACTORS = "system,agent,rules,replay,decisions,benchmark,sweeper";
 
 /// Closed command vocabulary (outbox types)
 Parameter COMMANDS = "Investigate,Execute,Reconcile,Expire,Reassess,Resume";
