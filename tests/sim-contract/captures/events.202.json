@@ -1,5 +1,5 @@
 {
-  "scenarioInstanceId":"sci_XDQCVRWVFMI7DOQPZZWZXHJYR4",
+  "scenarioInstanceId":"sci_E3UNGIOWCII7DF3RBK2ABFAOSM",
   "family":"P3",
   "subtype":"P3.partner_fails_again",
   "variant":"P3-fails-tune-01",
@@ -14,11 +14,11 @@
   "appliedEvents":[
     {
       "type":"PARTNER_DEGRADES",
-      "at":"2026-10-31T13:05:18.741Z"
+      "at":"2026-11-01T16:34:47.590Z"
     }
   ],
   "emittedOrderIds":[
-    "ORD-sci_XDQCVRWVFMI7DOQPZZWZXHJYR4-0001"
+    "ORD-sci_E3UNGIOWCII7DF3RBK2ABFAOSM-0001"
   ],
-  "createdAt":"2026-10-31T13:05:18.720Z"
+  "createdAt":"2026-11-01T16:34:47.574Z"
 }

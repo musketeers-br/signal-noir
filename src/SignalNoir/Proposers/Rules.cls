@@ -2,15 +2,20 @@ Class SignalNoir.Proposers.Rules Extends SignalNoir.Core.Port.Proposer
 {
 
 /// Rules Mode: a deterministic proposer over the same Evidence, gateway and
-/// budget as the Agent (Constitution VIII). Minimal rule set for the shared
-/// path; the strengthened baseline is written on this port in wave 4.
+/// budget as the Agent (Constitution VIII). The benchmark's rules baseline
+/// (010 FR-012), documented per family in docs/benchmark/baseline-rules.md.
 /// 1. recorded patient records collide with the Order's patient -> REQUEST_REVIEW
-/// 2. Partner DOWN, or >= 50% errors/timeouts in the window -> HOLD
-/// 3. exactly one approved mapping matches an exam code and the specimen
-///    type of the Order -> APPLY_APPROVED_MAPPING
+/// 2. Partner DOWN, or >= 50% timeouts in the window -> HOLD. The window is
+///    this Order's own attempts (the Simulator filters it by orderId), so an
+///    answered error is the failure under investigation, not instability
+///    (rules-v1 counted it and held every single-failure Case)
+/// 3. exactly one approved mapping matches an exam code and every condition
+///    of the Order, with the synonyms of the catalog (the Validator's
+///    comparison, Core.Conditions) -> APPLY_APPROVED_MAPPING
 /// 4. otherwise -> REQUEST_REVIEW
 /// The base package spends the whole budget, so Rules reads only it.
-Parameter VERSION = "rules-v1";
+/// rules-v2: rule 2 counts timeouts only; rule 3 compares with the synonyms ("soro" is SERUM).
+Parameter VERSION = "rules-v2";
 
 Method Propose(context As SignalNoir.Core.Dto.InvestigationContext) As SignalNoir.Core.Result
 {
@@ -35,13 +40,14 @@ Method Propose(context As SignalNoir.Core.Dto.InvestigationContext) As SignalNoi
 	; 2. unstable partner
 	Set unstable = 0, cite = []
 	If ..IsFact(health) && (health.result.status = "DOWN") Set unstable = 1 Do cite.%Push(health.evidenceId)
-	If ..IsFact(history) && $IsObject(history.result.window) && (history.result.window.errorRate >= 0.5) && (history.result.window.total > 0) Set unstable = 1 Do cite.%Push(history.evidenceId)
+	If ..IsFact(history) && $IsObject(history.result.window) && (history.result.window.total > 0) && ((history.result.window.timeouts / history.result.window.total) >= 0.5) Set unstable = 1 Do cite.%Push(history.evidenceId)
 	If unstable {
 		Return ..Answer("HOLD", {"reason": "partner unstable"}, "MEDIUM", "The partner is unstable; hold until it recovers", "Partner health or recent history shows instability", cite, [{"check": "PARTNER_HEALTHY_WINDOW", "expected": false}], details)
 	}
 	; 3. exactly one applicable approved mapping
 	If ..IsFact(catalog) && $IsObject(context.order) && $IsObject(context.order.snapshot) {
-		Set matches = ##class(SignalNoir.Core.MappingMatch).Candidates(context.order.snapshot, catalog.result.items)
+		Set synonyms = $Select(catalog.result.%GetTypeOf("synonyms") = "object": catalog.result.synonyms, 1: {})
+		Set matches = ##class(SignalNoir.Core.MappingMatch).Candidates(context.order.snapshot, catalog.result.items, synonyms)
 		If matches.%Size() = 1 {
 			Set m = matches.%Get(0)
 			Set cite = [(catalog.evidenceId)]
