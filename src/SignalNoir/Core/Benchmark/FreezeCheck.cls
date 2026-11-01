@@ -5,18 +5,20 @@ Class SignalNoir.Core.Benchmark.FreezeCheck Extends %RegisteredObject
 /// plan D8). Pure: the freeze record, the inputs as they are now, the recorded roles and
 /// reviews, the declarations of used sets and the run's selection in; whether the run is
 /// development data, and every reason why, out. A development run still runs and still
-/// reports; its report says why it cannot be the reference.
+/// reports; its report says why it cannot be the reference. Reviews never make a run
+/// development (Constitution 2.0.0, Principle VIII): ReviewStatus says how each was done, and
+/// the report shows it.
 Parameter FIELDS = "promptVersion,model,baselineVersion,policyVersion,mappingVersion,policyDigest,mappingDigest,evaluatorVersion,reservedCatalogDigest,answerKeyDigest";
 
-/// The families whose answer key, baseline and review must be held by different people
+/// The families whose answer key and baseline must be held by different people
 Parameter CORE = "P5,P8,P9";
 
 /// freeze: the committed freeze record ({freezeId, ...} or "" or {freezeId: ""} for none).
 /// current: the same fields as the inputs are now. roles: {families: {P5: {answerKeyBy, baselineBy}}}.
-/// reviews: [{kind, family, author, reviewer, commit, date}]. usage: [{set: "P5/test", by, at, why}].
+/// reviews: [{kind, family, author, reviewer, commit, date, automated}]. usage: [{set: "P5/test", by, at, why}].
 /// selection: {purpose, variants: [{family, set, variant}]}.
-/// Returns {development, reasons[]}. A set declared used marks every run over it; the freeze,
-/// the roles and the reviews are required of a run for the reference purpose only.
+/// Returns {development, reasons[]}. A set declared used marks every run over it; the freeze
+/// and the roles are required of a run for the reference purpose only.
 ClassMethod Evaluate(freeze, current, roles, reviews, usage, selection As %DynamicObject) As %DynamicObject
 {
 	Set reasons = []
@@ -34,9 +36,8 @@ ClassMethod Evaluate(freeze, current, roles, reviews, usage, selection As %Dynam
 		For {
 			Set f = $Order(families(f))
 			Quit:f=""
-			If (","_..#CORE_",") [ ("," _ f _ ",") Do ..CheckIndependence(f, roles, reviews, reasons)
+			If (","_..#CORE_",") [ ("," _ f _ ",") Do ..CheckIndependence(f, roles, reasons)
 		}
-		Do ..CheckEvaluatorReview(roles, reviews, reasons)
 	}
 	Set out = {"reasons": (reasons)}
 	Do out.%Set("development", ''reasons.%Size(), "boolean")
@@ -76,7 +77,8 @@ ClassMethod CheckFreeze(freeze, current, reasons As %DynamicArray) [ Private ]
 	}
 }
 
-ClassMethod CheckIndependence(family As %String, roles, reviews, reasons As %DynamicArray) [ Private ]
+/// The author of the baseline must not hold the answer key: they would have read the reserved cases
+ClassMethod CheckIndependence(family As %String, roles, reasons As %DynamicArray) [ Private ]
 {
 	Set r = $Select($IsObject(roles) && (roles.%GetTypeOf("families") = "object") && (roles.families.%GetTypeOf(family) = "object"): roles.families.%Get(family), 1: "")
 	If '$IsObject(r) {
@@ -85,34 +87,28 @@ ClassMethod CheckIndependence(family As %String, roles, reviews, reasons As %Dyn
 	}
 	Set key = r.answerKeyBy, base = r.baselineBy
 	If (key = "") || (base = "") || (key = base) Do reasons.%Push("family " _ family _ ": the answer key and the baseline are not held by two different people")
-	Set review = ..FindReview(reviews, "baseline", family)
-	If '$IsObject(review) {
-		Do reasons.%Push("no baseline review for family " _ family)
-		Quit
-	}
-	If '..Complete(review) {
-		Do reasons.%Push("the baseline review of family " _ family _ " is incomplete: it needs author, reviewer, commit and date")
-		Quit
-	}
-	If (review.reviewer = key) || (review.reviewer = base) Do reasons.%Push("family " _ family _ ": the reviewer of the baseline also held another role (" _ review.reviewer _ ")")
 }
 
-ClassMethod CheckEvaluatorReview(roles, reviews, reasons As %DynamicArray) [ Private ]
+/// How the baseline of each core family in families (a comma list) and the evaluator were reviewed:
+/// {baseline: {P5: status}, evaluator: status}. A status is other_member, self (the reviewer is the
+/// author), automated, incomplete (author, reviewer, commit or date missing) or missing.
+ClassMethod ReviewStatus(reviews, families As %String) As %DynamicObject
 {
-	Set review = ..FindReview(reviews, "evaluator", "*")
-	If '$IsObject(review) {
-		Do reasons.%Push("no evaluator review")
-		Quit
+	Set baseline = {}
+	For i = 1 : 1 : $Length(families, ",") {
+		Set f = $Piece(families, ",", i)
+		If (f '= "") && ((","_..#CORE_",") [ ("," _ f _ ",")) Do baseline.%Set(f, ..Status(..FindReview(reviews, "baseline", f)))
 	}
-	If '..Complete(review) {
-		Do reasons.%Push("the evaluator review is incomplete: it needs author, reviewer, commit and date")
-		Quit
-	}
-	If '$IsObject(roles) || (roles.%GetTypeOf("families") '= "object") Quit
-	Set it = roles.families.%GetIterator()
-	While it.%GetNext(.family, .r) {
-		If $IsObject(r) && ((r.answerKeyBy = review.reviewer) || (r.baselineBy = review.reviewer)) Do reasons.%Push("the reviewer of the evaluator also held another role in family " _ family _ " (" _ review.reviewer _ ")")
-	}
+	Return {"baseline": (baseline), "evaluator": (..Status(..FindReview(reviews, "evaluator", "*")))}
+}
+
+ClassMethod Status(review) As %String [ Private ]
+{
+	If '$IsObject(review) Return "missing"
+	If '..Complete(review) Return "incomplete"
+	If review.%Get("automated") Return "automated"
+	If review.reviewer = review.author Return "self"
+	Return "other_member"
 }
 
 /// The review of a kind for a family; an evaluator review may be recorded for "*" or for any family

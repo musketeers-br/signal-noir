@@ -4,8 +4,10 @@ Class SignalNoir.Tests.Core.Benchmark.TestFreezeCheck Extends %UnitTest.TestCase
 Parameter F = "SignalNoir.Core.Benchmark.FreezeCheck";
 
 /// 010 T046 - what makes a run development data (FR-026, FR-027, FR-029, plan D8): a frozen
-/// input that differs from the freeze record, a test set declared used, roles that are not
-/// held by different people, a missing review, no freeze at all. Pure: records in, reasons out.
+/// input that differs from the freeze record, a test set declared used, an answer key and a
+/// baseline held by the same person, no freeze at all. A review never makes a run development
+/// (Constitution 2.0.0, Principle VIII): ReviewStatus says how it was done. Pure: records in,
+/// reasons out.
 ClassMethod Freeze() As %DynamicObject
 {
 	Return {"freezeId": "freeze_1", "commit": "abc1234", "promptVersion": "agent-v1", "model": "gpt-x", "baselineVersion": "rules-v2", "policyVersion": "2026.10.1", "mappingVersion": "2026.10.1", "policyDigest": "pd", "mappingDigest": "md", "evaluatorVersion": "scorer-v1", "reservedCatalogDigest": "rc", "answerKeyDigest": "ak"}
@@ -80,40 +82,51 @@ Method TestATestSetDeclaredUsedMarksEveryRunOverIt()
 	Do $$$AssertEquals(r.development, 1, "whatever the purpose, a used set is development data")
 }
 
-Method TestTheSamePersonInTwoRolesIsDevelopment()
+Method TestTheKeyAndTheBaselineByOnePersonIsDevelopment()
 {
 	Set roles = ..Roles()
 	Set roles.families.P5.baselineBy = "henrique"
 	Set r = ..Run(..Freeze(), ..Current(), roles, ..Reviews(), [], ..Selection())
 	Do $$$AssertEquals(r.development, 1, "key author and baseline author are the same")
 	Do $$$AssertTrue(r.reasons.%ToJSON() [ "P5", "for P5")
+}
+
+Method TestAReviewNeverMakesItDevelopment()
+{
 	Set reviews = ..Reviews()
 	Set reviews.%Get(1).reviewer = "henry"
 	Set r = ..Run(..Freeze(), ..Current(), ..Roles(), reviews, [], ..Selection())
-	Do $$$AssertEquals(r.development, 1, "the reviewer wrote the baseline")
+	Do $$$AssertEquals(r.development, 0, "the baseline reviewed by its author: " _ r.reasons.%ToJSON())
 	Set reviews = ..Reviews()
 	Set reviews.%Get(0).reviewer = "henrique"
 	Set r = ..Run(..Freeze(), ..Current(), ..Roles(), reviews, [], ..Selection())
-	Do $$$AssertEquals(r.development, 1, "the reviewer prepared the answer key")
-}
-
-Method TestAMissingOrIncompleteReviewIsDevelopment()
-{
-	Set reviews = ..Reviews()
-	Do reviews.%Remove(0)
-	Set r = ..Run(..Freeze(), ..Current(), ..Roles(), reviews, [], ..Selection())
-	Do $$$AssertEquals(r.development, 1, "no baseline review for P5")
-	Do $$$AssertTrue(r.reasons.%ToJSON() [ "baseline review", "and the reason says so")
-	Set reviews = ..Reviews()
-	Do reviews.%Remove(2)
-	Set r = ..Run(..Freeze(), ..Current(), ..Roles(), reviews, [], ..Selection())
-	Do $$$AssertEquals(r.development, 1, "no evaluator review")
+	Do $$$AssertEquals(r.development, 0, "the baseline reviewed by the author of the answer key")
+	Set r = ..Run(..Freeze(), ..Current(), ..Roles(), [], [], ..Selection())
+	Do $$$AssertEquals(r.development, 0, "no review at all")
 	Set reviews = ..Reviews()
 	Set reviews.%Get(0).commit = ""
 	Set r = ..Run(..Freeze(), ..Current(), ..Roles(), reviews, [], ..Selection())
-	Do $$$AssertEquals(r.development, 1, "a review with no commit does not count")
+	Do $$$AssertEquals(r.development, 0, "an incomplete review")
 	Set r = ..Run(..Freeze(), ..Current(), {"families": {}}, ..Reviews(), [], ..Selection())
-	Do $$$AssertEquals(r.development, 1, "no roles recorded")
+	Do $$$AssertEquals(r.development, 1, "but the roles must still be recorded")
+	Do $$$AssertTrue(r.reasons.%ToJSON() [ "no roles", "and the reason says so")
+}
+
+Method TestReviewStatusNamesHowEachReviewWasDone()
+{
+	Set s = $ClassMethod(..#F, "ReviewStatus", ..Reviews(), "P5,P8,clean")
+	Do $$$AssertEquals(s.%ToJSON(), {"baseline": {"P5": "other_member", "P8": "other_member"}, "evaluator": "other_member"}.%ToJSON(), "reviewed by another member; only core families have a baseline review")
+	Set reviews = ..Reviews()
+	Set reviews.%Get(0).reviewer = "henry"
+	Do reviews.%Get(1).%Set("automated", 1, "boolean")
+	Set reviews.%Get(1).reviewer = "copilot"
+	Set reviews.%Get(2).date = ""
+	Set s = $ClassMethod(..#F, "ReviewStatus", reviews, "P5,P8")
+	Do $$$AssertEquals(s.baseline.P5, "self", "the author reviewed their own baseline")
+	Do $$$AssertEquals(s.baseline.P8, "automated", "an automated reviewer")
+	Do $$$AssertEquals(s.evaluator, "incomplete", "a review with no date")
+	Set s = $ClassMethod(..#F, "ReviewStatus", [], "P5")
+	Do $$$AssertEquals(s.%ToJSON(), {"baseline": {"P5": "missing"}, "evaluator": "missing"}.%ToJSON(), "no review recorded")
 }
 
 Method TestOnlyAReferenceRunNeedsTheFreezeAndTheRoles()

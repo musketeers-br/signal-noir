@@ -145,14 +145,16 @@ comparison.
 
 Before the reserved test runs, the prompt, model, rules baseline, policies, fixtures and evaluator are frozen
 in one record. Tuning and test variants are kept apart and only the test variants count in a result. The
-people who prepared the reserved cases and the answer key, who wrote the rules baseline, and who reviewed
-the baseline and the evaluator are different, and the report says so.
+person who wrote the rules baseline did not prepare the reserved cases or the answer key, and the report says
+who held each role and how the baseline and the evaluator were reviewed: by another member, by their author,
+or by an automated reviewer (Constitution 2.0.0, Principle VIII).
 
 **Why this priority**: Without it the numbers can be right and still not mean anything: a setup tuned on the
 test, or a baseline weakened or written by the person who wrote the key, cannot support the thesis.
 
 **Independent Test**: Freeze a setup, change one frozen input, run, and read the run's status and report;
-read the report metadata for a run whose roles are not all distinct.
+read the report metadata for a run whose answer key and baseline are held by one person, and for one whose
+baseline was reviewed by its own author.
 
 **Acceptance Scenarios**:
 
@@ -166,11 +168,15 @@ read the report metadata for a run whose roles are not all distinct.
    required before a reference result can be published.
 4. **Given** a report, **When** its metadata is read, **Then** it names who prepared the reserved cases and
    the answer key, who wrote the rules baseline, and who reviewed the baseline and the evaluator, with the
-   commit and date of the review.
-5. **Given** the same person in two of those roles for the same family, **When** the reference run is
-   requested, **Then** it is refused or marked development, with the reason.
+   commit and date of the review and whether it was done by another member, by its author or by an
+   automated reviewer.
+5. **Given** the same person preparing the answer key and writing the baseline of the same family, **When**
+   the reference run is requested, **Then** it is refused or marked development, with the reason.
 6. **Given** the tuning set and the test set of a family, **When** results are read, **Then** only the test
    set counts as a result, and tuning results appear separately, labelled development.
+7. **Given** a review of the baseline or of the evaluator that is missing, incomplete or done by its author,
+   **When** the reference run is requested, **Then** it is not marked development for that reason, and the
+   report shows the status of that review.
 
 ---
 
@@ -319,8 +325,10 @@ model and read the divergence reasons.
   protections and budgets.
 - **FR-012**: The rules baseline MUST be the strongest deterministic baseline the team can write. Its rules
   for each family MUST be documented, versioned and published together with the answer key of that family.
-- **FR-013**: For each family, the baseline MUST be written or reviewed by a team member who is not the
-  author of that family's answer key, and the review MUST be recorded with its author, commit and date.
+- **FR-013**: For each family, the baseline MUST be written by a team member who did not prepare that
+  family's reserved cases or answer key and did not read them before the freeze. Its review MAY be done by
+  any team member, its author included, or by an automated reviewer; it MUST be recorded with its author,
+  reviewer, commit and date, and it MUST NOT block the freeze or the run (Constitution 2.0.0, Principle VIII).
 
 **Answer key and scoring**
 
@@ -363,9 +371,11 @@ model and read the divergence reasons.
   its report MUST say why. A new reserved test MUST then be required.
 - **FR-028**: Repetitions MUST NOT count as independent cases. A variant counts once in every denominator;
   the repetitions supply only the range.
-- **FR-029**: The preparation of the reserved cases and the answer key, the writing of the rules baseline and
-  the review of the baseline and the evaluator MUST be held by different team members, and this separation
-  MUST be recorded in the report metadata. A run that cannot show it MUST NOT be published as the reference.
+- **FR-029**: The preparation of the reserved cases and the answer key and the writing of the rules baseline
+  MUST be held by different team members. The report metadata MUST state who held each role and how the
+  baseline and the evaluator were reviewed: by another member, by their author (self), by an automated
+  reviewer, incomplete or missing. A run that cannot show the separation of key and baseline MUST NOT be
+  published as the reference; the status of a review is shown and never prevents publication.
 
 **Reference run, Replay and quick validation**
 
@@ -395,7 +405,8 @@ model and read the divergence reasons.
   with the separate counts of a blocked wrong Proposal and of a wrong effect.
 - **Freeze record**: the single record of the prompt, model, baseline, policies, fixtures and evaluator fixed
   before the reserved test.
-- **Review record**: the review of the baseline and of the evaluator, with its author, commit and date.
+- **Review record**: the review of the baseline and of the evaluator, with its author, reviewer, commit and
+  date, and whether an automated reviewer did it.
 - **Report**: the agent decision part and the platform guarantees part of one run, with its metadata and raw
   data; and the comparative report over runs.
 - **Reference result**: the recorded outcome of the reference run's cases, against which the quick
@@ -444,11 +455,12 @@ model and read the divergence reasons.
 - P9 is not part of the first reference run: it is conditional (spec 011). If it is included, it is its own
   family and it replaces the clean Case in the quick validation.
 - The rules baseline is the existing deterministic proposer, improved by its author before the reference run.
-  This feature does not write it; it requires it to be published, versioned, reviewed by another person, and
-  frozen. The synonyms of reference data in the baseline's Mapping rule are a dependency of that work.
+  This feature does not write it; it requires it to be published, versioned, reviewed (by any member or an
+  automated reviewer, the review shown in the report) and frozen. The synonyms of reference data in the baseline's Mapping rule are a dependency of that work.
 - The roles of the independence rule follow `docs/specify-prompts/PARALELISMO.md`: the reserved cases and the
   answer key for P5 and P8b are prepared by Henrique, the rules baseline is written by Henry, and the review
-  of the baseline and of the evaluator is done by José in the last wave, with its commit and date recorded.
+  of the baseline and of the evaluator is planned for José in the last wave. Under Constitution 2.0.0 the
+  review does not block the freeze or the run; whoever does it is recorded with its commit and date.
   Henry, author of the Agent, does not see the reserved variants before the freeze.
 - Latency is measured from the Exception to the validated Proposal, as the Case already records it. Cost is
   the estimate the Agent records per Case, and is zero in rules mode.
@@ -459,8 +471,8 @@ model and read the divergence reasons.
   the published report. The recording is a Replay in the sense of FR-031: it never counts as a real run.
 - The Agent cannot be run without a configured provider; a run in agent mode without one is refused at
   creation, not started and left half-done.
-- The reference run must exist before the functional freeze of 2026-11-05 and the review by José is on its
-  critical path. The order is: baseline and evaluator ready, review recorded, one freeze commit, reference
-  run, report with the independence metadata.
+- The reference run must exist before the functional freeze of 2026-11-05. The order is: baseline and
+  evaluator ready, one freeze commit, reference run, report with the independence metadata. A review done
+  before the report is built appears in it; a review never holds back the freeze or the run.
 - Out of scope: the Simulator implementation, the Agent implementation, the console, the submission
   packaging.

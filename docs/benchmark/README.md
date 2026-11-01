@@ -42,6 +42,7 @@ reference result is recorded. A report from another provider or model than the r
 ## Rules the numbers rest on
 
 Prompt, model, baseline, policies, fixtures and evaluator are frozen in one record before the reserved test runs;
-the answer key, the baseline and the review are held by different people, and the report says who; tuning on a
+the answer key and the baseline are held by different people, and the report says who held each role and how the
+baseline and the evaluator were reviewed (by another member, by their author or by an automated reviewer); tuning on a
 test set turns it into development data and requires a new reserved test. See
 `specs/010-benchmark-and-reference-run/` (spec, plan, `contracts/scoring.md`).
