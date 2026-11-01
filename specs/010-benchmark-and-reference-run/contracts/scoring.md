@@ -29,7 +29,7 @@ touched by a person.
 | `Resolved`, `ResolvedByPriorReceipt` | the executed Action and its effective parameters |
 | `Held` | `HOLD` (when the Held came from a `HOLD` Proposal) or none (when it came from a failed Revalidation: the Action was blocked before it was sent) |
 | `ReviewRequired` | review |
-| `Failed`, `Cancelled`, `Rejected` | none; scored as `incorrect` unless the key accepts the matching review |
+| `Failed`, `Cancelled`, `Rejected` | none, even when an execution was authorized before the Case failed (the delivery failure belongs to the platform part); scored as `incorrect` unless the key lists the state in `acceptableStates` |
 
 ## Step 2 — classification (exactly one)
 

@@ -86,6 +86,19 @@ Method TestAHoldIsAnEffectOnlyWhenTheProposalWasAHold()
 	Do $$$AssertEquals(facts.%GetTypeOf("effect"), "null", "an Action held by a failed Revalidation was not sent")
 }
 
+/// A Case that ended Failed has no effect even when an execution was authorized: the Action did not
+/// reach the Partner as a result (contracts/scoring.md, Step 1). The failure belongs to the platform part.
+Method TestAFailedCaseHasNoEffect()
+{
+	Set caseId = ..NewCase("Failed")
+	Set sent = ..Proposal(caseId, "APPLY_APPROVED_MAPPING", "{""mappingId"":""map_glicj_soro""}", "accepted")
+	Do ..Execution(caseId, sent, "APPLY_APPROVED_MAPPING")
+	Set facts = ##class(SignalNoir.Application.Benchmark.CaseFacts).For(..Item(caseId))
+	Do $$$AssertEquals(facts.finalState, "Failed", "failed")
+	Do $$$AssertEquals(facts.%GetTypeOf("effect"), "null", "nothing counts as sent")
+	Do $$$AssertEquals(facts.proposals.%Size(), 1, "the Proposal is still there to be read")
+}
+
 Method TestReviewHasNoEffect()
 {
 	Set caseId = ..NewCase("ReviewRequired")

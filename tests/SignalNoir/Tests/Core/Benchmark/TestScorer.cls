@@ -218,6 +218,18 @@ Method TestAControlThatFailedToRunIsNotCorrect()
 	Do $$$AssertEquals(r.notDecidedReason, "run_failed", "and so is any other item: the reason is not replaced by no_case")
 }
 
+/// A Failed Case has no effect: it is incorrect unless the key accepts the state, and never a wrong effect
+Method TestAFailedCaseIsScoredByItsState()
+{
+	Set r = $ClassMethod(..#S, "Score", ..SerumKey(), ..Facts("Failed", ""))
+	Do $$$AssertEquals(r.outcome, "incorrect", "a key that does not accept Failed")
+	Do $$$AssertEquals(r.wrongEffect, 0, "nothing reached the Partner")
+	Set key = ..SerumKey()
+	Set key.acceptableStates = ["Failed"]
+	Set r = $ClassMethod(..#S, "Score", key, ..Facts("Failed", ""))
+	Do $$$AssertEquals(r.outcome, "correct", "a key that accepts Failed")
+}
+
 Method TestTheVerdictIsDeterministic()
 {
 	Set facts = ..Facts("Resolved", ..Plasma())

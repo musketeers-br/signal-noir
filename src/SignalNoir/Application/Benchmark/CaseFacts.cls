@@ -40,11 +40,13 @@ ClassMethod For(item As SignalNoir.Application.Model.BenchmarkItemRecord) As %Dy
 }
 
 /// What was sent to the Partner for this Case: the executed Proposal's Action and
-/// parameters when it was executed (resolved, or failed after the send), or the HOLD when
-/// the Case holds on a HOLD. An Action held by a failed Revalidation was not sent.
+/// parameters when the Case was resolved, or the HOLD when the Case holds on a HOLD. An Action
+/// held by a failed Revalidation was not sent, and a Case that ended Failed has no effect either
+/// (contracts/scoring.md, Step 1): the delivery failure belongs to the platform part of the report,
+/// and the key decides through acceptableStates.
 ClassMethod Effect(case As SignalNoir.Application.Model.CaseRecord) As %DynamicObject
 {
-	If (case.state = "Resolved") || (case.state = "ResolvedByPriorReceipt") || (case.state = "Failed") {
+	If (case.state = "Resolved") || (case.state = "ResolvedByPriorReceipt") {
 		Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT TOP 1 proposalId FROM SignalNoir_Application_Model.ExecutionRecord WHERE caseId = ? ORDER BY authorizedAt DESC, executionId DESC", case.caseId)
 		If 'rs.%Next() Return ""
 		Return ..Sent(rs.%Get("proposalId"))
