@@ -1,0 +1,28 @@
+{
+  "contract": "contracts/openapi-signalnoir.yaml",
+  "generatedBy": "captured from the IRIS implementation (feature 010, T011): SignalNoir.Application.Benchmark.ReportBuilder and RunService over test data",
+  "note": "Synthetic data only. Kept apart from contracts/fixtures, which holds only what the prototype exporter generates. Validate with: uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py tests/benchmark/contract-captures",
+  "fixtures": [
+    {
+      "file": "benchmark-run.created.json",
+      "operation": "GET /benchmark-runs/{runId}",
+      "status": 200,
+      "schema": "BenchmarkRun",
+      "description": "A rules run over one P8b and one clean tuning variant, created and not started."
+    },
+    {
+      "file": "benchmark-report.rules.json",
+      "operation": "GET /benchmark-runs/{runId}/report",
+      "status": 200,
+      "schema": "BenchmarkReport",
+      "description": "A completed rules run: a clean control that opened no Case (caseId and finalState null) and a P8b Case resolved with the plasma Mapping; no reference recorded yet."
+    },
+    {
+      "file": "benchmark-reports.compare.json",
+      "operation": "GET /benchmark-reports",
+      "status": 200,
+      "schema": "ComparativeBenchmarkReport",
+      "description": "Two rules runs over the same scenario set read together."
+    }
+  ]
+}

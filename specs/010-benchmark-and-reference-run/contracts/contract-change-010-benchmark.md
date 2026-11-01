@@ -69,8 +69,10 @@ platform guarantees only.
 
 CC-1 to CC-7 are in `contracts/openapi-signalnoir.yaml`, with the refinement above. The contract was checked
 against what the implementation returns, not only against the proposal: a report, a comparison and a run
-captured from IRIS are now fixtures (`benchmark-run.created.json`, `benchmark-report.rules.json`,
-`benchmark-reports.compare.json`), and `contracts/tools/validate_fixtures.py` validates them (34 valid).
+captured from IRIS are in `tests/benchmark/contract-captures/` (not in `contracts/fixtures`, which holds only
+what the prototype exporter generates and is checked against it in CI), and
+`contracts/tools/validate_fixtures.py tests/benchmark/contract-captures` validates them (3 valid; the 31
+fixtures of `contracts/fixtures` stay valid). Running that line in CI is part of the integration-gate batch.
 
 **`ui/src/lib/api/types.ts` is unchanged.** It holds only the types the console uses, and the console reads no
 benchmark endpoint (FR-031: no entry point). Types for these schemas would be dead code.
