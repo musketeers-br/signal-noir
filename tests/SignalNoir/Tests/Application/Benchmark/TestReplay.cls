@@ -54,6 +54,32 @@ Method TestTheAnswerIsFoundByTheReferenceCase()
 	Do $$$AssertEquals(r.details.provider, "replay", "authored as a replay, never a real run")
 }
 
+/// In a quick validation run the item is always repetition 1, but quickCases may name another
+/// repetition of the variant: Replay plays that one, the one the run is compared with. Any other run
+/// keeps the item's own repetition.
+Method TestAQuickValidationReplaysTheNamedRepetition()
+{
+	Set context = ..Context("P8b-test-01", 1, .caseId)
+	Set reference = ..Reference("P8b-test-01", 1)
+	Set second = ..Reference("P8b-test-01", 2).cases.%Get(0)
+	Set second.answer = {}.%FromJSON($Replace(second.answer.%ToJSON(), "map_glicj_soro", "map_glicj_plasma"))
+	Do reference.cases.%Push(second)
+	Set reference.quickCases = ["P8b-test-01/2"]
+	Set run = ##class(SignalNoir.Application.Model.BenchmarkRunRecord).%New()
+	Set run.runId = "run_replay", run.mode = "replay", run.purpose = "quick_validation", run.status = "running"
+	$$$ThrowOnError(run.%Save())
+	Set replay = ##class(SignalNoir.Proposers.Replay).%New()
+	Set replay.Reference = reference
+	Set r = replay.Propose(context)
+	Do $$$AssertTrue(r.ok, "found: " _ r.message)
+	Quit:'r.ok
+	Do $$$AssertEquals(r.obj.params.mappingId, "map_glicj_plasma", "the named repetition 2, not the item's repetition 1")
+	Set run.purpose = "benchmark"
+	$$$ThrowOnError(run.%Save())
+	Set r = replay.Propose(context)
+	Do $$$AssertEquals(r.obj.params.mappingId, "map_glicj_soro", "a benchmark run keeps the item's repetition")
+}
+
 Method TestEvidenceReferencesPointAtTheEvidenceOfThisCase()
 {
 	Set context = ..Context("P8b-test-01", 1, .caseId)

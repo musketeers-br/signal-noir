@@ -33,17 +33,25 @@ Method Propose(context As SignalNoir.Core.Dto.InvestigationContext) As SignalNoi
 	Return r
 }
 
-/// The recorded answer (as JSON text) for the Order's reference case, or "": the exact repetition
-/// if recorded, else the variant's first recording
+/// The recorded answer (as JSON text) for the Order's reference case, or "": in a quick validation
+/// run the repetition quickCases names for the variant (the one the run is compared with), otherwise
+/// the exact repetition if recorded, else the variant's first recording
 Method ByReferenceCase(orderId As %String) As %String [ Private ]
 {
 	Set order = ##class(SignalNoir.Application.Model.OrderRecord).%OpenId(orderId)
 	If '$IsObject(order) || (order.scenarioInstanceId = "") Return ""
-	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT TOP 1 variant, repetition FROM SignalNoir_Application_Model.BenchmarkItemRecord WHERE scenarioInstanceId = ?", order.scenarioInstanceId)
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT TOP 1 i.variant, i.repetition, r.purpose FROM SignalNoir_Application_Model.BenchmarkItemRecord i LEFT JOIN SignalNoir_Application_Model.BenchmarkRunRecord r ON r.runId = i.runId WHERE i.scenarioInstanceId = ?", order.scenarioInstanceId)
 	If 'rs.%Next() Return ""
 	Set variant = rs.%Get("variant"), repetition = rs.%Get("repetition")
 	Set record = $Select($IsObject(..Reference) && ..Reference.%IsDefined("cases"): ..Reference, 1: ##class(SignalNoir.Benchmark.Data.ReferenceResult).Load("Record"))
 	If '$IsObject(record) || (record.%GetTypeOf("cases") '= "array") Return ""
+	If (rs.%Get("purpose") = "quick_validation") && (record.%GetTypeOf("quickCases") = "array") {
+		For i = 0 : 1 : record.quickCases.%Size() - 1 {
+			Set name = record.quickCases.%Get(i)
+			If $Piece(name, "/", 1, $Length(name, "/") - 1) '= variant Continue
+			Set repetition = $Piece(name, "/", $Length(name, "/"))
+		}
+	}
 	Set fallback = ""
 	For i = 0 : 1 : record.cases.%Size() - 1 {
 		Set c = record.cases.%Get(i)

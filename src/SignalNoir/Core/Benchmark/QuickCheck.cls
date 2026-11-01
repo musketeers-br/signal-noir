@@ -6,14 +6,14 @@ Class SignalNoir.Core.Benchmark.QuickCheck Extends %RegisteredObject
 /// ended in the same state, with the same Action and the parameters the reference recorded (the
 /// Case may carry more). Otherwise it "diverged", and the reason says what differs. A provider or
 /// model other than the reference's does not make it diverge by itself: it is said alongside.
-/// reference: {referenceCase, finalState, action, params} (finalState NoCase for a control that
-/// raised nothing). actual: {finalState, action, actionParams} as in the report's Case row
+/// reference: {referenceCase, finalState, action, params} (finalState NoCase or null for a control
+/// that raised nothing). actual: {finalState, action, actionParams} as in the report's Case row
 /// (finalState null for no Case). runInfo: {mode, providerDiffers}.
 /// Returns {status: matches_reference | diverged, reason: string | null}.
 ClassMethod Compare(reference As %DynamicObject, actual As %DynamicObject, runInfo As %DynamicObject) As %DynamicObject
 {
-	Set want = reference.%Get("finalState")
-	Set got = $Select(actual.%GetTypeOf("finalState") = "string": actual.finalState, 1: "NoCase")
+	Set want = ..FinalState(reference)
+	Set got = ..FinalState(actual)
 	Set note = $Select(runInfo.%Get("providerDiffers"): " (the provider or model differs from the reference's)", 1: "")
 	If want '= got Return ..Result("diverged", "a different final state: the reference ended " _ want _ ", this Case ended " _ got _ note)
 	Set wantAction = $Select(reference.%GetTypeOf("action") = "string": reference.action, 1: "")
@@ -21,6 +21,13 @@ ClassMethod Compare(reference As %DynamicObject, actual As %DynamicObject, runIn
 	If wantAction '= gotAction Return ..Result("diverged", "a different Action: the reference sent " _ $Select(wantAction = "": "none", 1: wantAction) _ ", this Case sent " _ $Select(gotAction = "": "none", 1: gotAction) _ note)
 	If '..ParamsMatch(reference, actual) Return ..Result("diverged", "different parameters for " _ wantAction _ ": the reference recorded " _ ##class(SignalNoir.Core.EffectKey).Canonical($Select(reference.%GetTypeOf("params") = "object": reference.params, 1: {})) _ note)
 	Return ..Result("matches_reference", $Select(note '= "": "matches" _ note, 1: ""))
+}
+
+/// The final state of a reference case or a report row; a control that opened no Case is written
+/// NoCase in a reference result and null in the report, and both read as NoCase
+ClassMethod FinalState(row As %DynamicObject) As %String
+{
+	Return $Select(row.%GetTypeOf("finalState") = "string": $Select(row.finalState = "": "NoCase", 1: row.finalState), 1: "NoCase")
 }
 
 /// Every parameter the reference recorded is in the Case with the same value (canonical, not text)

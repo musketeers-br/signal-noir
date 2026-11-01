@@ -17,11 +17,12 @@ ClassMethod Plan(record) As SignalNoir.Core.Result
 	For i = 0 : 1 : record.quickCases.%Size() - 1 {
 		Set c = ..Find(record, record.quickCases.%Get(i))
 		If '$IsObject(c) Return ..Refuse("the reference result has no case " _ record.quickCases.%Get(i))
-		If c.finalState = "ReviewRequired" {
+		Set state = ##class(SignalNoir.Core.Benchmark.QuickCheck).FinalState(c)
+		If state = "ReviewRequired" {
 			Set dossier = dossier + 1
 		} ElseIf (c.family = "P5") || (c.family = "P8") {
 			Set core = core + 1
-		} ElseIf (c.finalState = "NoCase") || (c.family = "P9") {
+		} ElseIf (state = "NoCase") || (c.family = "P9") {
 			Set control = control + 1
 		} Else {
 			Return ..Refuse("case " _ c.referenceCase _ " is none of: a control, a P5 or P8b case, a Dossier case")
@@ -82,9 +83,19 @@ ClassMethod Find(record, referenceCase As %String) As %DynamicObject [ Private ]
 	Return ""
 }
 
+/// The reference case of a variant: the one quickCases names (variant/repetition) when it names one,
+/// otherwise the variant's first recording
 ClassMethod ByVariant(record, variant As %String) As %DynamicObject [ Private ]
 {
 	If '$IsObject(record) || (record.%GetTypeOf("cases") '= "array") Return ""
+	If record.%GetTypeOf("quickCases") = "array" {
+		For i = 0 : 1 : record.quickCases.%Size() - 1 {
+			Set name = record.quickCases.%Get(i)
+			If $Piece(name, "/", 1, $Length(name, "/") - 1) '= variant Continue
+			Set named = ..Find(record, name)
+			If $IsObject(named) Return named
+		}
+	}
 	For i = 0 : 1 : record.cases.%Size() - 1 {
 		If record.cases.%Get(i).variant = variant Return record.cases.%Get(i)
 	}

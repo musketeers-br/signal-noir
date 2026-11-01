@@ -72,6 +72,32 @@ Method TestP9TakesThePlaceOfTheControl()
 	Do $$$AssertTrue($ClassMethod(..#Q, "Plan", rec).ok, "P9 replaces the clean control")
 }
 
+/// A reference result copied from the report's Case rows has finalState null for a control (the
+/// report writes no Case as null): it is the same control as one written NoCase
+Method TestAControlRecordedAsNullIsAControl()
+{
+	Set rec = ..Record()
+	Do rec.cases.%Get(0).%Set("finalState", "", "null")
+	Set r = $ClassMethod(..#Q, "Plan", rec)
+	Do $$$AssertTrue(r.ok, "the plan reads a null final state as no Case: " _ r.message)
+	Set out = $ClassMethod(..#Q, "Results", [{"caseId": "", "variant": "clean-success-test-01", "finalState": null, "action": null, "actionParams": null}], rec, 0)
+	Do $$$AssertEquals(out.%Get(0).status, "matches_reference", "and a control with no Case matches it: " _ out.%Get(0).reason)
+}
+
+/// quickCases names one repetition of a variant; the Case is compared with that repetition, not
+/// with the variant's first recording
+Method TestTheNamedRepetitionIsTheReference()
+{
+	Set rec = ..Record()
+	Do rec.cases.%Push({"referenceCase": "P8b-test-01/2", "family": "P8", "variant": "P8b-test-01", "repetition": 2, "finalState": "Resolved", "action": "APPLY_APPROVED_MAPPING", "params": {"mappingId": "map_glicj_plasma"}})
+	Set rec.quickCases = ["clean-success-test-01/1", "P8b-test-01/2", "clean-ambiguous-identity-test-01/1"]
+	Do $$$AssertTrue($ClassMethod(..#Q, "Plan", rec).ok, "planned")
+	Set row = {"caseId": "case_q2", "variant": "P8b-test-01", "repetition": 1, "finalState": "Resolved", "action": "APPLY_APPROVED_MAPPING", "actionParams": {"mappingId": "map_glicj_plasma"}}
+	Set out = $ClassMethod(..#Q, "Results", [(row)], rec, 0)
+	Do $$$AssertEquals(out.%Get(0).referenceCase, "P8b-test-01/2", "compared with the named repetition")
+	Do $$$AssertEquals(out.%Get(0).status, "matches_reference", "which it matches: " _ out.%Get(0).reason)
+}
+
 Method TestTheModeIsTheAgentOnlyWithAProvider()
 {
 	Do $$$AssertEquals($ClassMethod(..#Q, "ModeFor", 1), "agent", "a provider is configured")
