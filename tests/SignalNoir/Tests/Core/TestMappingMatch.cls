@@ -15,4 +15,23 @@ Method TestCandidates()
 	Do $$$AssertEquals(##class(SignalNoir.Core.MappingMatch).Candidates(order, "").%Size(), 0, "no catalog")
 }
 
+/// 010 T053 - with the synonyms the comparison is the Validator's (Core.Conditions)
+Method TestCandidatesWithSynonyms()
+{
+	Set items = [{"mappingId": "plasma", "sourceCode": "GLIC-J", "conditions": {"specimenType": "PLASMA"}}, {"mappingId": "serum", "sourceCode": "GLIC-J", "conditions": {"specimenType": "SERUM"}}, {"mappingId": "unit", "sourceCode": "GLIC-J", "conditions": {"specimenUnit": "ML"}}, {"mappingId": "free", "sourceCode": "HBA1C-L", "conditions": {}}]
+	Set synonyms = {"specimenType": {"PLASMA": ["PLASMA"], "SERUM": ["SERUM", "SORO"]}}
+	Set order = {"exams": [{"code": " glic-j "}, {"code": "hba1c-l"}], "specimen": {"type": "soro"}}
+	Do $$$AssertEquals(..Ids(##class(SignalNoir.Core.MappingMatch).Candidates(order, items, synonyms)), "serum,free", "soro is SERUM; a condition on an absent field never matches")
+	Do $$$AssertEquals(..Ids(##class(SignalNoir.Core.MappingMatch).Candidates(order, items)), "free", "without synonyms soro is not SERUM (Decisions unchanged)")
+	Do $$$AssertEquals(..Ids(##class(SignalNoir.Core.MappingMatch).Candidates(order, items, {})), "free", "empty synonyms: exact comparison")
+}
+
+ClassMethod Ids(out As %DynamicArray) As %String
+{
+	Set ids = ""
+	Set it = out.%GetIterator()
+	While it.%GetNext(, .m) { Set ids = ids _ $Select(ids = "": "", 1: ",") _ m.mappingId }
+	Return ids
+}
+
 }
