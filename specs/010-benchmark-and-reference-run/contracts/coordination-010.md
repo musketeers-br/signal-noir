@@ -15,7 +15,10 @@ what, where, why and what test pins it.
 | E5 | `Api/Dispatch.cls`, `UrlMap` (003/009, Henry) | add `Map` entries for `/benchmark-runs` and `/benchmark-reports` forwarding to `Api.BenchmarkDispatch` | contract | `Tests.Api.TestBenchmarkApi` |
 | E6 | `Core/Port/` (001, José) | add `RunDirectory` next to the other ports | D2 | seam tests (`TestConsumerUsesSeam`) |
 
-E1–E5 are each a few lines. E6 is a new file in the Core. None changes a contract, an Action or a state.
+| E7 | `Interop/Bootstrap.cls`, `EnsureBackgroundTasks` (012, Henry) | the task list becomes `TaskClasses()` and gains `Tasks.BenchmarkTask` (drives a run again when its driver stopped) | plan D4 | `TestBenchmarkTask`, `TestBootstrap` |
+| E8 | `tests/.../Support.cls` and `TestBenchmarkApproval.cls` (003/007, Henry) | a test that gives an Order a run id first registers a running run (`Support.EnsureRun`), because a Case now keeps only the id of a run that is running | E1, E2 | the suites of 003, 007 and 015 stay green |
+
+E1–E5, E7 and E8 are each a few lines. E6 is a new file in the Core. None changes a contract, an Action or a state.
 
 ## Work only other people can do
 

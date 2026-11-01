@@ -7,6 +7,8 @@ ClassMethod RunCase(svc, tag, runId, answer, ByRef cmd) As %String
 	Set S = "SignalNoir.Tests.Support"
 	Set caseId = $ClassMethod(S, "InvestigatingCase", svc, tag, "rules", .cmd, "SERUM")
 	Set rec = ##class(SignalNoir.Application.Model.CaseRecord).%OpenId(caseId)
+	; feature 010: a run id counts only for a run that exists and is running
+	If runId '= "" Do $ClassMethod(S, "EnsureRun", runId)
 	Set rec.runId = runId
 	Do rec.%Save()
 	Do $ClassMethod(S, "Script", caseId, "answer", answer)

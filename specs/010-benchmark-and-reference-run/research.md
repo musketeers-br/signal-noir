@@ -321,3 +321,53 @@ other people can do: **the ten reserved variants and their answer key (Henrique)
   `Core.Benchmark.Stats` on it (D9).
 - **B7.** The quick validation fits in 180 s on the repo image with a real provider key; replay mode is the
   deterministic fallback (D12).
+
+## Baseline (T001, 2026-10-31)
+
+Fresh container `signalnoir-010` (image `congenial-waffle-iris:latest`, repo mounted at
+`/home/irisowner/dev`, `master` at 9adfc41 plus the 010 specification), 274 classes compiled at start,
+Simulator web application created with `SignalNoir.Sim.Setup.EnsureWebApplication()`.
+
+- Full recursive suite: **436 methods, 436 passed, 0 failed** (a clean single run).
+- A first pair of overlapping runs showed 2 failures, both in `Tests.Gates.TestGateG1`. Cause found:
+  `^SignalNoir.Config("simBaseUrl")` had been set on the instance, and with it set the Simulator Tools
+  take part in the plasma Order's investigation and the gate's expected Mapping no longer comes out. With
+  the setting empty the gate passes (2 of 2). **Consequence for 010:** tests that need the base URL set
+  it in `OnBeforeAllTests` and restore it in `OnAfterAllTests`; the baseline suite must run with it empty.
+  Running two suites at once on one instance is not supported (shared extents).
+- `tests/sim-contract/captures/*.json` are rewritten by the Simulator contract tests when the suite runs
+  on the mounted directory (they were already modified in the working tree before this work). They are
+  not part of this feature and are not committed.
+- The exec client times out on a long suite while the suite goes on; the result is read from
+  `%UnitTest_Result` by polling until the instance stops growing.
+
+## Implementation log (2026-11-01, container `signalnoir-010`)
+
+- **B1 resolved differently.** No `Map`/`Forward` is needed: the benchmark routes are plain `Route`
+  entries in `Api.Dispatch.UrlMap` whose methods delegate to `Api.BenchmarkDispatch`; the handlers return
+  `{status, headers, body}` and are tested without HTTP, like the other dispatch tests.
+- **B2.** `Runner.Drive` runs in its own `Job`; a per-run lock (`^SignalNoir.BenchmarkDrive(runId)`) makes a
+  second driver exit at once; `Runner.Resume` (the scheduled task) re-drives a running run whose heartbeat
+  is older than 90 s. `Tests.Application.Benchmark.TestBenchmarkTask` covers stale, live, late and completed
+  runs.
+- **B3 resolved without touching 006.** The coded reason is on the Case's Dossier: `Core.DossierReason`
+  turns the free "provider unavailable" text into `provider_unavailable`, stored in `DossierRecord.reason`.
+  `CaseFacts` reads that, never the text of `InvestigationRecord.outcomeReason`.
+- **B5.** Compiling the two new persistent classes in the mounted container wrote their Storage blocks into
+  the files; they are committed with the classes.
+- **B6 done.** `scripts/benchmark/recompute.py` and the ObjectScript `Stats` agree on
+  `tests/benchmark/golden` (the Python tests and `TestStats.TestTheGoldenRowsAreReproduced`).
+- **Tooling finding.** A long test run through `iris-agentic-dev exec` is killed when the client times out
+  (`<DISCONNECT>`); start suites with `Job ##class(%UnitTest.Manager).RunTest(...)` and read
+  `^UnitTest.Result`. Two suites must not run at once on one instance.
+- **Refinement of CC-2.** `counts` and `denominator` are ranges over the repetitions, not single integers,
+  because a repetition can cover fewer variants; see contracts/contract-change-010-benchmark.md.
+
+### Suite after US1, US3 and the Core of US2 and US4 (2026-11-01)
+
+Full recursive suite on the fresh container: **531 methods, 531 passed, 0 failed** (baseline 436, plus 95
+new methods). New classes: `Core.Benchmark` (Seed, RunPolicy, Scorer, Stats, Guarantees and the no-I/O
+scan, 45 methods), `Application.Benchmark` (records, store, case opening, lifecycle, pinned versions, runner,
+task, answer keys, case facts, automatic approval, 46 methods), `Api.TestBenchmarkApi` (4 methods). The
+Python tests of `scripts/benchmark/recompute.py` pass (9). Not yet written: `TestScoringEndToEnd` (T034),
+the report builder and its endpoints (T041 to T044).

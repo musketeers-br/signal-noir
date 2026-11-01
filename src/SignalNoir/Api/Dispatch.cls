@@ -17,7 +17,26 @@ XData UrlMap [ XMLNamespace = "http://www.intersystems.com/urlmap" ]
 <Route Url="/cases/:caseid/proposals/:proposalid/decision" Method="POST" Call="Decide"/>
 <Route Url="/reference/action-catalog" Method="GET" Call="ActionCatalog"/>
 <Route Url="/reference/mappings" Method="GET" Call="Mappings"/>
+<Route Url="/benchmark-runs" Method="POST" Call="CreateBenchmarkRun"/>
+<Route Url="/benchmark-runs" Method="GET" Call="ListBenchmarkRuns"/>
+<Route Url="/benchmark-runs/:runid" Method="GET" Call="GetBenchmarkRun"/>
 </Routes>
+}
+
+/// The benchmark routes (feature 010) are served by Api.BenchmarkDispatch
+ClassMethod CreateBenchmarkRun() As %Status
+{
+	Return ##class(SignalNoir.Api.BenchmarkDispatch).Create()
+}
+
+ClassMethod ListBenchmarkRuns() As %Status
+{
+	Return ##class(SignalNoir.Api.BenchmarkDispatch).List()
+}
+
+ClassMethod GetBenchmarkRun(runid As %String) As %Status
+{
+	Return ##class(SignalNoir.Api.BenchmarkDispatch).Get(runid)
 }
 
 ClassMethod Health() As %Status

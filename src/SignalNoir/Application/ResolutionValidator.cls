@@ -48,8 +48,8 @@ ClassMethod PriorReceiptOrder(evidence As %ListOfObjects, proposal As SignalNoir
 
 /// The run a Case belongs to, as the Store reads it. The reference data a Case is validated
 /// against and the reference data its Tools serve are chosen from this one object. The versions
-/// a BenchmarkRun pins are null until the run records them (007): the Store then falls back
-/// to the versions in force.
+/// a BenchmarkRun pins are read from its record (010); null when it pinned none, and the
+/// Store then falls back to the versions in force.
 ClassMethod RunFor(rec As SignalNoir.Application.Model.CaseRecord) As %DynamicObject
 {
 	Set run = {"policyVersion": null, "mappingVersion": null}
@@ -59,6 +59,13 @@ ClassMethod RunFor(rec As SignalNoir.Application.Model.CaseRecord) As %DynamicOb
 		Do run.%Set("runId", "", "null")
 	} Else {
 		Set run.runId = runId
+		; the versions the run pinned at its creation (feature 010); a run that pinned none
+		; leaves them null and the Store falls back to the versions in force
+		Set pinned = ##class(SignalNoir.Application.Benchmark.RunStore).%New().Find(runId)
+		If $IsObject(pinned) {
+			If pinned.policyVersion '= "" Set run.policyVersion = pinned.policyVersion
+			If pinned.mappingVersion '= "" Set run.mappingVersion = pinned.mappingVersion
+		}
 	}
 	Return run
 }

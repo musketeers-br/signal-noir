@@ -18,6 +18,9 @@ Property Validator As SignalNoir.Core.Port.Validator;
 /// Approval deadline and benchmark admission (feature 007; 004 replaces the default)
 Property Approvals As SignalNoir.Core.Port.ApprovalPolicy;
 
+/// Which BenchmarkRun a run id names (feature 010; the default reads the run records)
+Property Runs As SignalNoir.Core.Port.RunDirectory;
+
 /// Seconds to wait for a per-Case or per-Order lock
 Parameter LOCKTIMEOUT = 5;
 
@@ -28,6 +31,7 @@ ClassMethod Default() As SignalNoir.Application.CaseService
 	Set svc.Ids = ##class(SignalNoir.Application.IdFactory).%New()
 	Set svc.Validator = ##class(SignalNoir.Core.Validator).%New()
 	Set svc.Approvals = ##class(SignalNoir.Core.ApprovalPolicy).%New()
+	Set svc.Runs = ##class(SignalNoir.Application.Benchmark.RunStore).%New()
 	Return svc
 }
 
@@ -984,6 +988,23 @@ Method ExpireApproval(approvalId As %String, now As %String = "") As SignalNoir.
 }
 
 /// The approval policy in use (the default when none was injected)
+/// Whether this actor may act on a Case of this run. The policy decides who (007); the
+/// benchmark actor also needs the run to exist and be running right now (feature 010
+/// FR-008, FR-009), so a run that ended, failed or never was approves nothing.
+Method Admitted(actor As %String, runId As %String) As %Boolean
+{
+	If '..Policy().Admit(actor, runId) Return 0
+	If actor '= "benchmark" Return 1
+	Set run = ..Directory().Find(runId)
+	Return ($IsObject(run) && (run.status = "running"))
+}
+
+Method Directory() As SignalNoir.Core.Port.RunDirectory
+{
+	If '$IsObject(..Runs) Set ..Runs = ##class(SignalNoir.Application.Benchmark.RunStore).%New()
+	Return ..Runs
+}
+
 Method Policy() As SignalNoir.Core.Port.ApprovalPolicy
 {
 	If '$IsObject(..Approvals) Set ..Approvals = ##class(SignalNoir.Core.ApprovalPolicy).%New()
@@ -1799,7 +1820,7 @@ Method RouteProposal(rec As SignalNoir.Application.Model.CaseRecord, proposal As
 	If verdict.requiresApproval {
 		Set moved = ..ApplyTransition(rec, "PendingApproval", "system", {"reason": "validator accepted; approval required", "proposalId": (rec.currentProposalId)}, "", now)
 		; inside a BenchmarkRun the process that runs the Case approves for the run (007 FR-014)
-		If 'moved.ok || '..Policy().Admit("benchmark", rec.runId) Return moved
+		If 'moved.ok || '..Admitted("benchmark", rec.runId) Return moved
 		Set appr = ..RecordApproval(rec, rec.currentProposalId, "approved", "benchmark", "automatic approval inside BenchmarkRun " _ rec.runId, 1, now)
 		Return ..ApplyTransition(rec, "Approved", "benchmark", {"reason": "automatic approval inside a BenchmarkRun", "proposalId": (rec.currentProposalId), "approvalId": (appr.approvalId)}, "", now)
 	}
@@ -1975,7 +1996,7 @@ Method ApplyTransition(rec As SignalNoir.Application.Model.CaseRecord, toState A
 	Set code = ##class(SignalNoir.Core.CaseMachine).Check(from, toState, actor)
 	If code '= "" Return ..ErrorWithCase(code, "transition " _ from _ " -> " _ toState _ $Select(code = "INVALID_ACTOR": " not allowed to " _ actor, 1: " rejected"), rec, "")
 	; the benchmark actor acts only inside a BenchmarkRun (007 FR-014)
-	If '..Policy().Admit(actor, rec.runId) Return ..ErrorWithCase("INVALID_ACTOR", "the benchmark actor acts only inside a BenchmarkRun", rec, "")
+	If '..Admitted(actor, rec.runId) Return ..ErrorWithCase("INVALID_ACTOR", "the benchmark actor acts only inside a BenchmarkRun", rec, "")
 	; Approved and Rejected need a recorded decision on the current Proposal (007 FR-007)
 	If (from = "PendingApproval") && ((toState = "Approved") || (toState = "Rejected")) {
 		Set why = ..DecisionGuard(rec, toState, payload)
@@ -2032,10 +2053,19 @@ Method NewCase(orderRec As SignalNoir.Application.Model.OrderRecord, previousCas
 	Set rec.state = "Open"
 	Set rec.caseVersion = 1
 	Set rec.lastEventSeq = 0
-	Set rec.runId = orderRec.runId
-	Set rec.proposerMode = "agent"
+	; the Case belongs to a run only if the run exists and is running; otherwise it is
+	; the Agent's and carries no benchmark mark (feature 010 FR-003)
+	Set run = ..Directory().Find(orderRec.runId)
+	If $IsObject(run) && (run.status = "running") {
+		Set rec.runId = run.runId
+		Set rec.proposerMode = run.mode
+		Set rec.replay = (run.mode = "replay")
+	} Else {
+		Set rec.runId = ""
+		Set rec.proposerMode = "agent"
+		Set rec.replay = 0
+	}
 	Set rec.synthetic = 1
-	Set rec.replay = 0
 	Set rec.createdAt = now
 	Set rec.updatedAt = now
 	Set opened = {"orderId": (orderRec.orderId), "correlationId": (orderRec.correlationId), "state": "Open"}

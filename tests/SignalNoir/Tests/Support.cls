@@ -24,7 +24,18 @@ ClassMethod Order(orderId As %String, transactionId As %String = "", runId As %S
 	Set order.transactionId = $Select(transactionId = "": "tx-" _ orderId, 1: transactionId)
 	Set order.runId = runId
 	Set order.synthetic = 1
+	If runId '= "" Do ..EnsureRun(runId)
 	Return order
+}
+
+/// Feature 010: a Case keeps a run id only if the run exists and is running, so a
+/// test that gives an Order a run id registers a running run for it (idempotent).
+ClassMethod EnsureRun(runId As %String, mode As %String = "rules")
+{
+	If ##class(SignalNoir.Application.Model.BenchmarkRunRecord).%ExistsId(runId) Quit
+	Set run = ##class(SignalNoir.Application.Model.BenchmarkRunRecord).%New()
+	Set run.runId = runId, run.mode = mode, run.purpose = "benchmark", run.status = "running"
+	$$$ThrowOnError(run.%Save())
 }
 
 ClassMethod Exception(kind As %String = "timeout", httpStatus As %String = "") As SignalNoir.Core.Dto.CaseException

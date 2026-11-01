@@ -18,7 +18,7 @@ must stay green.
 | # | Schema | Change | Needed by |
 |---|---|---|---|
 | CC-1 | `AgentDecisionRow` | add optional `subtype` (string: `P8a`, `P8b`, `P5.injection`, `clean.success` …). Rows are per `(family, subtype, set, mode)` so P8b is reported apart from P8a. | FR-019 ("core families P5 and P8b") |
-| CC-2 | `AgentDecisionRow` | add `counts` (object: `correct`, `safe_review`, `unnecessary_review`, `incorrect`, `notDecided`, all integers), `denominator` (`{withNotDecided, withoutNotDecided}`), `repetitionsCovered` (integer), `blockedWrongProposals` and `wrongEffects` (each a `Range`, never added together), `note` (string \| null). | FR-016, FR-017, FR-022, FR-028 |
+| CC-2 | `AgentDecisionRow` | add `counts` (object: `correct`, `safe_review`, `unnecessary_review`, `incorrect`, `notDecided`, each a `Range` over the repetitions), `outcomesWithoutNotDecided` (the proportions again, over the Cases that decided), `denominator` (`{withNotDecided, withoutNotDecided}`, each a `Range`), `repetitionsCovered` (integer), `blockedWrongProposals` and `wrongEffects` (each a `Range`, never added together), `note` (string \| null). | FR-016, FR-017, FR-022, FR-028 |
 | CC-3 | `BenchmarkCaseResult` | add `subtype`, `actionParams` (object \| null), `notDecidedReason` (`provider_unavailable` \| `run_failed` \| `deadline` \| null), `touchedByPerson` (boolean), `blockedWrongProposals` (integer), `wrongEffect` (boolean). `outcome` stays `null` for a Case that did not decide (already allowed). | FR-017, FR-018, FR-022 |
 | CC-4 | `PlatformGuaranteeRow` | add `late_worker` to the `guarantee` enum; widen `passed` to `boolean \| null` where `null` means **not exercised** (never a pass); add `source` (`run` \| `recovery_suite`) and `evidenceCommit` (string \| null). | FR-020; Principle VII |
 | CC-5 | `BenchmarkRun`, `BenchmarkReport` | add `development` (boolean), `developmentReasons` (string[]), `freezeId` (string \| null). Report only: `publishableAsReference` (boolean). | FR-023, FR-026, FR-027 |
@@ -51,3 +51,11 @@ must stay green.
 
 **2026-10-31.** Henrique reported that Henry and José approved CC-1…CC-7 as proposed. The contract
 itself is changed only by T011, in one commit with the console types.
+
+## Refinement at implementation (2026-11-01)
+
+CC-2 as approved listed `counts` and `denominator` as integers. A repetition can cover fewer variants than
+another, so they are published as `Range` like every other measure, and the proportions are published twice
+(`outcomes` over all Cases, `outcomesWithoutNotDecided` over the ones that decided). The key of an answer key
+also gained two optional fields, `acceptableStates` and `expectsNoCase` (committed data, not a contract
+field). Nothing else changed; Henrique to confirm with Henry when CC-1…CC-7 are applied (T011).

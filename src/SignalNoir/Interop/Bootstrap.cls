@@ -188,13 +188,22 @@ ClassMethod EnsureWebApplications() As %String
 	Return status
 }
 
+/// The scheduled tasks of the product: the sweeper, the Origin feed reader and (feature
+/// 010) the one that drives again a BenchmarkRun whose driver stopped
+ClassMethod TaskClasses() As %String
+{
+	Return "SignalNoir.Tasks.SweeperTask,SignalNoir.Tasks.OriginFeedTask,SignalNoir.Tasks.BenchmarkTask"
+}
+
 /// Schedules the sweeper and the Origin feed reader, or removes them. Off
 /// by default: the dev database holds test requests that the sweeper would
 /// redeliver (007 research R6). Returns "scheduled", "off" or "failed".
 ClassMethod EnsureBackgroundTasks(enabled As %Boolean) As %String
 {
 	Set ok = 1
-	For cls = "SignalNoir.Tasks.SweeperTask", "SignalNoir.Tasks.OriginFeedTask" {
+	Set classes = ..TaskClasses()
+	For i = 1 : 1 : $Length(classes, ",") {
+		Set cls = $Piece(classes, ",", i)
 		Set sc = $Select(enabled: $ClassMethod(cls, "Ensure"), 1: $ClassMethod(cls, "Remove"))
 		Set ok = ok && $$$ISOK(sc)
 	}
