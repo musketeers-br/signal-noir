@@ -80,8 +80,10 @@ benchmark endpoint (FR-031: no entry point). Types for these schemas would be de
 **Where the contract follows the implementation instead of the proposal (Henry to confirm):**
 
 1. `setup.independence` is `{roles: {<family>: {answerKeyBy, baselineBy}}, reviews: [{kind, family, author,
-   reviewer, commit, date}]}`: the same names as CC-6, per family, with the review records of T055 in place of
-   `reviewedBy[]`. The new `BenchmarkSetup` schema describes it, and `variantSet` can also be `mixed`.
+   reviewer, commit, date, automated}], reviewStatus: {baseline: {<family>: status}, evaluator: status}}`: the
+   same names as CC-6, per family, with the review records of T055 in place of `reviewedBy[]`. `reviewStatus`
+   (`ReviewStatus`: other_member, self, automated, incomplete, missing) was added for Constitution 2.0.0,
+   under which a review is shown and never blocks. The new `BenchmarkSetup` schema describes it, and `variantSet` can also be `mixed`.
 2. The comparison carries `setups`, one short entry per run (runId, mode, purpose, provider, model,
    development, versions), not the whole `setup` of each report.
 3. `notDecidedReason` also takes `no_case` (no Case where the key expected one) and `no_answer_key`.

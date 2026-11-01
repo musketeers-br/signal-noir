@@ -141,6 +141,8 @@ Method TestTheReportSaysWhyAndIsNotPublishable()
 	}
 	Do $$$AssertEquals(report.setup.variantSet, "test", "the set it covered")
 	Do $$$AssertTrue(report.setup.independence.%IsDefined("roles") && report.setup.independence.%IsDefined("reviews"), "and the independence metadata")
+	Do $$$AssertEquals(report.setup.independence.reviewStatus.evaluator, "missing", "how each review was done: none is committed yet")
+	Do $$$AssertEquals(report.setup.independence.reviewStatus.baseline.%Get("P5"), "missing", "per core family of the run")
 }
 
 Method TestTuningResultsAreLabelledApart()

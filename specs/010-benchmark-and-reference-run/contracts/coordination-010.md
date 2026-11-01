@@ -33,10 +33,12 @@ E1–E5, E7 and E8 are each a few lines. E6 is a new file in the Core. None chan
 ## Independence, as encoded
 
 The report's `setup.independence` is built from `Benchmark.Data.Roles` and `Benchmark.Data.Reviews`
-(CC-6). `FreezeCheck` marks a run **development** when, for any family in it, the answer-key author, the
-baseline author and the reviewer are not three different people, or a review record is missing. The file
-`docs/specify-prompts/PARALELISMO.md` names the intended holders (Henrique key, Henry baseline, José
-review); the data records what actually happened.
+(CC-6). `FreezeCheck` marks a reference run **development** when, for any core family in it, the
+answer-key author also wrote the baseline, or no roles are recorded. Since Constitution 2.0.0 (PR #36,
+2026-11-01) a review never does: `setup.independence.reviewStatus` shows, per core family and for the
+evaluator, whether the review was done by another member, by its author (`self`), by an automated reviewer,
+or is incomplete or missing. The file `docs/specify-prompts/PARALELISMO.md` names the intended holders
+(Henrique key, Henry baseline, José review); the data records what actually happened.
 
 ## Open questions that need a person
 

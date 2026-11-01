@@ -2301,7 +2301,7 @@ components:
           enum: [tuning, test, mixed]
         independence:
           type: object
-          required: [roles, reviews]
+          required: [roles, reviews, reviewStatus]
           properties:
             roles:
               type: object
@@ -2331,6 +2331,28 @@ components:
                     type: string
                   date:
                     type: string
+                  automated:
+                    type: boolean
+                    description: Revisão feita por um revisor automatizado.
+            reviewStatus:
+              type: object
+              description: >-
+                Como cada revisão foi feita (Constituição 2.0.0, Princípio VIII). Uma revisão não
+                bloqueia o run; o relatório mostra se foi feita por outro membro, pelo próprio autor
+                (self), por um revisor automatizado, se está incompleta ou se não existe.
+              required: [baseline, evaluator]
+              properties:
+                baseline:
+                  type: object
+                  description: Por família central do run (P5, P8, P9).
+                  additionalProperties:
+                    $ref: '#/components/schemas/ReviewStatus'
+                evaluator:
+                  $ref: '#/components/schemas/ReviewStatus'
+
+    ReviewStatus:
+      type: string
+      enum: [other_member, self, automated, incomplete, missing]
 
     BenchmarkReport:
       type: object

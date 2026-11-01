@@ -91,8 +91,9 @@ controls/dossier; ≈ 12 Core test classes, ≈ 8 application suites, 1 API suit
 - [x] **VIII. Honest Measurement** — the whole feature. Same Tools and protections for both modes; setup
   frozen in one commit and checked at run time and in CI; Replay excluded from every metric; all outcomes
   published with counts, both denominators, dispersion, latency, cost and raw rows; repetitions never counted
-  as independent cases; tuning vs test; the roles of key, baseline and reviewer recorded and enforced as
-  *development* when not distinct.
+  as independent cases; tuning vs test; the roles of key and baseline recorded and enforced as
+  *development* when one person holds both; reviews recorded and shown in the report by status, never
+  blocking (Constitution 2.0.0).
 - [x] **IX. Verifiable Increments** — sliced by behavior (a run that opens Cases in a mode → scoring → report
   → freeze → reference → replay and quick validation), each with its test; the dependency on the baseline
   and the review is explicit.
@@ -203,8 +204,9 @@ The first two also appear in `coordination-010.md` and in the contract change (C
 ## Dependencies and risks
 
 - **Critical path (calendar).** Functional freeze 2026-11-05. Order is fixed by the board: baseline and
-  evaluator ready → José's review → one freeze commit → reference run → report. The code of this feature
-  can finish ahead of that order; the reference run cannot. The review is the longest pole.
+  evaluator ready → one freeze commit → reference run → report. The code of this feature can finish
+  ahead of that order; the reference run cannot. José's review no longer blocks the freeze (Constitution
+  2.0.0): it is recorded when done and the report shows its status.
 - **Reserved variants.** `P5Test` and `P8Test` are one-variant placeholders; ten real variants and their
   answer keys are required before the freeze. If they are late, only a development reference can exist, and
   the report will say so rather than claim more.

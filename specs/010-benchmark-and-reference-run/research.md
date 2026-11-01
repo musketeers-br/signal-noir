@@ -203,7 +203,8 @@ for bit. With 5 variants a p95 is the maximum; the report says so in a `note` ra
   (004's `Store`), the evaluator version (`Scorer.VERSION`), the digest of the reserved catalog and of the
   answer keys, and `files`: the git blob id of each frozen source file.
 - `Roles` — who prepared the reserved cases and the answer key, who wrote the baseline, per family.
-- `Reviews` — the review records (kind baseline | evaluator, family, author, reviewer, commit, date).
+- `Reviews` — the review records (kind baseline | evaluator, family, author, reviewer, commit, date, and
+  `automated` when an automated reviewer did it).
 - `SetUsage` — one line per declared-used set (`P5/test`, `P8/test`) with who, when and why. A set that
   appears here is development data. It is declared by commit, not by an endpoint, so it is auditable and
   cannot be undone silently.
@@ -211,8 +212,10 @@ for bit. With 5 variants a p95 is the maximum; the report says so in a `note` ra
 `Core.Benchmark.FreezeCheck.Evaluate(freeze, current, roles, reviews, usage, selection)` returns
 `{development, reasons[]}`. A run is marked **development** (it runs, its report says why, and it is not
 publishable as the reference) when: a frozen input at run time differs from the record, the set was
-declared used, the same person holds two of the roles *answer key*, *baseline author*, *reviewer* for a
-family, or there is no review record for the family. **Refused** at creation (400): empty selection,
+declared used, the author of a family's answer key also wrote its baseline, or no roles are recorded for
+the family. A review never marks a run development (amended 2026-11-01 for Constitution 2.0.0, Principle
+VIII): `FreezeCheck.ReviewStatus` says how each was done (`other_member`, `self`, `automated`,
+`incomplete`, `missing`) and the report shows it in `setup.independence.reviewStatus`. **Refused** at creation (400): empty selection,
 unknown family or variant, tuning variants (alone or mixed) with purpose `reference`.
 
 Runtime compares the declared versions and the fixture and catalog digests (V3). Source files cannot be

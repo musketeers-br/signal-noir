@@ -30,7 +30,13 @@
     "variantSet": "tuning",
     "independence": {
       "roles": {},
-      "reviews": []
+      "reviews": [],
+      "reviewStatus": {
+        "baseline": {
+          "P8": "missing"
+        },
+        "evaluator": "missing"
+      }
     }
   },
   "agentDecision": [

@@ -195,7 +195,8 @@ ClassMethod Reference(run As SignalNoir.Application.Model.BenchmarkRunRecord, re
 }
 
 /// How the run was set up (CC-6): the versions it ran with, the freeze, the sets it covered and who held
-/// which role (FR-023, FR-029). The roles and reviews are those committed in SignalNoir.Benchmark.Data.
+/// which role (FR-023, FR-029). The roles and reviews are those committed in SignalNoir.Benchmark.Data;
+/// reviewStatus says how each review was done (FreezeCheck.ReviewStatus), so a self-review is plain to see.
 ClassMethod Setup(run As SignalNoir.Application.Model.BenchmarkRunRecord, cases As %DynamicArray) As %DynamicObject [ Private ]
 {
 	Set inputs = $Select(run.inputsDigestJson = "": {}, 1: {}.%FromJSON(run.inputsDigestJson))
@@ -215,7 +216,10 @@ ClassMethod Setup(run As SignalNoir.Application.Model.BenchmarkRunRecord, cases 
 	Set setup = {"promptVersion": (inputs.%Get("promptVersion")), "baselineVersion": (inputs.%Get("baselineVersion")), "evaluatorVersion": (inputs.%Get("evaluatorVersion"))}
 	Do setup.%Set("freezeId", run.freezeId, $Select(run.freezeId = "": "null", 1: "string"))
 	Set setup.variantSet = $Select(sets = "tuning": "tuning", sets = "test": "test", 1: "mixed")
-	Set setup.independence = {"roles": (shown), "reviews": (##class(SignalNoir.Benchmark.Data.Reviews).Load("Records"))}
+	Set reviews = ##class(SignalNoir.Benchmark.Data.Reviews).Load("Records"), names = ""
+	Set it = fams.%GetIterator()
+	While it.%GetNext(.family) { Set names = names _ $Select(names = "": "", 1: ",") _ family }
+	Set setup.independence = {"roles": (shown), "reviews": (reviews), "reviewStatus": (##class(SignalNoir.Core.Benchmark.FreezeCheck).ReviewStatus(reviews, names))}
 	Return setup
 }
 

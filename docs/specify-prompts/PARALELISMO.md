@@ -49,7 +49,7 @@ José saiu da implementação em 2026-10-24 e volta só na última onda, para a 
 | 4 | 008 | 009 + baseline de regras do 010 | — | G3 |
 | 5 | 010 runner/scoring → execução de referência | 012 | revisão do baseline e do avaliador → 011 (condicional) | G4 |
 
-Ordem obrigatória na onda 5: baseline e avaliador prontos → revisão do José (registra commit e data) → commit único de congelamento (prompt, modelo, baseline, políticas, fixtures, avaliador, variantes reservadas P5Test/P8Test) → execução de referência → relatório com os metadados de independência. A revisão é caminho crítico do G4; a 011 só entra se sobrar tempo depois dela.
+Ordem obrigatória na onda 5: baseline e avaliador prontos → commit único de congelamento (prompt, modelo, baseline, políticas, fixtures, avaliador, variantes reservadas P5Test/P8Test) → execução de referência → relatório com os metadados de independência. Desde a Constituição 2.0.0 (PR #36) a revisão do José não bloqueia o congelamento nem a execução: é registrada quando feita (commit e data) e o relatório mostra como cada revisão foi feita. A 011 só entra se sobrar tempo depois dela.
 
 As ondas são sugestão de throughput, não donos. Se alguém terminar antes, puxa a próxima spec cujo pré-requisito já esteja satisfeito.
 
@@ -96,7 +96,7 @@ Trilhas (002, 007 e 008 passaram para o Henry em 28/10): Henrique = validação 
 
 Papéis fixos fora do board:
 
-- **010 independência (Princípio VIII):** casos reservados e gabarito P5/P8b com Henrique; baseline de regras com Henry (escrito na onda 4); revisão do baseline e do avaliador com José. Henry (autor do Agente) não acessa as variantes reservadas até o congelamento. A revisão do José confirma que o baseline não foi enfraquecido e fica registrada no relatório.
+- **010 independência (Princípio VIII):** casos reservados e gabarito P5/P8b com Henrique; baseline de regras com Henry (escrito na onda 4); revisão do baseline e do avaliador com José. Henry (autor do Agente) não acessa as variantes reservadas até o congelamento. A revisão do José confirma que o baseline não foi enfraquecido e fica registrada no relatório; se for feita pelo próprio autor ou por um revisor automatizado, o relatório diz isso (`setup.independence.reviewStatus`).
 - **012 cross-install:** Henry escreve o README; Henrique instala em máquina limpa.
 - **011:** condicional. O José abre o `contract-change` de P9 na onda 5; sem contrato aprovado, ou sem tempo depois da revisão do 010, a 011 fica fora da submissão. Os dados de P9 já existem no Simulador (002, US7).
 
