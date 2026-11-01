@@ -107,7 +107,8 @@ ClassMethod DriveTo(svc As SignalNoir.Application.CaseService, caseId As %String
 
 /// 007: a current Proposal for a Case that reached DecisionProposed by a
 /// raw transition (test fixture written on the records). Returns its id.
-ClassMethod FixtureProposal(caseId As %String, action As %String = "RETRY", params As %DynamicObject = "") As %String
+/// versions ({policy, mapping}) are the reference data it was made under ("fixture" when not given).
+ClassMethod FixtureProposal(caseId As %String, action As %String = "RETRY", params As %DynamicObject = "", versions As %DynamicObject = "") As %String
 {
 	Set rec = ##class(SignalNoir.Application.Model.CaseRecord).%OpenId(caseId)
 	If rec.currentProposalId '= "" {
@@ -121,7 +122,9 @@ ClassMethod FixtureProposal(caseId As %String, action As %String = "RETRY", para
 	; a contract-complete Proposal: the dev database keeps it and the live check reads it
 	Set pr.diagnosisJson = {"summary": "fixture", "claims": [], "hypotheses": []}.%ToJSON()
 	Set pr.confidence = "LOW", pr.preconditionsJson = "[]", pr.metricsJson = {"toolCalls": 0}.%ToJSON()
-	Set pr.versionsJson = {"policy": "fixture", "mapping": "fixture", "prompt": null, "model": null, "provider": null}.%ToJSON()
+	Set made = {"policy": "fixture", "mapping": "fixture", "prompt": null, "model": null, "provider": null}
+	If $IsObject(versions) Set made.policy = versions.policy, made.mapping = versions.mapping
+	Set pr.versionsJson = made.%ToJSON()
 	Do pr.%Save()
 	Set rec.currentProposalId = pr.proposalId
 	Do rec.%Save()

@@ -3,7 +3,7 @@ Class SignalNoir.Tests.Fakes.VersionedPolicy Extends SignalNoir.Core.ExecutionPo
 
 /// Test-only execution policy whose reference data moved on: the policy in
 /// force is not the one fixture Proposals recorded (008 US2)
-Method CurrentVersions() As %DynamicObject
+Method CurrentVersions(run As %DynamicObject = "") As %DynamicObject
 {
 	Return {"policy": "pol-v2", "mapping": ""}
 }
