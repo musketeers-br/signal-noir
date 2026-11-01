@@ -96,7 +96,7 @@ ClassMethod DriveTo(svc As SignalNoir.Application.CaseService, caseId As %String
 
 /// 007: a current Proposal for a Case that reached DecisionProposed by a
 /// raw transition (test fixture written on the records). Returns its id.
-ClassMethod FixtureProposal(caseId As %String, action As %String = "RETRY") As %String
+ClassMethod FixtureProposal(caseId As %String, action As %String = "RETRY", params As %DynamicObject = "") As %String
 {
 	Set rec = ##class(SignalNoir.Application.Model.CaseRecord).%OpenId(caseId)
 	If rec.currentProposalId '= "" {
@@ -105,7 +105,7 @@ ClassMethod FixtureProposal(caseId As %String, action As %String = "RETRY") As %
 	}
 	Set pr = ##class(SignalNoir.Application.Model.ProposalRecord).%New()
 	Set pr.proposalId = ##class(SignalNoir.Application.IdFactory).%New().New("prop_")
-	Set pr.caseId = caseId, pr.author = "agent", pr.action = action, pr.paramsJson = "{}", pr.current = 1
+	Set pr.caseId = caseId, pr.author = "agent", pr.action = action, pr.paramsJson = $Select($IsObject(params): params.%ToJSON(), 1: "{}"), pr.current = 1
 	Set pr.createdAt = ##class(SignalNoir.Application.SystemClock).%New().NowUtc()
 	; a contract-complete Proposal: the dev database keeps it and the live check reads it
 	Set pr.diagnosisJson = {"summary": "fixture", "claims": [], "hypotheses": []}.%ToJSON()
