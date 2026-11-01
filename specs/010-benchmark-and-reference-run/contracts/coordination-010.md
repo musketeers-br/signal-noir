@@ -25,7 +25,7 @@ E1–E5, E7 and E8 are each a few lines. E6 is a new file in the Core. None chan
 | Who | What | Needed before |
 |---|---|---|
 | Henrique | the ten reserved test variants (5 P5, 5 P8b) replacing `P5-test-00` / `P8b-test-00`, and their answer keys; the answer keys of the tuning variants | the freeze |
-| Henry | the rules baseline (`Proposers/Rules.cls`), including the synonyms of `Core.Conditions.Matches` (open since 004) and the test that pins `requiresApproval` of `REQUEST_REVIEW`; **does not read the reserved variants before the freeze** | the review |
+| Henry | the rules baseline (`Proposers/Rules.cls`), including the synonyms of `Core.Conditions.Matches` (open since 004; the test that pins `requiresApproval` of `REQUEST_REVIEW` already exists, see below); **does not read the reserved variants before the freeze** | the review |
 | José | the review of the baseline and of the evaluator (`Core.Benchmark.Scorer`, `Stats`): that the baseline was not weakened and the evaluator matches `contracts/scoring.md`; records author, commit and date in `Benchmark.Data.Reviews` | the freeze |
 | Henrique | the freeze commit (one commit), then the reference run, then `ReferenceResult` and the published report | the quick validation (012) |
 | Henry (012) | `scripts/quick-validate.sh` is written by 010; 012 wires it into the README and the smoke path | submission |
@@ -56,6 +56,26 @@ no condition stated:
 
 The approval was given outside the repository (message to Henrique). If either of them attached a
 condition, add it here before the edit it affects starts.
+
+## Henry on the edits as implemented (2026-11-01)
+
+Henrique asked Henry to review the edits in his files as they stand in PR #32 (E1–E5, E7, E8, and the
+resolution of the merge with `master` in `CaseService`: a Case of a `running` run takes the run's mode, any
+other Case takes `Factory.ConfiguredMode()`). Henry answered, by message to Henrique: "Pode alterar,
+acredito que o que fiz já está na master" ("go ahead and change them; I believe what I did is already in
+master"). Recorded as his agreement to those edits as implemented, with no condition stated.
+
+It does not cover:
+
+- the points of `contract-change-010-benchmark.md` under *Applied (T011)*, which Henry still confirms in
+  the review of PR #32;
+- T053. Henry believed the synonyms were already in `master`. They are not: `Core.MappingMatch`, which
+  the Rules use, compares the specimen type without the synonym list, so an Order written `soro` still ends
+  in review (the second case of `Tests.Gates.TestGateG1` says so). The test pinning `requiresApproval` of
+  `REQUEST_REVIEW` does exist (`TestReferenceEndpoints`, the endpoint against the verdict per Action). What
+  is left (the synonyms in the Rules, `Rules.VERSION`, `docs/benchmark/baseline-rules.md`) stays with
+  Henry: if Henrique wrote it, the baseline author and the answer-key author of P8b would be the same person
+  and the reference run would be development data (FR-029).
 
 ## Request for the integration gate (T073)
 
