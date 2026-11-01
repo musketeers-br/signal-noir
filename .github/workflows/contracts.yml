@@ -38,3 +38,6 @@ jobs:
 
       - name: Fixtures validate against the contract
         run: uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py
+
+      - name: Precedents fixtures validate against the contract
+        run: uv run --with jsonschema --with pyyaml python contracts/tools/validate_fixtures.py contracts/precedents-fixtures

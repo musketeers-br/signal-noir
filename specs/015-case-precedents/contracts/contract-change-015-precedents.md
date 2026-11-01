@@ -89,7 +89,11 @@ already defines for the CaseId parameter and the 400/404 error envelopes.)
 
 `PrecedentMatch` deliberately has no vector, raw text or model field (FR-008).
 
-## Fixtures (new, validated by `contracts/tools/validate_fixtures.py`)
+## Fixtures (new, validated by `contracts/tools/validate_fixtures.py contracts/precedents-fixtures`)
+
+Written by hand from this contract: the prototype mock has no precedents, so they live in
+`contracts/precedents-fixtures/` with their own manifest, apart from `contracts/fixtures/`, which the
+exporter regenerates and CI compares.
 
 - `precedents.200.results.json` — lexical mode, three matches, one `Failed`.
 - `precedents.200.no-precedents.json`
