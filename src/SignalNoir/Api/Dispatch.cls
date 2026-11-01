@@ -20,6 +20,8 @@ XData UrlMap [ XMLNamespace = "http://www.intersystems.com/urlmap" ]
 <Route Url="/benchmark-runs" Method="POST" Call="CreateBenchmarkRun"/>
 <Route Url="/benchmark-runs" Method="GET" Call="ListBenchmarkRuns"/>
 <Route Url="/benchmark-runs/:runid" Method="GET" Call="GetBenchmarkRun"/>
+<Route Url="/benchmark-runs/:runid/report" Method="GET" Call="GetBenchmarkReport"/>
+<Route Url="/benchmark-reports" Method="GET" Call="CompareBenchmarkRuns"/>
 </Routes>
 }
 
@@ -37,6 +39,16 @@ ClassMethod ListBenchmarkRuns() As %Status
 ClassMethod GetBenchmarkRun(runid As %String) As %Status
 {
 	Return ##class(SignalNoir.Api.BenchmarkDispatch).Get(runid)
+}
+
+ClassMethod GetBenchmarkReport(runid As %String) As %Status
+{
+	Return ##class(SignalNoir.Api.BenchmarkDispatch).Report(runid)
+}
+
+ClassMethod CompareBenchmarkRuns() As %Status
+{
+	Return ##class(SignalNoir.Api.BenchmarkDispatch).Compare()
 }
 
 ClassMethod Health() As %Status

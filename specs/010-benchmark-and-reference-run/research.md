@@ -371,3 +371,10 @@ scan, 45 methods), `Application.Benchmark` (records, store, case opening, lifecy
 task, answer keys, case facts, automatic approval, 46 methods), `Api.TestBenchmarkApi` (4 methods). The
 Python tests of `scripts/benchmark/recompute.py` pass (9). Not yet written: `TestScoringEndToEnd` (T034),
 the report builder and its endpoints (T041 to T044).
+
+### Suite after the report builder (2026-11-01)
+
+Full recursive suite: **541 methods, 541 passed, 0 failed**. New: `ReportBuilder` (build, store once, report,
+comparison), `TestReport` (7), `TestScoringEndToEnd` (1), the report and comparison cases of `TestBenchmarkApi`
+(2). The runner now stores the final report before it marks the run completed, and fails the run with
+`report_error` if the report cannot be built.

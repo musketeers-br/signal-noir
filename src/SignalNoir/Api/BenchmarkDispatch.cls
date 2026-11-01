@@ -48,7 +48,40 @@ ClassMethod HandleList(status As %String, limit As %String) As %DynamicObject
 	Return {"status": "200 OK", "headers": {}, "body": (r.obj)}
 }
 
+/// GET /benchmark-runs/{runId}/report: the final report, 404 for an unknown run, 409 until it ends
+ClassMethod HandleReport(runId As %String) As %DynamicObject
+{
+	Set r = ##class(SignalNoir.Application.Benchmark.ReportBuilder).Report(runId)
+	If 'r.ok Return ..Failure(r)
+	Return {"status": "200 OK", "headers": {}, "body": (r.obj)}
+}
+
+/// GET /benchmark-reports?runId=&runId=: the runs side by side (runIds is an array of ids)
+ClassMethod HandleCompare(runIds As %DynamicArray) As %DynamicObject
+{
+	Set r = ##class(SignalNoir.Application.Benchmark.ReportBuilder).Compare(runIds)
+	If 'r.ok Return ..Failure(r)
+	Return {"status": "200 OK", "headers": {}, "body": (r.obj)}
+}
+
 // ---------------------------------------------------------------- the route methods
+
+ClassMethod Report(runid As %String) As %Status
+{
+	Return ..Write(..HandleReport(runid))
+}
+
+ClassMethod Compare() As %Status
+{
+	Set ids = [], n = ""
+	For {
+		Set n = $Order(%request.Data("runId", n))
+		Quit:n=""
+		Do ids.%Push(%request.Data("runId", n))
+	}
+	Return ..Write(..HandleCompare(ids))
+}
+
 
 ClassMethod Create() As %Status
 {

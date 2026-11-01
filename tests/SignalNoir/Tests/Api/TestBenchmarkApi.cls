@@ -103,4 +103,53 @@ Method TestGetAndListAndNotFound()
 	Do $$$AssertEquals(##class(SignalNoir.Api.BenchmarkDispatch).HandleList("", "abc").status, "400 Bad Request", "a limit that is not a number is 400")
 }
 
+ClassMethod Done(runId As %String, mode As %String = "rules", variant As %String = "P8b-tune-01", purpose As %String = "benchmark", status As %String = "completed")
+{
+	Set E = "SignalNoir.Tests.Application.Benchmark.TestScoringEndToEnd"
+	Do $ClassMethod(E, "Run", runId, mode, status, purpose)
+	Do $ClassMethod(E, "Item", runId, 1, "P8", "P8b", variant, $ClassMethod(E, "Resolved", [{"mappingId": "map_glicj_plasma", "verdict": "accepted"}]))
+}
+
+Method TestTheReportRoute()
+{
+	Set D = "SignalNoir.Api.BenchmarkDispatch"
+	Do ..Done("run_api_r1")
+	Set ok = $ClassMethod(D, "HandleReport", "run_api_r1")
+	Do $$$AssertEquals(ok.status, "200 OK", "a completed run's report")
+	Do $$$AssertEquals(ok.body.runId, "run_api_r1", "the run's report")
+	Do ..Done("run_api_r2", "rules", "P8b-tune-01", "benchmark", "running")
+	Set early = $ClassMethod(D, "HandleReport", "run_api_r2")
+	Do $$$AssertEquals(early.status, "409 Conflict", "before the end")
+	Do $$$AssertEquals(early.body.error.code, "INVALID_TRANSITION", "INVALID_TRANSITION")
+	Do $$$AssertEquals($ClassMethod(D, "HandleReport", "run_api_none").status, "404 Not Found", "unknown run")
+}
+
+Method TestTheComparativeReport()
+{
+	Set D = "SignalNoir.Api.BenchmarkDispatch"
+	Do ..Done("run_api_c1", "rules")
+	Do ..Done("run_api_c2", "agent")
+	Set ok = $ClassMethod(D, "HandleCompare", ["run_api_c1", "run_api_c2"])
+	Do $$$AssertEquals(ok.status, "200 OK", "two completed runs over the same scenarios")
+	Do $$$AssertEquals(ok.body.runIds.%Size(), 2, "both runs")
+	Do $$$AssertEquals(ok.body.agentDecision.%Size(), 2, "one row per run: side by side by mode")
+	Set modes = ok.body.agentDecision.%Get(0).mode _ "," _ ok.body.agentDecision.%Get(1).mode
+	Do $$$AssertEquals(modes, "rules,agent", "by mode, in the order asked")
+	Do $$$AssertEquals(ok.body.platformGuarantees.%Size(), 12, "the guarantees of each run, with its run id, and no score")
+	Do $$$AssertEquals(ok.body.platformGuarantees.%Get(0).runId, "run_api_c1", "tagged by run")
+	Do ..Done("run_api_c3", "rules", "P8b-tune-02")
+	Set other = $ClassMethod(D, "HandleCompare", ["run_api_c1", "run_api_c3"])
+	Do $$$AssertEquals(other.status, "400 Bad Request", "different scenarios are refused")
+	Do $$$AssertEquals(other.body.error.code, "VALIDATION_FAILED", "VALIDATION_FAILED")
+	Do ..Done("run_api_c4", "replay")
+	Do $$$AssertEquals($ClassMethod(D, "HandleCompare", ["run_api_c1", "run_api_c4"]).status, "400 Bad Request", "a replay run is refused")
+	Do ..Done("run_api_c5", "rules", "P8b-tune-01", "quick_validation")
+	Do $$$AssertEquals($ClassMethod(D, "HandleCompare", ["run_api_c1", "run_api_c5"]).status, "400 Bad Request", "a quick validation run is refused")
+	Do ..Done("run_api_c6", "rules", "P8b-tune-01", "benchmark", "running")
+	Do $$$AssertEquals($ClassMethod(D, "HandleCompare", ["run_api_c1", "run_api_c6"]).status, "409 Conflict", "a run that has not ended")
+	Do $$$AssertEquals($ClassMethod(D, "HandleCompare", ["run_api_c1", "run_api_none"]).status, "404 Not Found", "an unknown run")
+	Do $$$AssertEquals($ClassMethod(D, "HandleCompare", ["run_api_c1"]).status, "400 Bad Request", "fewer than two")
+	Do $$$AssertEquals($ClassMethod(D, "HandleCompare", ["run_api_c1", "run_api_c1"]).status, "400 Bad Request", "the same run twice")
+}
+
 }

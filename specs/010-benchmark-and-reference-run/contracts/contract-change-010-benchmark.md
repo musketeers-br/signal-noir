@@ -59,3 +59,8 @@ another, so they are published as `Range` like every other measure, and the prop
 (`outcomes` over all Cases, `outcomesWithoutNotDecided` over the ones that decided). The key of an answer key
 also gained two optional fields, `acceptableStates` and `expectsNoCase` (committed data, not a contract
 field). Nothing else changed; Henrique to confirm with Henry when CC-1…CC-7 are applied (T011).
+
+Also at implementation: a scenario that raises no exception (a clean control) opens no Case, so its row has
+an empty `caseId` and `finalState` is `null`; `BenchmarkCaseResult.finalState` must allow `null` (CC-3). Rows of
+the platform families (P3, idempotency) are kept as raw data with `countsInMetrics = false`: they feed the
+platform guarantees only.

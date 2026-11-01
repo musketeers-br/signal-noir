@@ -177,8 +177,32 @@ Method Undecided(item As SignalNoir.Application.Model.BenchmarkItemRecord, reaso
 /// Every item ended: the run completes
 Method Finish(rec As SignalNoir.Application.Model.BenchmarkRunRecord) As SignalNoir.Core.Result [ Private ]
 {
+	; the final report is written once, before the run is marked completed; a report that cannot
+	; be built fails the run with its reason instead of leaving a completed run with no report
+	Try {
+		Set rec.casesPlanned = ..Count(rec.runId, "")
+		Set rec.casesOpened = ..Count(rec.runId, "status <> 'planned'")
+		Set rec.casesTerminal = ..Count(rec.runId, "status IN ('ended','not_decided')")
+		$$$ThrowOnError(rec.%Save())
+		Set built = ##class(SignalNoir.Application.Benchmark.ReportBuilder).Store(rec.runId)
+		If 'built.ok {
+			Do ..Service.Move(rec.runId, "fail", "report_error")
+			Return ..Result(1, "failed")
+		}
+	}
+	Catch ex {
+		Do ..Service.Move(rec.runId, "fail", "report_error")
+		Return ..Result(1, "failed")
+	}
 	Do ..Service.Move(rec.runId, "complete")
 	Return ..Result(1, "completed")
+}
+
+ClassMethod Count(runId As %String, where As %String) As %Integer [ Private ]
+{
+	Set rs = ##class(%SQL.Statement).%ExecDirect(, "SELECT COUNT(*) AS n FROM SignalNoir_Application_Model.BenchmarkItemRecord WHERE runId = ?" _ $Select(where = "": "", 1: " AND " _ where), runId)
+	Do rs.%Next()
+	Return rs.%Get("n")
 }
 
 Method SecondsFor(rec As SignalNoir.Application.Model.BenchmarkRunRecord) As %Integer [ Private ]
