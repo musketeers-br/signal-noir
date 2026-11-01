@@ -218,7 +218,9 @@ Method ToDto(rec As SignalNoir.Application.Model.BenchmarkRunRecord) As %Dynamic
 	Set counts = ##class(%SQL.Statement).%ExecDirect(, "SELECT COUNT(*) AS planned, SUM(CASE WHEN status <> 'planned' THEN 1 ELSE 0 END) AS opened, SUM(CASE WHEN status IN ('ended','not_decided') THEN 1 ELSE 0 END) AS ended FROM SignalNoir_Application_Model.BenchmarkItemRecord WHERE runId = ?", rec.runId)
 	Do counts.%Next()
 	Do dto.%Set("progress", {"casesPlanned": (+counts.%Get("planned")), "casesOpened": (+counts.%Get("opened")), "casesTerminal": (+counts.%Get("ended"))})
-	Do dto.%Set("labels", {"synthetic": true, "replay": (rec.mode = "replay")})
+	Set labels = {"synthetic": true}
+	Do labels.%Set("replay", (rec.mode = "replay"), "boolean")
+	Set dto.labels = labels
 	If rec.label '= "" Set dto.label = rec.label
 	Set dto.createdAt = rec.createdAt
 	Do dto.%Set("startedAt", rec.startedAt, $Select(rec.startedAt = "": "null", 1: "string"))

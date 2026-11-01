@@ -130,4 +130,25 @@ Method TestRepetitionsGiveARangeAndAVariantCountsOnce()
 	Do $$$AssertEquals(row.denominator.withNotDecided.max, 1, "the repetition's denominator is the variants, not the runs")
 }
 
+/// The JSON types the contract gives (T011): no Case is a null caseId and a null finalState, a
+/// measure that no Case had is null (not an empty string), and the replay label is a boolean
+Method TestTheReportHasTheContractsTypes()
+{
+	Set T = "SignalNoir.Tests.Application.Benchmark.TestScoringEndToEnd"
+	Do $ClassMethod(T, "Run", "run_types", "rules", "completed", "benchmark", 1)
+	Do $ClassMethod(T, "Item", "run_types", 1, "clean", "clean.success", "clean-success-tune-01", "")
+	Set report = ##class(SignalNoir.Application.Benchmark.ReportBuilder).Report("run_types").obj
+	Set row = report.cases.%Get(0)
+	Do $$$AssertEquals(row.%GetTypeOf("caseId"), "null", "a control that opened no Case has a null caseId")
+	Do $$$AssertEquals(row.%GetTypeOf("finalState"), "null", "and a null finalState")
+	Do $$$AssertEquals(report.labels.%GetTypeOf("replay"), "boolean", "the replay label is a boolean")
+	Set decision = report.agentDecision.%Get(0)
+	For key = "latencyMsP50", "latencyMsP95", "toolCallsPerCase", "estCostUsdPerCase" {
+		Do $$$AssertEquals(decision.%GetTypeOf(key), "null", key _ " is null when no Case measured it")
+	}	Do $ClassMethod(T, "Run", "run_types_b", "rules", "completed", "benchmark", 1)
+	Do $ClassMethod(T, "Item", "run_types_b", 1, "clean", "clean.success", "clean-success-tune-01", "")
+	Set cmp = ##class(SignalNoir.Application.Benchmark.ReportBuilder).Compare(["run_types", "run_types_b"]).obj
+	Do $$$AssertEquals(cmp.setups.%Get(0).%GetTypeOf("development"), "boolean", "a compared run's development flag is a boolean")
+}
+
 }

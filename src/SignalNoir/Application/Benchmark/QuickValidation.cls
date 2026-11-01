@@ -64,11 +64,14 @@ ClassMethod Results(cases As %DynamicArray, record, differs As %Boolean) As %Dyn
 		Set row = cases.%Get(i)
 		Set ref = ..ByVariant(record, row.variant)
 		If '$IsObject(ref) {
-			Do out.%Push({"referenceCase": (row.variant), "caseId": (row.caseId), "status": "diverged", "reason": "no reference result is recorded for this variant"})
+			Set item = {"referenceCase": (row.variant), "status": "diverged", "reason": "no reference result is recorded for this variant"}
+			Do item.%Set("caseId", row.caseId, $Select(row.caseId = "": "null", 1: "string"))
+			Do out.%Push(item)
 			Continue
 		}
 		Set verdict = ##class(SignalNoir.Core.Benchmark.QuickCheck).Compare(ref, row, {"providerDiffers": (''differs)})
-		Set item = {"referenceCase": (ref.referenceCase), "caseId": (row.caseId), "status": (verdict.status)}
+		Set item = {"referenceCase": (ref.referenceCase), "status": (verdict.status)}
+		Do item.%Set("caseId", row.caseId, $Select(row.caseId = "": "null", 1: "string"))
 		Do item.%Set("reason", verdict.reason, $Select(verdict.%GetTypeOf("reason") = "null": "null", 1: "string"))
 		Do out.%Push(item)
 	}

@@ -82,6 +82,10 @@ ClassMethod Row(cases As %DynamicArray, key As %String, mode As %String, ByRef g
 	Set row.latencyMsP95 = ..RangeOf(.r, reps, "p95", "")
 	Set row.toolCallsPerCase = ..RangeOf(.r, reps, "calls", "")
 	Set row.estCostUsdPerCase = ..RangeOf(.r, reps, "cost", "")
+	; a measure that no Case of a repetition had is null, never an empty string
+	For key = "latencyMsP50", "latencyMsP95", "toolCallsPerCase", "estCostUsdPerCase" {
+		If row.%GetTypeOf(key) '= "object" Do row.%Set(key, "", "null")
+	}
 	Set row.blockedWrongProposals = ..RangeOf(.r, reps, "blocked", "")
 	Set row.wrongEffects = ..RangeOf(.r, reps, "wrong", "")
 	If small {

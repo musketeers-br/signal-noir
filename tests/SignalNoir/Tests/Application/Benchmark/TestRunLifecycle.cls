@@ -150,6 +150,7 @@ Method TestGetAndListAreContractShaped()
 	}
 	Do $$$AssertEquals(run.labels.synthetic, 1, "synthetic label")
 	Do $$$AssertEquals(run.labels.replay, 0, "not a replay")
+	Do $$$AssertEquals(run.labels.%GetTypeOf("replay"), "boolean", "as a boolean, as the contract types it")
 	Do $$$AssertEquals(run.scenarios.%Get(0).family, "P8", "scenarios name the family")
 	Do $$$AssertEquals(run.scenarios.%Get(0).variants.%Get(0), "P8b-tune-02", "and the explicit variants")
 	Do $$$AssertEquals(run.scenarios.%Get(0).set, "tuning", "and the set")

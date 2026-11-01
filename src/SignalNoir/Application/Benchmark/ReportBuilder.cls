@@ -24,7 +24,8 @@ ClassMethod Build(runId As %String) As SignalNoir.Core.Result
 	Set report.repetitions = run.repetitions
 	Set report.policyVersion = run.policyVersion, report.mappingVersion = run.mappingVersion
 	Set report.generatedAt = ##class(SignalNoir.Application.SystemClock).%New().NowUtc()
-	Set report.labels = {"synthetic": true, "replay": (run.mode = "replay")}
+	Set report.labels = {"synthetic": true}
+	Do report.labels.%Set("replay", (run.mode = "replay"), "boolean")
 	Do report.%Set("development", run.development, "boolean")
 	Do report.%Set("developmentReasons", $Select(run.developmentReasonsJson = "": [], 1: [].%FromJSON(run.developmentReasonsJson)))
 	Do report.%Set("freezeId", run.freezeId, $Select(run.freezeId = "": "null", 1: "string"))
@@ -94,7 +95,11 @@ ClassMethod Compare(runIds As %DynamicArray) As SignalNoir.Core.Result
 			Set row.runId = report.runId
 			Do guarantees.%Push(row)
 		}
-		Do setups.%Push({"runId": (report.runId), "mode": (report.mode), "purpose": (report.purpose), "provider": (report.provider), "model": (report.model), "development": (report.development), "policyVersion": (report.policyVersion), "mappingVersion": (report.mappingVersion)})
+		Set one = {"runId": (report.runId), "mode": (report.mode), "purpose": (report.purpose), "policyVersion": (report.policyVersion), "mappingVersion": (report.mappingVersion)}
+		Do one.%Set("provider", report.provider, $Select(report.%GetTypeOf("provider") = "string": "string", 1: "null"))
+		Do one.%Set("model", report.model, $Select(report.%GetTypeOf("model") = "string": "string", 1: "null"))
+		Do one.%Set("development", report.development, "boolean")
+		Do setups.%Push(one)
 	}
 	Set out = {"runIds": (runIds), "generatedAt": (##class(SignalNoir.Application.SystemClock).%New().NowUtc()), "sameScenarioSet": true}
 	Set out.agentDecision = rows, out.platformGuarantees = guarantees, out.setups = setups
@@ -131,8 +136,10 @@ ClassMethod CaseRow(run As SignalNoir.Application.Model.BenchmarkRunRecord, item
 		Do score.%Set("notDecided", 0, "boolean")
 		Do score.%Set("wrongEffect", 0, "boolean")
 	}
-	Set row = {"caseId": (item.caseId), "family": (item.family), "subtype": (item.subtype), "variant": (item.variant), "set": (item.set), "repetition": (item.repetition)}
-	Do row.%Set("finalState", facts.finalState, $Select(facts.finalState = "NoCase": "null", 1: "string"))
+	Set row = {"family": (item.family), "subtype": (item.subtype), "variant": (item.variant), "set": (item.set), "repetition": (item.repetition)}
+	; a control that opened no Case has neither a caseId nor a final state: both are null
+	Do row.%Set("caseId", item.caseId, $Select(item.caseId = "": "null", 1: "string"))
+	Do row.%Set("finalState", $Select(facts.finalState = "NoCase": "", 1: facts.finalState), $Select(facts.finalState = "NoCase": "null", 1: "string"))
 	If $IsObject(facts.effect) {
 		Set row.action = facts.effect.action, row.actionParams = facts.effect.params
 	} Else {
