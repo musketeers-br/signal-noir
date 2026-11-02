@@ -110,6 +110,8 @@ ClassMethod Work(investigationId As %String)
 		Set author = ..Author(inv.mode, answer)
 		If author '= inv.mode Do meta.%Set("author", author)
 		If $IsObject(answer.details) && $IsObject(answer.details.%Get("cascade")) Do ..RecordCascade(svc, inv.caseId, answer.details.%Get("cascade"))
+		; 017 agent-v5: a confidence the platform corrected stays visible next to the Proposal
+		If $IsObject(answer.details) && $IsObject(answer.details.%Get("confidence")) Do ..RecordCascade(svc, inv.caseId, answer.details.%Get("confidence"))
 		If $IsObject(answer.details) {
 			For key = "provider", "model", "promptVersion", "tokensIn", "tokensOut", "tokensCached", "estCostUsd" {
 				If answer.details.%Get(key) '= "" Do meta.%Set(key, answer.details.%Get(key))

@@ -133,3 +133,18 @@ task list's automated checks.
 - [ ] T021 The tuning rehearsal on agent-v4 (3 repetitions, same tuning variants) is run by the team
   member who runs the Benchmark, before the freeze of 2026-11-05
 
+---
+
+## Phase 11: agent-v5 (revision 2026-11-02 c, after run_000193)
+
+- [x] T022 `DecisionFacts`: `steps` (steps 1 to 3, whether each applies) and `Confidence` (the FR-008
+  rule); `TestDecisionFacts.TestSteps` and `TestConfidence`
+- [x] T023 `Agent.Calibrate` sets the confidence from CHECKS and keeps a correction in
+  `details.confidence`; `InvestigationService` records it as an Annotation;
+  `TestAgentPromptV2.TestCalibrate`
+- [x] T024 Prompt agent-v5 (steps in order, stop at step 2, preconditions per Action, MEDIUM when not
+  exact), `PROMPTVERSION = "agent-v5"`; TestAgentPromptV2 and TestProposerModes updated
+- [x] T025 Compile and run the whole suite; record the counts in research.md
+- [ ] T026 The tuning rehearsal on agent-v5 (3 repetitions, same tuning variants), before the freeze of
+  2026-11-05
+
