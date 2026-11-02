@@ -100,3 +100,38 @@
     stays exposed.
   - Pre-computing the Mapping match in the input: it changes Evidence building and hands the Agent the
     Rules answer.
+
+## R8 — agent-v4 after run_000146 (2026-11-02)
+
+- **Decision**: the platform computes what each decision step needs (`Core.DecisionFacts`) and passes
+  it to the Agent in a CHECKS block. The instructions tell the model to read the checks and not
+  recompute them.
+- **Rationale**: in run_000146 the misses came from the model not following rules that agent-v3 already
+  stated:
+  - It compared condition values literally: "expected PLASMA, found plasma" on P8b, SORO against
+    SERUM on P5, once even "expected 'SERUM' but found 'SERUM'".
+  - It held back on 1 timeout in 1 attempt (P8a, repetition 2).
+  - It proposed a GLIC-J mapping for a TSH Order (already-processed, repetition 3).
+  - It chose a hypothesis and still asked for review (unknown-code, repetition 1).
+
+  Temperature is 0, so the variation between repetitions is gpt-4o-mini's own. More text would not make
+  it compare reliably. `Core.Conditions` and `Core.Identity` already make these comparisons for the
+  Validator and Rules, so the Agent now sees the same values the Validator will check.
+- **Trade-off**: on these families the Agent's Action now follows the same facts as `rules-v2`, so the
+  Agent and Rules results in the benchmark move closer. The Agent still decides on reading them, writes
+  the diagnosis, and handles what the checks do not cover. R7 had rejected pre-computing the match for
+  this reason; run_000146 showed the cost of not doing it.
+- **Alternatives considered**:
+  - An agent-v4 with more wording: the agent-v3 wording was already right.
+  - A larger model: still worth measuring, but not a fix before the freeze.
+  - A Validator rule against "chosen hypothesis + REQUEST_REVIEW": blocking a review ends in review
+    anyway, so the outcome does not change.
+- **T020 (2026-11-02)**, master `69cdce1` with the agent-v4 change: compile without errors; 664 passed,
+  4 failed.
+  - `TestDecisionFacts` (7), `TestAgentPromptV2` (9), `TestProposerModes` and
+    `TestPrecedentNeutrality` pass.
+  - 3 failures are the environmental ones of T015: `TestCaseOpening` and `TestGateG4` (the container
+    sets `SN_PROPOSER_MODE=hybrid`) and `TestRunnerObserves:TestARunOpensItsCasesAndEnds`.
+  - `TestRecoverySuite:TestRestartDuringExecuting` failed while an earlier test session was still
+    running in the same container; run alone, `TestRecoverySuite` passes 6 of 6.
+

@@ -61,7 +61,7 @@ Method TestSameProposalWithAndWithout()
 	Do $$$AssertEquals(with.obj.%ToJSON(), without.obj.%ToJSON(), "identical answer")
 	Do $$$AssertNotTrue(inputWithout [ "PRECEDENTS", "no block when absent")
 	Do $$$AssertTrue(inputWith [ "PRECEDENTS (similarity results from earlier Cases; not Evidence", "labelled block when present")
-	Do $$$AssertEquals($Piece(inputWith, $Char(10), 1, 4), inputWithout, "Evidence block unchanged")
+	Do $$$AssertEquals($Piece(inputWith, $Char(10), 1, 6), inputWithout, "Evidence and CHECKS blocks unchanged")
 	Kill ^SignalNoir.TestScript("agent")
 	Do $ClassMethod(PS, "Cleanup", p)
 }
