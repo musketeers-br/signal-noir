@@ -323,6 +323,16 @@ ClassMethod Types(svc As SignalNoir.Application.CaseService, caseId As %String) 
 	Return out
 }
 
+/// The Timeline note of an answer that was not a Proposal ("" when none)
+ClassMethod InvalidNote(svc As SignalNoir.Application.CaseService, caseId As %String)
+{
+	Set tl = svc.GetTimeline(caseId, 0, 500).list
+	For i = 1 : 1 : tl.Count() {
+		Set e = tl.GetAt(i)
+		If (e.type = "Annotation") && $IsObject(e.payload) && (e.payload.%Get("kind") = "invalid_response") Return e.payload
+	}
+	Return ""
+}
 
 /// 008: a Case in Approved on a current fixture Proposal of this action
 ClassMethod ApprovedCase(svc As SignalNoir.Application.CaseService, tag As %String, action As %String = "RETRY") As %String
