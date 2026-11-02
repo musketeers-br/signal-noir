@@ -172,7 +172,7 @@ this feature's files.
 - [X] T042 [P] Search the module, timeline, logs and exports for the provider key and confirm zero occurrences (FR-018)
 - [X] T043 [P] Review the diff against the Constitution, the spec, the plan and the tests before merge (Engineering Standards review gate)
 - [X] T044 Run `quickstart.md` end to end on a clean container and fix any gap
-- [ ] T045 Record approval of contract change 001 by a second team member (Governance) and mark the proposal applied in `contracts/contract-change-001-health.md`
+- [X] T045 Record approval of contract change 001 by a second team member (Governance) and mark the proposal applied in `contracts/contract-change-001-health.md`
 
 ---
 

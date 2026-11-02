@@ -1,6 +1,7 @@
 # Contract change 001 — add a health surface to the product API
 
-**Status**: proposed, to be applied before any code for this feature.
+**Status**: applied. `GET /health` is in `contracts/openapi-signalnoir.yaml`; approved by
+Henrique Dias on 2026-11-02 (Governance: a second team member).
 **Owner**: feature 001 (runtime skeleton and shared seams).
 **Target**: `contracts/openapi-signalnoir.yaml` (frozen, normative).
 

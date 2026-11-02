@@ -7,7 +7,12 @@ Class SignalNoir.Benchmark.Data.Reviews Extends SignalNoir.Benchmark.Data.Base
 /// (Constitution 2.0.0): the report shows how each was done, and one without all of them as incomplete.
 XData Records [ MimeType = application/json ]
 {
-[]
+[
+  {"kind": "baseline", "family": "P5", "author": "henry", "reviewer": "jose", "commit": "dfd2b0d", "date": "2026-11-02"},
+  {"kind": "baseline", "family": "P8", "author": "henry", "reviewer": "jose", "commit": "dfd2b0d", "date": "2026-11-02"},
+  {"kind": "baseline", "family": "clean", "author": "henry", "reviewer": "jose", "commit": "dfd2b0d", "date": "2026-11-02"},
+  {"kind": "evaluator", "family": "*", "author": "henrique", "reviewer": "jose", "commit": "dfd2b0d", "date": "2026-11-02"}
+]
 }
 
 }
