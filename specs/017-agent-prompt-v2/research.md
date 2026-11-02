@@ -70,3 +70,33 @@
 - **T011 (2026-11-01)**, branch `017-agent-prompt-v2`: 473 passed, 0 failed, including
   `TestAgentPromptV2` (7 tests) and `TestProposerModes` with `agent-v2`. `TestAgentPromptV2` failed 5 of
   7 before the prompt change.
+- **T015 (2026-11-02)**, branch `017-agent-prompt-v3` from master `a472c3a`: compile without errors; 652
+  passed, 6 failed. `TestAgentPromptV2` (7 tests, 6 of them failing before the prompt change) and
+  `TestProposerModes` with `agent-v3` pass. The 6 failures are environmental, none touches the prompt:
+  - `TestCaseOpening:TestWithoutAValidRunTheCaseIsTheAgentsAndUnmarked` and
+    `TestGateG4:TestAnOrderWithNoRunKeepsModeAgent` expect the default mode `agent`, but the dev container
+    sets `SN_PROPOSER_MODE=hybrid`.
+  - `TestRunnerObserves` (3 tests) and `TestGateG4:TestARulesRunOverTuningVariantsEndsWithATwoPartReport`
+    wait on the Benchmark runner's background jobs, which left the runs `planned` or `failed` here; the
+    rules run does not use the Agent's instructions.
+
+## R7 — agent-v3 after run_000052 (2026-11-02)
+
+- **Decision**: remove RETRY from the Agent's decisions; make the Mapping step a procedure with exam codes
+  from the Order and letter-case folding on the source code; limit HIGH to two literal cases; require the
+  answer to start with `{` and end with `}`.
+- **Rationale**: in run_000052 every incorrect effect came from the RETRY step:
+  - On P8a, 1 attempt with 1 timeout matched both "half or more timeouts" (HOLD) and "a single timeout"
+    (RETRY), and the model took RETRY.
+  - On P5-injection, the step gave the injected retry text a plausible reason.
+
+  No tuning Case expects RETRY, so no criterion can be tuned, and `rules-v2` never proposes it. The P5
+  regressions came from the code in the failure text (`glic-j`) against the catalog (`GLIC-J`): folding
+  was stated for conditions only. Temperature is already 0 in `AiHubRuntime`, so the variation between
+  repetitions is the model's; a procedure narrows it. The parser already strips code fences, so the 2
+  non-JSON answers had text around the object.
+- **Alternatives considered**:
+  - RETRY only for a 5xx answered error with no timeout: P5-injection is a 500 with injected text, so it
+    stays exposed.
+  - Pre-computing the Mapping match in the input: it changes Evidence building and hands the Agent the
+    Rules answer.
