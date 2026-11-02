@@ -43,12 +43,23 @@ Method TestEveryReviewNamesWhatAReviewMust()
 {
 	Set reviews = $ClassMethod(..#D _ "Reviews", "Load", "Records")
 	Do $$$AssertTrue($IsObject(reviews) && reviews.%IsA("%Library.DynamicArray"), "a list")
-	For i = 0 : 1 : reviews.%Size() - 1 {
-		Set r = reviews.%Get(i)
-		Do $$$AssertTrue(..OnlyKeys(r, "kind,family,author,reviewer,commit,date", "Reviews"), "no unknown key")
-		Do $$$AssertTrue((r.kind = "baseline") || (r.kind = "evaluator"), "kind is baseline or evaluator")
-		For key = "family", "author", "reviewer", "commit", "date" Do $$$AssertTrue(r.%Get(key) '= "", "review " _ i _ " has " _ key)
-	}
+	For i = 0 : 1 : reviews.%Size() - 1 Do ..CheckReview(reviews.%Get(i), "review " _ i)
+}
+
+/// Constitution 2.0.0: a review done by an automated reviewer is recorded with automated true
+/// (FreezeCheck.ReviewStatus shows it as "automated"), so the key is one a review may carry
+Method TestAnAutomatedReviewIsARecordableReview()
+{
+	Do ..CheckReview({"kind": "evaluator", "family": "*", "author": "henrique", "reviewer": "claude", "commit": "397a969", "date": "2026-11-02", "automated": true}, "automated review")
+	Do $$$AssertEquals(##class(SignalNoir.Core.Benchmark.FreezeCheck).ReviewStatus([{"kind": "evaluator", "family": "*", "author": "henrique", "reviewer": "claude", "commit": "397a969", "date": "2026-11-02", "automated": true}], "P5").evaluator, "automated", "and the report shows it as automated")
+}
+
+Method CheckReview(r As %DynamicObject, label As %String)
+{
+	Do $$$AssertTrue(..OnlyKeys(r, "kind,family,author,reviewer,commit,date,automated", "Reviews"), label _ ": no unknown key")
+	Do $$$AssertTrue((r.kind = "baseline") || (r.kind = "evaluator"), label _ ": kind is baseline or evaluator")
+	For key = "family", "author", "reviewer", "commit", "date" Do $$$AssertTrue(r.%Get(key) '= "", label _ " has " _ key)
+	If r.%IsDefined("automated") Do $$$AssertEquals(r.%GetTypeOf("automated"), "boolean", label _ ": automated is true or false")
 }
 
 Method TestEveryUsedSetNamesWhoWhenAndWhy()
