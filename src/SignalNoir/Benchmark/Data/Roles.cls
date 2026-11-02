@@ -9,7 +9,11 @@ Class SignalNoir.Benchmark.Data.Roles Extends SignalNoir.Benchmark.Data.Base
 XData Record [ MimeType = application/json ]
 {
 {
-  "families": {}
+  "families": {
+    "P5": {"answerKeyBy": "henrique", "baselineBy": "henry"},
+    "P8": {"answerKeyBy": "henrique", "baselineBy": "henry"},
+    "clean": {"answerKeyBy": "henrique", "baselineBy": "henry"}
+  }
 }
 }
 
