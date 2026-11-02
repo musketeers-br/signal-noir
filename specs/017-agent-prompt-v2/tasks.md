@@ -117,3 +117,19 @@ task list's automated checks.
 - [x] T015 Compile and run the whole suite; record the counts in research.md
 - [ ] T016 The tuning rehearsal on agent-v3 (3 repetitions, same tuning variants) is run by the team
   member who runs the Benchmark, before the freeze of 2026-11-05
+
+---
+
+## Phase 10: agent-v4 (revision 2026-11-02 b, after run_000146)
+
+- [x] T017 Add src/SignalNoir/Core/DecisionFacts.cls (identity, Partner instability, Mapping candidates
+  over Core.Identity and Core.Conditions) and tests/SignalNoir/Tests/Core/TestDecisionFacts.cls on the
+  run_000146 shapes
+- [x] T018 `Agent.Input` appends the neutralized CHECKS block after the Evidence; update
+  TestPrecedentNeutrality (lines 1-6 unchanged by precedents)
+- [x] T019 Replace the `SystemPrompt` with contracts/agent-v4-instructions.md, set `PROMPTVERSION =
+  "agent-v4"`, and update TestAgentPromptV2 and TestProposerModes
+- [x] T020 Compile and run the whole suite; record the counts in research.md
+- [ ] T021 The tuning rehearsal on agent-v4 (3 repetitions, same tuning variants) is run by the team
+  member who runs the Benchmark, before the freeze of 2026-11-05
+

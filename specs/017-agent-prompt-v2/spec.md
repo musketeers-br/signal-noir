@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-01
 
-**Status**: Revised 2026-11-02 (agent-v3)
+**Status**: Revised 2026-11-02 (agent-v4)
 
 **Input**: Henry, 2026-11-01, after the first tuning rehearsal of the Agent mode (gpt-4o-mini, AI Hub
 build 154, tuning variants of P5, P8 and clean, one repetition): 12 Cases in about 5 minutes, 4
@@ -37,6 +37,33 @@ no RETRY criterion can be tuned, and `rules-v2` never proposes it. `agent-v3`
 ([contract](./contracts/agent-v3-instructions.md)) supersedes `agent-v2`. The requirements below are
 revised in place: FR-002, FR-003, FR-007, FR-008, FR-011, FR-014, FR-015 and SC-005, plus the new FR-017
 and FR-018. User Story 2's RETRY scenarios (3 and 4) now read "the Agent does not propose RETRY".
+
+## Revision 2026-11-02 b: agent-v4
+
+The `agent-v3` rehearsal (run_000146, gpt-4o-mini, same tuning, 3 repetitions) ended with no RETRY, no
+non-JSON answer and no wrong effect. SC-004 to SC-006 pass; SC-001 to SC-003 do not:
+- SC-001: 3 regressions to review.
+- SC-002: P8b-tune-01 and P8b-tune-02 right in only 1 of 3 repetitions.
+- SC-003: in already-processed, repetition 3, an APPLY_APPROVED_MAPPING of a GLIC-J mapping for a TSH
+  Order. The Validator blocked it (MAPPING_SOURCE_CODE_ABSENT).
+
+Causes, read from the hypotheses:
+- The model compared condition values literally ("expected PLASMA, found plasma"; once "expected
+  'SERUM' but found 'SERUM'") although agent-v3 already told it to ignore letter case and use the
+  synonyms.
+- It held back on one timeout out of one attempt although agent-v3 already said that is HOLD.
+- It once chose a mapping hypothesis and still proposed REQUEST_REVIEW.
+
+The instructions already said the right thing, so a longer text would not fix this. Henry decided on
+2026-11-02 that the platform computes what each step needs. `agent-v4`
+([contract](./contracts/agent-v4-instructions.md)) supersedes `agent-v3`:
+- `SignalNoir.Core.DecisionFacts` computes the identity collisions, the Partner instability and the
+  Mapping candidates with every condition compared. It uses the comparisons of `Core.Identity` and
+  `Core.Conditions`, which the Validator and Rules use.
+- The Agent's input carries them in a CHECKS block after the Evidence.
+- The instructions tell the model to read them, never to recompute them.
+
+Revised in place: FR-003, FR-006, FR-008, FR-010, FR-011, FR-014, FR-015, SC-005; new: FR-019, FR-020.
 
 ## Context
 
@@ -222,7 +249,9 @@ under, and the freeze cannot be checked (Constitution VIII).
   Order itself (never from an error message or receipt text); candidates are the Mappings whose source
   code equals one of them without regard to letter case; check every condition of each candidate without
   regard to letter case and through the catalog's synonyms; record every candidate as a chosen or
-  discarded hypothesis (revised for agent-v3).
+  discarded hypothesis (revised for agent-v3). Since agent-v4 the platform carries out the procedure
+  (FR-019); the instructions tell the Agent to read the candidates, record each as a hypothesis, and use
+  only a mappingId among them.
 - **FR-004**: The instructions MUST tell the Agent to propose APPLY_APPROVED_MAPPING, with that Mapping's
   id and version, when exactly one approved Mapping is applicable and no earlier step applies.
 - **FR-005**: The instructions MUST tell the Agent to propose REQUEST_REVIEW when no Mapping or more than
@@ -233,7 +262,7 @@ under, and the freeze cannot be checked (Constitution VIII).
 
 - **FR-006**: The instructions MUST tell the Agent to propose HOLD when the Evidence shows the Partner down,
   in a scheduled maintenance window, or half or more of this Order's attempts in the history window timed
-  out.
+  out. Since agent-v4 this is `partner.unstable` in CHECKS (FR-019).
 - **FR-006a**: The instructions MUST say that answered errors (an HTTP error status or a rejection with a
   reason, including a rejection inside an accepted delivery) are the failure under investigation, not
   Partner instability; only timeouts, a Partner down and a maintenance window count as instability.
@@ -248,7 +277,8 @@ under, and the freeze cannot be checked (Constitution VIII).
 - **FR-008**: The instructions MUST limit HIGH to HOLD backed by Partner health DOWN or an active
   maintenance, and to APPLY_APPROVED_MAPPING whose every condition matched literally (no synonym, no
   letter-case difference); any other HOLD or Mapping is MEDIUM; REQUEST_REVIEW is LOW (revised for
-  agent-v3).
+  agent-v3). Since agent-v4 the two HIGH cases are `partner.downOrMaintenance` and the candidate's
+  `exact` in CHECKS.
 
 **Unchanged**
 
@@ -256,17 +286,18 @@ under, and the freeze cannot be checked (Constitution VIII).
   that every claim cites only evidenceIds from the Evidence, the closed precondition vocabulary, the JSON
   answer shape, the pre-collected Evidence mode and the single call per Investigation MUST stay as in
   `agent-v1`.
-- **FR-010**: The Validator, the Rules proposer, the Core and the Tools MUST NOT change in this feature.
+- **FR-010**: The Validator, the Rules proposer, the existing Core classes and the Tools MUST NOT change
+  in this feature (revised for agent-v4). One new pure Core class, `DecisionFacts`, is added (FR-019).
 
 **Version and freeze**
 
-- **FR-011**: The prompt version recorded on every Agent Proposal MUST be `agent-v3`; earlier versions
-  MUST no longer be used by any proposer (revised for agent-v3).
+- **FR-011**: The prompt version recorded on every Agent Proposal MUST be `agent-v4`; earlier versions
+  MUST no longer be used by any proposer (revised for agent-v4).
 - **FR-012**: The instructions MUST NOT name a scenario family, a variant id, or answer-key text; they MUST
   be general criteria over the Evidence.
 - **FR-013**: `agent-v2` MUST be tuned only on tuning variants; nobody tuning it MAY read the reserved test
   variants or their answer key before the freeze (Constitution VIII).
-- **FR-014**: `agent-v3` MUST be merged before the freeze of 2026-11-05 and be the prompt version named in
+- **FR-014**: `agent-v4` MUST be merged before the freeze of 2026-11-05 and be the prompt version named in
   the freeze record.
 
 **Answer format (agent-v3)**
@@ -276,12 +307,30 @@ under, and the freeze cannot be checked (Constitution VIII).
 - **FR-018**: The instructions MUST NOT quote exam codes, Mapping ids or values taken from tuning variants
   (examples use made-up codes).
 
+**Computed checks (agent-v4)**
+
+- **FR-019**: The Agent's input MUST carry, after the Evidence block, a CHECKS block computed from that
+  Evidence by the comparisons the Validator and Rules use:
+  - identity collisions;
+  - Partner health, maintenance, a policy window covering now, timeouts against attempts, and whether
+    the Partner is unstable;
+  - every Mapping whose sourceCode is an exam code of the Order, with each condition's Order value and
+    match, whether it applies, and whether it matched exactly.
+
+  Each check MUST name the evidenceId it comes from. The block MUST be neutralized like the Evidence.
+  The Evidence block itself does not change.
+- **FR-020**: The instructions MUST tell the Agent to take the CHECKS as written and not recompute them.
+  They MUST tell it to propose a mappingId only from the candidates. They MUST state that a chosen
+  hypothesis means APPLY_APPROVED_MAPPING with that mappingId, and that REQUEST_REVIEW means no chosen
+  hypothesis.
+
 **Evidence of the change**
 
 - **FR-015**: An automated test MUST check, with a scripted runtime and no live provider, that an Agent
-  Proposal records `agent-v3`, that the instructions contain the four steps of the decision order, the
+  Proposal records `agent-v4`, that the instructions contain the four steps of the decision order, the
   RETRY prohibition, the Mapping procedure and the confidence criterion, and that they name no scenario
-  family or variant (revised for agent-v3).
+  family or variant (revised for agent-v4). The checks of FR-019 MUST be tested on the shapes of the
+  run_000146 misses (letter case, synonym, an Order with no candidate, one timeout out of one attempt).
 - **FR-016**: A tuning rehearsal with the real model MUST be run on `agent-v2` over the same tuning
   variants as the `agent-v1` rehearsal, and its outcomes recorded next to the `agent-v1` ones, labelled
   development.
@@ -309,7 +358,7 @@ under, and the freeze cannot be checked (Constitution VIII).
   the answer key expects another Action) in any repetition.
 - **SC-004**: Every Proposal of REQUEST_REVIEW for insufficient or ambiguous Evidence carries LOW
   confidence, and fewer than half of all Proposals carry HIGH.
-- **SC-005**: 100% of Agent Proposals recorded after the change carry the prompt version `agent-v3`.
+- **SC-005**: 100% of Agent Proposals recorded after the change carry the prompt version `agent-v4`.
 - **SC-006**: The rehearsal of 12 Cases still completes within 10 minutes per repetition.
 - **SC-007**: The reserved test variants are not run with, nor read for, `agent-v2` before the freeze.
 
