@@ -30,12 +30,13 @@ FIELDS = [
     "policyDigest", "mappingDigest", "evaluatorVersion", "reservedCatalogDigest", "answerKeyDigest",
 ]
 
-# The source files frozen with the record: the proposers and the prompt, what the baseline matches
-# Mappings with, the evaluator, the reference data, the reserved variants and their texts, and the
-# reserved answer keys
+# The source files frozen with the record: the proposers and the prompt, the checks the Agent reads
+# (agent-v4), what the baseline matches Mappings with, the evaluator, the reference data, the
+# reserved variants and their texts, and the reserved answer keys
 FROZEN = [
     "src/SignalNoir/Proposers/Agent.cls",
     "src/SignalNoir/Proposers/Rules.cls",
+    "src/SignalNoir/Core/DecisionFacts.cls",
     "src/SignalNoir/Core/MappingMatch.cls",
     "src/SignalNoir/Core/Conditions.cls",
     "src/SignalNoir/Core/Identity.cls",
