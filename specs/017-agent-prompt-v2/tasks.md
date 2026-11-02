@@ -115,7 +115,7 @@ task list's automated checks.
 - [x] T014 Replace the `SystemPrompt` XData of src/SignalNoir/Proposers/Agent.cls with the text of
   contracts/agent-v3-instructions.md and set `PROMPTVERSION = "agent-v3"` until T013 passes
 - [x] T015 Compile and run the whole suite; record the counts in research.md
-- [ ] T016 The tuning rehearsal on agent-v3 (3 repetitions, same tuning variants) is run by the team
+- [x] T016 The tuning rehearsal on agent-v3 (3 repetitions, same tuning variants) is run by the team
   member who runs the Benchmark, before the freeze of 2026-11-05
 
 ---
@@ -130,7 +130,7 @@ task list's automated checks.
 - [x] T019 Replace the `SystemPrompt` with contracts/agent-v4-instructions.md, set `PROMPTVERSION =
   "agent-v4"`, and update TestAgentPromptV2 and TestProposerModes
 - [x] T020 Compile and run the whole suite; record the counts in research.md
-- [ ] T021 The tuning rehearsal on agent-v4 (3 repetitions, same tuning variants) is run by the team
+- [x] T021 The tuning rehearsal on agent-v4 (3 repetitions, same tuning variants) is run by the team
   member who runs the Benchmark, before the freeze of 2026-11-05
 
 ---
@@ -145,6 +145,6 @@ task list's automated checks.
 - [x] T024 Prompt agent-v5 (steps in order, stop at step 2, preconditions per Action, MEDIUM when not
   exact), `PROMPTVERSION = "agent-v5"`; TestAgentPromptV2 and TestProposerModes updated
 - [x] T025 Compile and run the whole suite; record the counts in research.md
-- [ ] T026 The tuning rehearsal on agent-v5 (3 repetitions, same tuning variants), before the freeze of
+- [x] T026 The tuning rehearsal on agent-v5 (3 repetitions, same tuning variants), before the freeze of
   2026-11-05
 

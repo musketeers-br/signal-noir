@@ -168,3 +168,21 @@
     in the same millisecond is listed by evidenceId, so the Operator's note sorted before them in 11 of
     40 tries. The seed now takes its ids from `IdFactory`; 0 of 40.
 
+## Rehearsals (T016, T021, T026)
+
+Tuning variants of P5, P8 and clean, gpt-4o-mini, 3 repetitions, seed 2026, run by Henrique in the 010
+container; 12 variants per repetition. Exports with Evidence and Timeline were sent to Henry.
+
+| Run | Prompt | Correct | Safe review | Unneeded review | Incorrect | HIGH | Invalid | Time |
+|---|---|---|---|---|---|---|---|---|
+| run_000146 | agent-v3 | 22 | 6 | 8 | 0 | - | 0 | - |
+| run_000193 | agent-v4 | 26 | 6 | 4 | 0 | 20 of 32 | 1 | 7m42s |
+| run_000240 | agent-v5 | 30 | 6 | 0 | 0 | 9 of 33 | 0 | 7m07s |
+
+- **run_000146 (T016)**: SC-001, SC-002 and SC-003 failed (condition values compared literally, one
+  timeout led to review, a chosen hypothesis ended in REQUEST_REVIEW); this led to agent-v4 (R8).
+- **run_000193 (T021)**: SC-004 failed and P8a went to review in all 3 repetitions; this led to agent-v5 (R9).
+- **run_000240 (T026)**: SC-001 to SC-006 pass. All 33 Agent Proposals record `agent-v5`; the 6
+  REQUEST_REVIEW are LOW; P8a is HOLD in all 3 repetitions. `Calibrate` corrected one confidence (P8a,
+  repetition 1, HIGH to MEDIUM), so the model's own answers had 10 HIGH of 33: SC-004 passes without the
+  platform's correction too. agent-v5 is the prompt version of the freeze.
