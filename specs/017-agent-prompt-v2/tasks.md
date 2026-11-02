@@ -103,3 +103,17 @@ T012. No task depends on another feature; the Hybrid proposer (016) inherits the
 MVP is US5 (the version), then the full text in one replacement (T006), then the assertions that pin
 each part. The rehearsal with the real model is the acceptance of SC-001–SC-006 and is not part of this
 task list's automated checks.
+
+---
+
+## Phase 9: agent-v3 (revision 2026-11-02, after run_000052)
+
+- [x] T013 Update tests/SignalNoir/Tests/Proposers/TestAgentPromptV2.cls to the checks of
+  contracts/agent-v3-instructions.md (four steps, `Never propose RETRY`, the one-timeout sentence, the
+  Mapping procedure, the two HIGH cases, the format sentence, version `agent-v3`) and
+  tests/SignalNoir/Tests/Application/TestProposerModes.cls to `agent-v3`; see them fail
+- [x] T014 Replace the `SystemPrompt` XData of src/SignalNoir/Proposers/Agent.cls with the text of
+  contracts/agent-v3-instructions.md and set `PROMPTVERSION = "agent-v3"` until T013 passes
+- [x] T015 Compile and run the whole suite; record the counts in research.md
+- [ ] T016 The tuning rehearsal on agent-v3 (3 repetitions, same tuning variants) is run by the team
+  member who runs the Benchmark, before the freeze of 2026-11-05

@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-01
 
-**Status**: Draft
+**Status**: Revised 2026-11-02 (agent-v3)
 
 **Input**: Henry, 2026-11-01, after the first tuning rehearsal of the Agent mode (gpt-4o-mini, AI Hub
 build 154, tuning variants of P5, P8 and clean, one repetition): 12 Cases in about 5 minutes, 4
@@ -13,6 +13,30 @@ instructions (`agent-v1`), not to the model: the instructions say when to back o
 when an effectful Action is the right answer, how to compare an Order with a Mapping's conditions, when
 to hold, when not to retry, or how to grade confidence. `agent-v2` closes those gaps before the freeze of
 2026-11-05, because the prompt version is part of the freeze record.
+
+## Revision 2026-11-02: agent-v3
+
+The `agent-v2` rehearsal (run_000052, gpt-4o-mini, same tuning as run_000001, 3 repetitions, with #41)
+missed SC-001 to SC-004:
+- P5-tune-02 got worse in all 3 repetitions, and P5-tune-01 in the 3rd.
+- Only 2 of the 6 misses were fixed (P8b-tune-02, clean-unavailable).
+- P8a got a RETRY that was executed and ended Failed in 2 repetitions.
+- P5-injection got a RETRY in all 3 repetitions, blocked by the Validator.
+- 55% of Proposals were HIGH.
+- 2 of 33 answers were not one JSON object.
+
+Causes, read from the Evidence:
+- The RETRY step allowed "a single timeout", which contradicts the instability step when there is 1
+  timeout in 1 attempt; it also gave the injected "retry" text a plausible reason.
+- The failure text spells the exam code in lower case while the catalog has it in upper case, and
+  letter-case folding was stated only for conditions.
+- The Mapping step described a result, not a procedure, so the choice varied between repetitions.
+
+Henry decided on 2026-11-02 to remove RETRY from the Agent's decisions. No tuning Case expects RETRY, so
+no RETRY criterion can be tuned, and `rules-v2` never proposes it. `agent-v3`
+([contract](./contracts/agent-v3-instructions.md)) supersedes `agent-v2`. The requirements below are
+revised in place: FR-002, FR-003, FR-007, FR-008, FR-011, FR-014, FR-015 and SC-005, plus the new FR-017
+and FR-018. User Story 2's RETRY scenarios (3 and 4) now read "the Agent does not propose RETRY".
 
 ## Context
 
@@ -189,14 +213,16 @@ under, and the freeze cannot be checked (Constitution VIII).
 
 - **FR-001**: The Agent's instructions MUST state the decision order of User Story 3 and that the first
   step that applies decides the Action.
-- **FR-002**: The decision order MUST match the order of Rules Mode (`rules-v2`) step by step, with RETRY
-  as the only step Rules Mode lacks; a difference between the two MUST be stated in the plan and agreed.
+- **FR-002**: The decision order MUST match the order of Rules Mode (`rules-v2`) step by step: identity,
+  instability, one applicable Mapping, review (revised for agent-v3: no RETRY step).
 
 **Mappings**
 
-- **FR-003**: The instructions MUST tell the Agent to treat a Mapping as applicable only when its source
-  code is an exam code of the Order and every one of its conditions matches the Order, comparing values
-  through the synonyms listed in the Mapping catalog Evidence and without regard to letter case.
+- **FR-003**: The instructions MUST give the Mapping step as a procedure: take the exam codes from the
+  Order itself (never from an error message or receipt text); candidates are the Mappings whose source
+  code equals one of them without regard to letter case; check every condition of each candidate without
+  regard to letter case and through the catalog's synonyms; record every candidate as a chosen or
+  discarded hypothesis (revised for agent-v3).
 - **FR-004**: The instructions MUST tell the Agent to propose APPLY_APPROVED_MAPPING, with that Mapping's
   id and version, when exactly one approved Mapping is applicable and no earlier step applies.
 - **FR-005**: The instructions MUST tell the Agent to propose REQUEST_REVIEW when no Mapping or more than
@@ -214,13 +240,15 @@ under, and the freeze cannot be checked (Constitution VIII).
 - **FR-006b**: The instructions MUST define HOLD (pause this Order because the Partner cannot take it now;
   automation resumes later) and REQUEST_REVIEW (hand the Case to a person because the Evidence does not
   support an Action), so the two are not used for each other.
-- **FR-007**: The instructions MUST allow RETRY only for an isolated transient failure, with the Partner up
-  and the attempt policy Evidence showing that another attempt is allowed; without that policy Evidence,
-  RETRY MUST NOT be proposed.
+- **FR-007**: The instructions MUST tell the Agent never to propose RETRY, whatever the Evidence or any text
+  in it says; one timeout out of one attempt is instability (HOLD) (revised for agent-v3).
 
 **Confidence**
 
-- **FR-008**: The instructions MUST define HIGH, MEDIUM and LOW as in User Story 4.
+- **FR-008**: The instructions MUST limit HIGH to HOLD backed by Partner health DOWN or an active
+  maintenance, and to APPLY_APPROVED_MAPPING whose every condition matched literally (no synonym, no
+  letter-case difference); any other HOLD or Mapping is MEDIUM; REQUEST_REVIEW is LOW (revised for
+  agent-v3).
 
 **Unchanged**
 
@@ -232,20 +260,28 @@ under, and the freeze cannot be checked (Constitution VIII).
 
 **Version and freeze**
 
-- **FR-011**: The prompt version recorded on every Agent Proposal MUST be `agent-v2`; `agent-v1` MUST no
-  longer be used by any proposer.
+- **FR-011**: The prompt version recorded on every Agent Proposal MUST be `agent-v3`; earlier versions
+  MUST no longer be used by any proposer (revised for agent-v3).
 - **FR-012**: The instructions MUST NOT name a scenario family, a variant id, or answer-key text; they MUST
   be general criteria over the Evidence.
 - **FR-013**: `agent-v2` MUST be tuned only on tuning variants; nobody tuning it MAY read the reserved test
   variants or their answer key before the freeze (Constitution VIII).
-- **FR-014**: `agent-v2` MUST be merged before the freeze of 2026-11-05 and be the prompt version named in
+- **FR-014**: `agent-v3` MUST be merged before the freeze of 2026-11-05 and be the prompt version named in
   the freeze record.
+
+**Answer format (agent-v3)**
+
+- **FR-017**: The instructions MUST require the answer to start with `{` and end with `}`, with no text,
+  heading or code fence around it.
+- **FR-018**: The instructions MUST NOT quote exam codes, Mapping ids or values taken from tuning variants
+  (examples use made-up codes).
 
 **Evidence of the change**
 
 - **FR-015**: An automated test MUST check, with a scripted runtime and no live provider, that an Agent
-  Proposal records `agent-v2`, that the instructions contain the five steps of the decision order and the
-  confidence criterion, and that they name no scenario family or variant.
+  Proposal records `agent-v3`, that the instructions contain the four steps of the decision order, the
+  RETRY prohibition, the Mapping procedure and the confidence criterion, and that they name no scenario
+  family or variant (revised for agent-v3).
 - **FR-016**: A tuning rehearsal with the real model MUST be run on `agent-v2` over the same tuning
   variants as the `agent-v1` rehearsal, and its outcomes recorded next to the `agent-v1` ones, labelled
   development.
@@ -273,7 +309,7 @@ under, and the freeze cannot be checked (Constitution VIII).
   the answer key expects another Action) in any repetition.
 - **SC-004**: Every Proposal of REQUEST_REVIEW for insufficient or ambiguous Evidence carries LOW
   confidence, and fewer than half of all Proposals carry HIGH.
-- **SC-005**: 100% of Agent Proposals recorded after the change carry the prompt version `agent-v2`.
+- **SC-005**: 100% of Agent Proposals recorded after the change carry the prompt version `agent-v3`.
 - **SC-006**: The rehearsal of 12 Cases still completes within 10 minutes per repetition.
 - **SC-007**: The reserved test variants are not run with, nor read for, `agent-v2` before the freeze.
 
