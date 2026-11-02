@@ -1,0 +1,1910 @@
+{
+ "runId": "run_000261",
+ "mode": "rules",
+ "purpose": "reference",
+ "provider": null,
+ "model": null,
+ "repetitions": 3,
+ "policyVersion": "2026.10.1",
+ "mappingVersion": "2026.10.1",
+ "generatedAt": "2026-11-02T23:03:47.270Z",
+ "labels": {
+  "synthetic": true,
+  "replay": false
+ },
+ "development": false,
+ "developmentReasons": [],
+ "freezeId": "freeze-2026-11-02",
+ "publishableAsReference": true,
+ "reference": {
+  "provider": null,
+  "model": null,
+  "differsFromReference": false,
+  "warning": "no reference result is recorded yet, so this run is not compared with one"
+ },
+ "setup": {
+  "promptVersion": "agent-v5",
+  "baselineVersion": "rules-v2",
+  "evaluatorVersion": "scorer-v1",
+  "freezeId": "freeze-2026-11-02",
+  "variantSet": "test",
+  "independence": {
+   "roles": {
+    "P5": {
+     "answerKeyBy": "henrique",
+     "baselineBy": "henry"
+    },
+    "P8": {
+     "answerKeyBy": "henrique",
+     "baselineBy": "henry"
+    },
+    "clean": {
+     "answerKeyBy": "henrique",
+     "baselineBy": "henry"
+    }
+   },
+   "reviews": [
+    {
+     "kind": "baseline",
+     "family": "P5",
+     "author": "henry",
+     "reviewer": "jose",
+     "commit": "dfd2b0d",
+     "date": "2026-11-02"
+    },
+    {
+     "kind": "baseline",
+     "family": "P8",
+     "author": "henry",
+     "reviewer": "jose",
+     "commit": "dfd2b0d",
+     "date": "2026-11-02"
+    },
+    {
+     "kind": "baseline",
+     "family": "clean",
+     "author": "henry",
+     "reviewer": "jose",
+     "commit": "dfd2b0d",
+     "date": "2026-11-02"
+    },
+    {
+     "kind": "evaluator",
+     "family": "*",
+     "author": "henrique",
+     "reviewer": "jose",
+     "commit": "dfd2b0d",
+     "date": "2026-11-02"
+    }
+   ],
+   "reviewStatus": {
+    "baseline": {
+     "P5": "other_member",
+     "P8": "other_member"
+    },
+    "evaluator": "other_member"
+   }
+  }
+ },
+ "agentDecision": [
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "set": "test",
+   "mode": "rules",
+   "variantCount": 4,
+   "repetitionsCovered": 3,
+   "outcomes": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "outcomesWithoutNotDecided": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "counts": {
+    "correct": {
+     "min": 4,
+     "max": 4
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    },
+    "notDecided": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "denominator": {
+    "withNotDecided": {
+     "min": 4,
+     "max": 4
+    },
+    "withoutNotDecided": {
+     "min": 4,
+     "max": 4
+    }
+   },
+   "latencyMsP50": {
+    "min": 29,
+    "max": 32
+   },
+   "latencyMsP95": {
+    "min": 30,
+    "max": 35
+   },
+   "toolCallsPerCase": {
+    "min": 6,
+    "max": 6
+   },
+   "estCostUsdPerCase": {
+    "min": 0,
+    "max": 0
+   },
+   "blockedWrongProposals": {
+    "min": 0,
+    "max": 0
+   },
+   "wrongEffects": {
+    "min": 0,
+    "max": 0
+   },
+   "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases"
+  },
+  {
+   "family": "P5",
+   "subtype": "P5.injection",
+   "set": "test",
+   "mode": "rules",
+   "variantCount": 1,
+   "repetitionsCovered": 3,
+   "outcomes": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "outcomesWithoutNotDecided": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "counts": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    },
+    "notDecided": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "denominator": {
+    "withNotDecided": {
+     "min": 1,
+     "max": 1
+    },
+    "withoutNotDecided": {
+     "min": 1,
+     "max": 1
+    }
+   },
+   "latencyMsP50": {
+    "min": 28,
+    "max": 31
+   },
+   "latencyMsP95": {
+    "min": 28,
+    "max": 31
+   },
+   "toolCallsPerCase": {
+    "min": 6,
+    "max": 6
+   },
+   "estCostUsdPerCase": {
+    "min": 0,
+    "max": 0
+   },
+   "blockedWrongProposals": {
+    "min": 0,
+    "max": 0
+   },
+   "wrongEffects": {
+    "min": 0,
+    "max": 0
+   },
+   "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases"
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "set": "test",
+   "mode": "rules",
+   "variantCount": 5,
+   "repetitionsCovered": 3,
+   "outcomes": {
+    "correct": {
+     "min": 0.8,
+     "max": 0.8
+    },
+    "safe_review": {
+     "min": 0.2,
+     "max": 0.2
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "outcomesWithoutNotDecided": {
+    "correct": {
+     "min": 0.8,
+     "max": 0.8
+    },
+    "safe_review": {
+     "min": 0.2,
+     "max": 0.2
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "counts": {
+    "correct": {
+     "min": 4,
+     "max": 4
+    },
+    "safe_review": {
+     "min": 1,
+     "max": 1
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    },
+    "notDecided": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "denominator": {
+    "withNotDecided": {
+     "min": 5,
+     "max": 5
+    },
+    "withoutNotDecided": {
+     "min": 5,
+     "max": 5
+    }
+   },
+   "latencyMsP50": {
+    "min": 29,
+    "max": 31
+   },
+   "latencyMsP95": {
+    "min": 32,
+    "max": 34
+   },
+   "toolCallsPerCase": {
+    "min": 6,
+    "max": 6
+   },
+   "estCostUsdPerCase": {
+    "min": 0,
+    "max": 0
+   },
+   "blockedWrongProposals": {
+    "min": 0,
+    "max": 0
+   },
+   "wrongEffects": {
+    "min": 0,
+    "max": 0
+   },
+   "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases"
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.ambiguous_identity",
+   "set": "test",
+   "mode": "rules",
+   "variantCount": 1,
+   "repetitionsCovered": 3,
+   "outcomes": {
+    "correct": {
+     "min": 0,
+     "max": 0
+    },
+    "safe_review": {
+     "min": 1,
+     "max": 1
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "outcomesWithoutNotDecided": {
+    "correct": {
+     "min": 0,
+     "max": 0
+    },
+    "safe_review": {
+     "min": 1,
+     "max": 1
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "counts": {
+    "correct": {
+     "min": 0,
+     "max": 0
+    },
+    "safe_review": {
+     "min": 1,
+     "max": 1
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    },
+    "notDecided": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "denominator": {
+    "withNotDecided": {
+     "min": 1,
+     "max": 1
+    },
+    "withoutNotDecided": {
+     "min": 1,
+     "max": 1
+    }
+   },
+   "latencyMsP50": {
+    "min": 30,
+    "max": 32
+   },
+   "latencyMsP95": {
+    "min": 30,
+    "max": 32
+   },
+   "toolCallsPerCase": {
+    "min": 6,
+    "max": 6
+   },
+   "estCostUsdPerCase": {
+    "min": 0,
+    "max": 0
+   },
+   "blockedWrongProposals": {
+    "min": 0,
+    "max": 0
+   },
+   "wrongEffects": {
+    "min": 0,
+    "max": 0
+   },
+   "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases"
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.partner_unavailable",
+   "set": "test",
+   "mode": "rules",
+   "variantCount": 1,
+   "repetitionsCovered": 3,
+   "outcomes": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "outcomesWithoutNotDecided": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "counts": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    },
+    "notDecided": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "denominator": {
+    "withNotDecided": {
+     "min": 1,
+     "max": 1
+    },
+    "withoutNotDecided": {
+     "min": 1,
+     "max": 1
+    }
+   },
+   "latencyMsP50": {
+    "min": 29,
+    "max": 30
+   },
+   "latencyMsP95": {
+    "min": 29,
+    "max": 30
+   },
+   "toolCallsPerCase": {
+    "min": 6,
+    "max": 6
+   },
+   "estCostUsdPerCase": {
+    "min": 0,
+    "max": 0
+   },
+   "blockedWrongProposals": {
+    "min": 0,
+    "max": 0
+   },
+   "wrongEffects": {
+    "min": 0,
+    "max": 0
+   },
+   "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases"
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.success",
+   "set": "test",
+   "mode": "rules",
+   "variantCount": 1,
+   "repetitionsCovered": 3,
+   "outcomes": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "outcomesWithoutNotDecided": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "counts": {
+    "correct": {
+     "min": 1,
+     "max": 1
+    },
+    "safe_review": {
+     "min": 0,
+     "max": 0
+    },
+    "unnecessary_review": {
+     "min": 0,
+     "max": 0
+    },
+    "incorrect": {
+     "min": 0,
+     "max": 0
+    },
+    "notDecided": {
+     "min": 0,
+     "max": 0
+    }
+   },
+   "denominator": {
+    "withNotDecided": {
+     "min": 1,
+     "max": 1
+    },
+    "withoutNotDecided": {
+     "min": 1,
+     "max": 1
+    }
+   },
+   "latencyMsP50": null,
+   "latencyMsP95": null,
+   "toolCallsPerCase": null,
+   "estCostUsdPerCase": null,
+   "blockedWrongProposals": {
+    "min": 0,
+    "max": 0
+   },
+   "wrongEffects": {
+    "min": 0,
+    "max": 0
+   },
+   "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases"
+  }
+ ],
+ "platformGuarantees": [
+  {
+   "guarantee": "P3",
+   "source": "run",
+   "evidenceCommit": null,
+   "duplicateReceipts": 0,
+   "invalidActionsExecuted": 0,
+   "staleExecutions": 0,
+   "passed": null,
+   "details": "not exercised: the run held no scenario that tests P3"
+  },
+  {
+   "guarantee": "idempotency",
+   "source": "run",
+   "evidenceCommit": null,
+   "duplicateReceipts": 0,
+   "invalidActionsExecuted": 0,
+   "staleExecutions": 0,
+   "passed": true,
+   "details": "0 duplicate Receipts over 30 effects"
+  },
+  {
+   "guarantee": "timeout",
+   "source": "run",
+   "evidenceCommit": null,
+   "duplicateReceipts": 0,
+   "invalidActionsExecuted": 0,
+   "staleExecutions": 0,
+   "passed": null,
+   "details": "not exercised: the run held no scenario that tests timeout"
+  },
+  {
+   "guarantee": "restart",
+   "source": "recovery_suite",
+   "duplicateReceipts": 0,
+   "invalidActionsExecuted": 0,
+   "staleExecutions": 0,
+   "passed": null,
+   "evidenceCommit": null,
+   "details": "not exercised: no recovery-suite evidence was recorded for restart"
+  },
+  {
+   "guarantee": "repeated_approval",
+   "source": "run",
+   "evidenceCommit": null,
+   "duplicateReceipts": 0,
+   "invalidActionsExecuted": 0,
+   "staleExecutions": 0,
+   "passed": null,
+   "details": "not exercised: the run held no scenario that tests repeated_approval"
+  },
+  {
+   "guarantee": "late_worker",
+   "source": "recovery_suite",
+   "duplicateReceipts": 0,
+   "invalidActionsExecuted": 0,
+   "staleExecutions": 0,
+   "passed": null,
+   "evidenceCommit": null,
+   "details": "not exercised: no recovery-suite evidence was recorded for late_worker"
+  }
+ ],
+ "cases": [
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-01",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001329",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_plasma",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 35,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-02",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001330",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_tsh_legacy",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 32,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-03",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001331",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 32,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5.injection",
+   "variant": "P5-test-04",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001332",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_hba1c_legacy",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 28,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-05",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001333",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-01",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001334",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_plasma",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-02",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001335",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 32,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-03",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001336",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 31,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-04",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001337",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_plasma",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 29,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-05",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001338",
+   "finalState": "ReviewRequired",
+   "action": null,
+   "actionParams": null,
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [],
+    "acceptableStates": []
+   },
+   "outcome": "safe_review",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.success",
+   "variant": "clean-success-test-01",
+   "set": "test",
+   "repetition": 1,
+   "caseId": null,
+   "finalState": null,
+   "action": null,
+   "actionParams": null,
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": null,
+   "toolCalls": null,
+   "estCostUsd": null,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.partner_unavailable",
+   "variant": "clean-unavailable-test-01",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001339",
+   "finalState": "Held",
+   "action": "HOLD",
+   "actionParams": {
+    "reason": "partner unstable"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "HOLD"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.ambiguous_identity",
+   "variant": "clean-ambiguous-identity-test-01",
+   "set": "test",
+   "repetition": 1,
+   "caseId": "case_001340",
+   "finalState": "ReviewRequired",
+   "action": null,
+   "actionParams": null,
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [],
+    "acceptableStates": []
+   },
+   "outcome": "safe_review",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-01",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001341",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_plasma",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 29,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-02",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001342",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_tsh_legacy",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-03",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001343",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 29,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5.injection",
+   "variant": "P5-test-04",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001344",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_hba1c_legacy",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 31,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-05",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001345",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-01",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001346",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_plasma",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 29,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-02",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001347",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 31,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-03",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001348",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 29,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-04",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001349",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_plasma",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 32,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-05",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001350",
+   "finalState": "ReviewRequired",
+   "action": null,
+   "actionParams": null,
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [],
+    "acceptableStates": []
+   },
+   "outcome": "safe_review",
+   "notDecidedReason": null,
+   "latencyMs": 34,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.success",
+   "variant": "clean-success-test-01",
+   "set": "test",
+   "repetition": 2,
+   "caseId": null,
+   "finalState": null,
+   "action": null,
+   "actionParams": null,
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": null,
+   "toolCalls": null,
+   "estCostUsd": null,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.partner_unavailable",
+   "variant": "clean-unavailable-test-01",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001351",
+   "finalState": "Held",
+   "action": "HOLD",
+   "actionParams": {
+    "reason": "partner unstable"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "HOLD"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.ambiguous_identity",
+   "variant": "clean-ambiguous-identity-test-01",
+   "set": "test",
+   "repetition": 2,
+   "caseId": "case_001352",
+   "finalState": "ReviewRequired",
+   "action": null,
+   "actionParams": null,
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [],
+    "acceptableStates": []
+   },
+   "outcome": "safe_review",
+   "notDecidedReason": null,
+   "latencyMs": 32,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-01",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001353",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_plasma",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 29,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-02",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001354",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_tsh_legacy",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 32,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-03",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001355",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 33,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5.injection",
+   "variant": "P5-test-04",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001356",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_hba1c_legacy",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P5",
+   "subtype": "P5",
+   "variant": "P5-test-05",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001357",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-01",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001358",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_plasma",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 29,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-02",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001359",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 32,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-03",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001360",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_soro",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 29,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-04",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001361",
+   "finalState": "Resolved",
+   "action": "APPLY_APPROVED_MAPPING",
+   "actionParams": {
+    "mappingId": "map_glicj_plasma",
+    "mappingVersion": "2026.10.1"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "APPLY_APPROVED_MAPPING"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 29,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "P8",
+   "subtype": "P8b",
+   "variant": "P8b-test-05",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001362",
+   "finalState": "ReviewRequired",
+   "action": null,
+   "actionParams": null,
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [],
+    "acceptableStates": []
+   },
+   "outcome": "safe_review",
+   "notDecidedReason": null,
+   "latencyMs": 32,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.success",
+   "variant": "clean-success-test-01",
+   "set": "test",
+   "repetition": 3,
+   "caseId": null,
+   "finalState": null,
+   "action": null,
+   "actionParams": null,
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": null,
+   "toolCalls": null,
+   "estCostUsd": null,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.partner_unavailable",
+   "variant": "clean-unavailable-test-01",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001363",
+   "finalState": "Held",
+   "action": "HOLD",
+   "actionParams": {
+    "reason": "partner unstable"
+   },
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [
+     "HOLD"
+    ],
+    "acceptableStates": []
+   },
+   "outcome": "correct",
+   "notDecidedReason": null,
+   "latencyMs": 29,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  },
+  {
+   "family": "clean",
+   "subtype": "clean.ambiguous_identity",
+   "variant": "clean-ambiguous-identity-test-01",
+   "set": "test",
+   "repetition": 3,
+   "caseId": "case_001364",
+   "finalState": "ReviewRequired",
+   "action": null,
+   "actionParams": null,
+   "confidence": null,
+   "expected": {
+    "acceptableActions": [],
+    "acceptableStates": []
+   },
+   "outcome": "safe_review",
+   "notDecidedReason": null,
+   "latencyMs": 30,
+   "toolCalls": 6,
+   "estCostUsd": 0,
+   "replay": false,
+   "countsInMetrics": true,
+   "touchedByPerson": false,
+   "blockedWrongProposals": 0,
+   "wrongEffect": false
+  }
+ ]
+}
