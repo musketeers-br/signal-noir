@@ -7,13 +7,12 @@ Class SignalNoir.Proposers.DecisionsHttp Extends SignalNoir.Core.Port.DecisionsR
 /// runtime environment at call time and never stored, logged or echoed; the
 /// provider's error text is dropped because the 401 message repeats part of
 /// the key. Verified live on build 154 (research R0).
-Parameter SERVER = "api.openai.com";
-
-Parameter PATH = "/v1/decisions";
+/// The request goes out through Embedded Python (httpx, shipped with build 154):
+/// TLS uses the certifi bundle, so no SSL configuration is created in %SYS, and
+/// the body is encoded as UTF-8 by Python (a Latin-1 "código" made the API answer 400).
+Parameter URL = "https://api.openai.com/v1/decisions";
 
 Parameter MODEL = "gpt-6-luna";
-
-Parameter SSLCONFIG = "SignalNoirTLS";
 
 /// A key is available: SN_DECISIONS_API_KEY, or the Agent's key when the
 /// Agent's provider is OpenAI
@@ -35,21 +34,16 @@ Method Decide(body As %DynamicObject, timeoutSeconds As %Integer) As SignalNoir.
 	Try {
 		Set request = {}.%FromJSON(body.%ToJSON())
 		Set request.model = ..Model()
-		Set http = ##class(%Net.HttpRequest).%New()
-		Set http.Server = ..#SERVER, http.Https = 1, http.SSLConfiguration = ..EnsureTls()
-		Set http.Timeout = $Select(+timeoutSeconds > 0: +timeoutSeconds, 1: 20)
-		Set http.ContentType = "application/json; charset=utf-8"
-		Do http.SetHeader("Authorization", "Bearer " _ ..Key())
-		Do http.EntityBody.Write(..Payload(request))
-		Set sc = http.Post(..#PATH)
-		If $$$ISERR(sc) {
-			Set result = ##class(SignalNoir.Core.Result).Error("provider_unavailable", "decisions call failed: " _ $System.Status.GetErrorCodes(sc))
+		Set timeout = $Select(+timeoutSeconds > 0: +timeoutSeconds, 1: 20)
+		Set sent = {}.%FromJSON(..Post(..#URL, ..Key(), request.%ToJSON(), timeout))
+		If sent.error '= "" {
+			Set result = ##class(SignalNoir.Core.Result).Error("provider_unavailable", "decisions call failed: " _ sent.error)
 			Quit
 		}
-		Set status = http.HttpResponse.StatusCode
+		Set status = sent.status
 		Set answer = ""
 		Try {
-			Set answer = {}.%FromJSON(http.HttpResponse.Data)
+			Set answer = {}.%FromJSON(sent.data)
 		}
 		Catch {
 		}
@@ -73,12 +67,29 @@ Method Decide(body As %DynamicObject, timeoutSeconds As %Integer) As SignalNoir.
 	Return result
 }
 
-/// The request as UTF-8 bytes. The body stream is binary, so text such as
-/// "código" in a synthetic Order would otherwise go out as Latin-1 and the
-/// API answers 400 invalid_json (found in the 016 live test).
-ClassMethod Payload(request As %DynamicObject) As %String
+/// The request, built without sending it: the body as UTF-8 bytes, the key only
+/// in the Authorization header
+ClassMethod Request(url As %String, key As %String, json As %String) As %SYS.Python [ Language = python ]
 {
-	Return $ZConvert(request.%ToJSON(), "O", "UTF8")
+	import httpx
+	return httpx.Request("POST", url, content=json.encode("utf-8"), headers={"Authorization": "Bearer " + key, "Content-Type": "application/json; charset=utf-8"})
+}
+
+/// Sends the request; returns {"status", "data"} or {"error": <exception name>}.
+/// An exception is reduced to its class name, so its text (which may echo the
+/// request) never leaves this method.
+ClassMethod Post(url As %String, key As %String, json As %String, timeoutSeconds As %Integer) As %String [ Language = python ]
+{
+	import json as js
+	import httpx
+	import iris
+	try:
+		request = iris.cls("SignalNoir.Proposers.DecisionsHttp").Request(url, key, json)
+		with httpx.Client(timeout=float(timeoutSeconds)) as client:
+			response = client.send(request)
+		return js.dumps({"status": response.status_code, "data": response.text})
+	except Exception as ex:
+		return js.dumps({"error": type(ex).__name__})
 }
 
 /// Live smoke check (labelled live): one synthetic request through the
@@ -103,16 +114,6 @@ ClassMethod Key() As %String [ Private ]
 	Set key = $System.Util.GetEnviron("SN_DECISIONS_API_KEY")
 	If (key = "") && ($System.Util.GetEnviron("SN_AI_PROVIDER") = "openai") Set key = $System.Util.GetEnviron("SN_AI_API_KEY")
 	Return key
-}
-
-/// A client TLS configuration in %SYS, created once; holds no secret
-ClassMethod EnsureTls() As %String [ Private ]
-{
-	Set name = ..#SSLCONFIG
-	New $Namespace
-	Set $Namespace = "%SYS"
-	If '##class(Security.SSLConfigs).Exists(name) Do ##class(Security.SSLConfigs).Create(name)
-	Return name
 }
 
 }

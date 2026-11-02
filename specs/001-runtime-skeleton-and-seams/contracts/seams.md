@@ -194,7 +194,7 @@ Decide(body, timeoutSeconds) -> Result
 One OpenAI Decisions API request. `Result.details`: `answer` (parsed response), `status` (HTTP),
 `model`. Failure: `provider_unavailable`, whose message holds only the HTTP status and the
 provider's error code, never its error text. The HTTP adapter (`SignalNoir.Proposers.DecisionsHttp`)
-reads the key at call time. It is the one proposer route outside AI Hub (build 154 has no decisions
+reads the key at call time and sends the request through Embedded Python (`httpx`). It is the one proposer route outside AI Hub (build 154 has no decisions
 route).
 
 ### PartnerClient

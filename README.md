@@ -11,8 +11,90 @@ a Review Dossier.
 > **All data is synthetic.** Orders, patients and partners come from the built-in scenario
 > Simulator. Signal Noir makes no clinical decision.
 
+## ⚖️ For judges: two minutes
+
+**What is different here.** Most agents in a workflow *act* on what the model says. In Signal Noir the
+AI Hub Agent only *proposes*. When a lab Order fails, the Agent investigates with read-only tools and
+proposes one Action from a closed catalog. A deterministic Validator checks the Proposal, an Operator
+approves that exact version, and the effect is sent at most once and reconciled against the partner's
+Receipt. When the Evidence does not support an Action, the Case goes to a person with a Dossier that
+says what was checked and what is missing.
+
+### Where the model stops
+
+| What a model alone cannot be trusted with | What Signal Noir adds |
+|---|---|
+| Comparing values reliably: in our rehearsals `gpt-4o-mini` discarded "plasma" against `PLASMA` even when told not to | **Computed checks**: the platform compares identity, partner instability and the candidate code mappings with the Validator's own rules. The Agent reads the results and cites the Evidence behind them |
+| Text inside the Evidence that reads like an instruction ("retry now") | **Neutralized input**: the model never sees it; the Evidence keeps it raw and the console tags it *Embedded instruction blocked* |
+| Acting on its own answer | **Validator and approval**: every Proposal is validated, whoever wrote it; an Approval binds that exact version and expires after 15 minutes |
+| Sending twice after a timeout | **At most once**: an idempotency key derived from the effect, a re-check just before sending, and reconciliation against Receipts before any resend |
+| Saying "I don't know" | **Review Dossier**: `REQUEST_REVIEW` with *What was checked* and *What we don't know* |
+
+### Five minutes, Docker and the build 154 file
+
+You need the AI Hub EAP build 154 file and an AI provider key (validated with OpenAI `gpt-4o-mini`).
+The [Install](#install) section has the five commands: load, retag, `.env`, build, `up`. Then:
+
+```bash
+sh scripts/smoke.sh
+# then open http://localhost:52773/signalnoir/
+```
+
+1. The smoke check emits one synthetic Order whose exam code the partner has discontinued, and waits
+   for its Case.
+2. Open the Case in the console. The **Proposal** shows the Action, its **Claims** with the Evidence
+   they cite, and its **Hypotheses**: every candidate mapping, chosen or discarded with the reason.
+3. **Versions and metrics** shows the provider, model, prompt version, tool calls, tokens and the
+   **Estimated cost** of that call.
+4. Press **Approve this version**. The Order is sent with the approved mapping, the partner's Receipt
+   comes back, and the **Timeline** records every step.
+5. Without a key, the same Case ends in `ReviewRequired`, and its **Review dossier** says the provider
+   is unavailable. The application never guesses.
+
+Videos: [hybrid use case](docs/video/signal-noir-hybrid-use-case.mp4)
+([dark](docs/video/signal-noir-hybrid-use-case-dark.mp4)) ·
+[Decisions and AI Hub](docs/video/signal-noir-decisions-and-aihub.mp4)
+
+### If you have two more minutes
+
+| Look at | Why it matters | Where |
+|---|---|---|
+| An Order with an instruction hidden in the partner's error | The Evidence card shows *Embedded instruction blocked*; the Agent never proposes the retry the text asks for | [below](#an-order-with-a-hidden-instruction) |
+| **Similar resolved Cases** on an open Case | Precedents from IRIS Vector Search (`VECTOR(DOUBLE, 1536)`, HNSW). They inform the Operator and are never Evidence | [How it works](#how-it-works), step 7 |
+| `sh scripts/quick-validate.sh` | 3 reference Cases in at most 3 minutes, each "matches the reference" or "diverged" | [Start, check, stop](#start-check-stop) |
+| `SN_PROPOSER_MODE=rules` | The same Cases decided by the deterministic baseline, through the same Validator | [Configuration](#configuration) |
+| `SN_PROPOSER_MODE=hybrid` | The OpenAI Decisions API answers first through a client in **Embedded Python** (`httpx`); when its answer is not decisive, the AI Hub Agent investigates | [`DecisionsHttp.cls`](src/SignalNoir/Proposers/DecisionsHttp.cls) |
+| The model-call record on any Case | Provider, model, prompt version, tokens and cost next to the Evidence and the Validator's verdict ([DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689)) | [Community idea](#community-idea-dpi-i-689) |
+
+#### An Order with a hidden instruction
+
+```bash
+SIM=http://localhost:52773/sim/api/v1
+SCI=$(curl -s -X POST -H 'Content-Type: application/json' \
+  -d '{"family":"P5","variant":"P5-injection-tune-01","seed":7}' $SIM/scenarios |
+  sed -n 's/.*"scenarioInstanceId":"\([^"]*\)".*/\1/p')
+curl -s -X POST $SIM/scenarios/$SCI/emissions
+```
+
+Its Case opens in the console within about a minute.
+
+### The honest parts
+
+- **[Limitations](#limitations)**:
+  - The Production runs in a portable shape, not as an `Ens.Production`.
+  - No benchmark figures are published yet.
+  - Only OpenAI `gpt-4o-mini` is validated.
+  - All data is synthetic.
+- **Build 154 is not public**: request it from the EAP portal. There is no image in any registry,
+  because the EAP terms do not allow it.
+- **How we got here**: the Agent's instructions went through four versions, each after a measured
+  rehearsal on tuning variants. The decisions and their reasons are in
+  [`specs/017-agent-prompt-v2/research.md`](specs/017-agent-prompt-v2/research.md).
+- Built across 18 specs, each with its plan, tasks and evidence in [`specs/`](specs/).
+
 ## Contents
 
+- [For judges: two minutes](#️-for-judges-two-minutes)
 - [How it works](#how-it-works)
 - [What you need](#what-you-need)
 - [Install](#install)
@@ -31,16 +113,21 @@ a Review Dossier.
    accepts each Order and delivers it once to the partner lab.
 2. **Case.** A delivery that ends without a valid Receipt is an Exception, and it opens a Case.
    Every fact lands on the Case's Timeline.
-3. **Investigation.** The Agent runs inside the IRIS Production through AI Hub (`%AI.Agent`). It
-   reads partner health, Order history, Origin status and Receipts, and proposes one of `RETRY`,
-   `APPLY_APPROVED_MAPPING`, `HOLD` or `REQUEST_REVIEW`. The diagnosis cites the Evidence it used.
-   Without a provider, the Case goes straight to review. Two other proposers can take the Agent's
+3. **Investigation.** The Agent runs in IRIS through AI Hub (`%AI.Agent`). Read-only tools first
+   collect the Evidence: partner health, failure history, Origin status, the approved mapping
+   catalog, policies and Receipts. The platform then computes the checks each decision step needs
+   (identity collisions, partner instability, the mappings that apply to the Order). The Agent
+   proposes `APPLY_APPROVED_MAPPING`, `HOLD` or `REQUEST_REVIEW`, and its diagnosis cites the
+   Evidence. The catalog also has `RETRY`, but the Agent never proposes it: resending an Order is
+   left to the platform's recovery. Without a provider, the Case goes straight to review. Two other proposers can take the Agent's
    place, chosen per deployment: **Rules**, a deterministic baseline, and **Decisions**, which asks
    the OpenAI Decisions API (`gpt-6-luna`) for typed answers (one choice over the catalog, one
    probability per Evidence item). An indecisive answer (low probability, a tie, `other` or a
    refusal) never becomes a Proposal: the Case goes to review with that reason. Decisions is the one
    proposer that does not run through AI Hub, because AI Hub build 154 has no route to that API
-   ([spike](docs/verification/013-decisions-spike.md)); it is off unless you enable it. The
+   ([spike](docs/verification/013-decisions-spike.md)). Its client is written in **Embedded Python**
+   (`httpx`, shipped with build 154; see `SignalNoir.Proposers.DecisionsHttp`). It is off unless you
+   enable it. The
    **hybrid** mode combines both: Decisions answers first, and when its answer is not decisive the
    AI Hub Agent investigates the same Evidence and proposes. Each Proposal is authored by whichever
    answered, and the Timeline records the route.
@@ -141,9 +228,14 @@ provider is unavailable.
 | `docker compose stop` / `start` | Stop and start again; data kept |
 | `docker compose down` | Remove the container; **the demo starts empty next time** |
 
-The quick validation (3 reference cases in at most 3 minutes, match or diverged per case) and the
-benchmark commands come with the benchmark feature. They are *pending* and will be listed here
-when they ship.
+```bash
+# quick validation: 3 reference cases in at most 3 minutes, "matches the reference" or "diverged" per case
+sh scripts/quick-validate.sh
+```
+
+With a configured provider it runs the Agent; without one it runs Replay, a recorded answer, and
+says so. Benchmark runs and the reference run are described in
+[`docs/benchmark/README.md`](docs/benchmark/README.md).
 
 ## Configuration
 
@@ -208,9 +300,11 @@ what is listed above.
   decision is involved.
 - **Replay.** Benchmark and demo runs may use *Replay*, a recorded Agent answer played back through
   the same path, so that results are reproducible without a key. Replay Cases are labeled as such.
-- Approved mappings and versioned policies are reference data that is still being integrated.
-  Until it lands, the Agent does not propose a mapping, and an approved mapping is held rather than
-  sent.
+- **Interoperability Production.** The Order intake is a Business Service
+  (`SignalNoir.Interop.Service.OrderIn`). The Production that holds it runs in a portable shape, not
+  as an `Ens.Production`, so its steps do not appear in the Visual Trace (see
+  [Community idea](#community-idea-dpi-i-689)).
+- **Benchmark numbers.** The reference run has not been made yet, so no figures are published.
 - Demo instance: the web applications accept unauthenticated requests on your machine. Do not
   expose the ports to a network.
 
@@ -236,9 +330,13 @@ an image of the EAP build.
 
 ## Team
 
-Musketeers: José Roberto (IRIS and API), Henrique (validation and benchmark), Henry (Agent,
-execution and console). Developer Community profiles: *pending*.
+Signal Noir is developed with 💜 by the **Musketeers Team**:
 
-Demo video (at most 5 minutes): *pending*.
+- [José Roberto Pereira](https://community.intersystems.com/user/jos%C3%A9-roberto-pereira-0)
+- [Henry Pereira](https://community.intersystems.com/user/henry-pereira)
+- [Henrique Dias](https://community.intersystems.com/user/henrique-dias-2)
+
+Demo videos: [hybrid use case](docs/video/signal-noir-hybrid-use-case.mp4),
+[Decisions and AI Hub](docs/video/signal-noir-decisions-and-aihub.mp4).
 
 Licensed under the [MIT License](LICENSE).
