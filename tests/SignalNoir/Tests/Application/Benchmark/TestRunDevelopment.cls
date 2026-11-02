@@ -70,9 +70,12 @@ Method TestAReferenceOverTuningVariantsIsRefused()
 	Do $$$AssertNotTrue(mixed.ok, "a mix is refused too")
 }
 
+/// The placeholder record is injected: since T056 the committed Freeze.cls holds a real freeze
 Method TestWithNoFreezeTheRunIsDevelopmentAndSaysWhy()
 {
-	Set r = ..Service().Create(..Reference())
+	Set data = ..Matching()
+	Set data.freeze = {"freezeId": "", "commit": "", "files": []}
+	Set r = ..Service(data).Create(..Reference())
 	Do $$$AssertTrue(r.ok, "it is created and runs: " _ r.message)
 	Do $$$AssertEquals(r.obj.development, 1, "development")
 	Do $$$AssertTrue(r.obj.developmentReasons.%ToJSON() [ "no freeze", "because nothing is frozen")
