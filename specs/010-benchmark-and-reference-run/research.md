@@ -125,7 +125,9 @@ items and does the next thing that is missing:
    intake once (`OriginFeed.Poll`) so the Case opens now instead of at the next scheduled read;
 2. an item `opened` → read the Case (read-only) and mark `ended` when it is terminal or in
    `ReviewRequired` (the contract's `casesTerminal`); mark `not_decided` when the Case sits in a
-   non-terminal state past the item deadline;
+   non-terminal state past the item deadline, unless it decided in time and is `Approved` or
+   `Executing`: then it gets the execution lease more, so a wrong Action that only takes long (a
+   RETRY into timeouts) is scored incorrect, not undecided (amended 2026-11-01);
 3. all items ended → build and store the report, `completed`.
 
 `RunService.Create` persists the run and the plan, then `JOB`s `Runner.Drive(runId)`, which loops `Step`
@@ -203,7 +205,8 @@ for bit. With 5 variants a p95 is the maximum; the report says so in a `note` ra
   (004's `Store`), the evaluator version (`Scorer.VERSION`), the digest of the reserved catalog and of the
   answer keys, and `files`: the git blob id of each frozen source file.
 - `Roles` — who prepared the reserved cases and the answer key, who wrote the baseline, per family.
-- `Reviews` — the review records (kind baseline | evaluator, family, author, reviewer, commit, date).
+- `Reviews` — the review records (kind baseline | evaluator, family, author, reviewer, commit, date, and
+  `automated` when an automated reviewer did it).
 - `SetUsage` — one line per declared-used set (`P5/test`, `P8/test`) with who, when and why. A set that
   appears here is development data. It is declared by commit, not by an endpoint, so it is auditable and
   cannot be undone silently.
@@ -211,8 +214,10 @@ for bit. With 5 variants a p95 is the maximum; the report says so in a `note` ra
 `Core.Benchmark.FreezeCheck.Evaluate(freeze, current, roles, reviews, usage, selection)` returns
 `{development, reasons[]}`. A run is marked **development** (it runs, its report says why, and it is not
 publishable as the reference) when: a frozen input at run time differs from the record, the set was
-declared used, the same person holds two of the roles *answer key*, *baseline author*, *reviewer* for a
-family, or there is no review record for the family. **Refused** at creation (400): empty selection,
+declared used, the author of a family's answer key also wrote its baseline, or no roles are recorded for
+the family. A review never marks a run development (amended 2026-11-01 for Constitution 2.0.0, Principle
+VIII): `FreezeCheck.ReviewStatus` says how each was done (`other_member`, `self`, `automated`,
+`incomplete`, `missing`) and the report shows it in `setup.independence.reviewStatus`. **Refused** at creation (400): empty selection,
 unknown family or variant, tuning variants (alone or mixed) with purpose `reference`.
 
 Runtime compares the declared versions and the fixture and catalog digests (V3). Source files cannot be
@@ -321,3 +326,117 @@ other people can do: **the ten reserved variants and their answer key (Henrique)
   `Core.Benchmark.Stats` on it (D9).
 - **B7.** The quick validation fits in 180 s on the repo image with a real provider key; replay mode is the
   deterministic fallback (D12).
+
+## Baseline (T001, 2026-10-31)
+
+Fresh container `signalnoir-010` (image `congenial-waffle-iris:latest`, repo mounted at
+`/home/irisowner/dev`, `master` at 9adfc41 plus the 010 specification), 274 classes compiled at start,
+Simulator web application created with `SignalNoir.Sim.Setup.EnsureWebApplication()`.
+
+- Full recursive suite: **436 methods, 436 passed, 0 failed** (a clean single run).
+- A first pair of overlapping runs showed 2 failures, both in `Tests.Gates.TestGateG1`. Cause found:
+  `^SignalNoir.Config("simBaseUrl")` had been set on the instance, and with it set the Simulator Tools
+  take part in the plasma Order's investigation and the gate's expected Mapping no longer comes out. With
+  the setting empty the gate passes (2 of 2). **Consequence for 010:** tests that need the base URL set
+  it in `OnBeforeAllTests` and restore it in `OnAfterAllTests`; the baseline suite must run with it empty.
+  Running two suites at once on one instance is not supported (shared extents).
+- `tests/sim-contract/captures/*.json` are rewritten by the Simulator contract tests when the suite runs
+  on the mounted directory (they were already modified in the working tree before this work). They are
+  not part of this feature and are not committed.
+- The exec client times out on a long suite while the suite goes on; the result is read from
+  `%UnitTest_Result` by polling until the instance stops growing.
+
+## Implementation log (2026-11-01, container `signalnoir-010`)
+
+- **B1 resolved differently.** No `Map`/`Forward` is needed: the benchmark routes are plain `Route`
+  entries in `Api.Dispatch.UrlMap` whose methods delegate to `Api.BenchmarkDispatch`; the handlers return
+  `{status, headers, body}` and are tested without HTTP, like the other dispatch tests.
+- **B2.** `Runner.Drive` runs in its own `Job`; a per-run lock (`^SignalNoir.BenchmarkDrive(runId)`) makes a
+  second driver exit at once; `Runner.Resume` (the scheduled task) re-drives a running run whose heartbeat
+  is older than 90 s. `Tests.Application.Benchmark.TestBenchmarkTask` covers stale, live, late and completed
+  runs.
+- **B3 resolved without touching 006.** The coded reason is on the Case's Dossier: `Core.DossierReason`
+  turns the free "provider unavailable" text into `provider_unavailable`, stored in `DossierRecord.reason`.
+  `CaseFacts` reads that, never the text of `InvestigationRecord.outcomeReason`.
+- **B5.** Compiling the two new persistent classes in the mounted container wrote their Storage blocks into
+  the files; they are committed with the classes.
+- **B6 done.** `scripts/benchmark/recompute.py` and the ObjectScript `Stats` agree on
+  `tests/benchmark/golden` (the Python tests and `TestStats.TestTheGoldenRowsAreReproduced`).
+- **Tooling finding.** A long test run through `iris-agentic-dev exec` is killed when the client times out
+  (`<DISCONNECT>`); start suites with `Job ##class(%UnitTest.Manager).RunTest(...)` and read
+  `^UnitTest.Result`. Two suites must not run at once on one instance.
+- **Refinement of CC-2.** `counts` and `denominator` are ranges over the repetitions, not single integers,
+  because a repetition can cover fewer variants; see contracts/contract-change-010-benchmark.md.
+
+### Suite after US1, US3 and the Core of US2 and US4 (2026-11-01)
+
+Full recursive suite on the fresh container: **531 methods, 531 passed, 0 failed** (baseline 436, plus 95
+new methods). New classes: `Core.Benchmark` (Seed, RunPolicy, Scorer, Stats, Guarantees and the no-I/O
+scan, 45 methods), `Application.Benchmark` (records, store, case opening, lifecycle, pinned versions, runner,
+task, answer keys, case facts, automatic approval, 46 methods), `Api.TestBenchmarkApi` (4 methods). The
+Python tests of `scripts/benchmark/recompute.py` pass (9). Not yet written: `TestScoringEndToEnd` (T034),
+the report builder and its endpoints (T041 to T044).
+
+### Suite after the report builder (2026-11-01)
+
+Full recursive suite: **541 methods, 541 passed, 0 failed**. New: `ReportBuilder` (build, store once, report,
+comparison), `TestReport` (7), `TestScoringEndToEnd` (1), the report and comparison cases of `TestBenchmarkApi`
+(2). The runner now stores the final report before it marks the run completed, and fails the run with
+`report_error` if the report cannot be built.
+
+### Suite at the end of the code that does not wait for people (2026-11-01)
+
+Full recursive suite on the fresh container: **599 methods, 599 passed, 0 failed** (baseline 436). Scripts:
+`tests/benchmark/test-check-freeze.sh`, `tests/benchmark/test-quick-validate.sh` and
+`scripts/benchmark/test_recompute.py` pass; the console's `no-replay-entry` test passes (3).
+
+Findings worth the reviewers' time:
+
+- **The rules baseline, live.** In the gate (`TestGateG4`), the baseline run against the Simulator-backed Tools chose
+  `HOLD` ("partner unstable") for `P8b-tune-01`, where with local Tools (`TestGateG1`) it chose the plasma Mapping.
+  The Partner's failure history in this throwaway container is long, so part of it is the environment, but it is
+  also what the baseline does with a noisy history, which is what its review (T055) is for. The gate therefore
+  checks that the Case was decided and scored, not what the baseline chose.
+- **A wrong HOLD is incorrect but sent nothing**, so it is not a wrong effect (`Scorer`, `contracts/scoring.md`).
+- **Replay** resolves `@ev:<source>` references only for recordings by reference case; the older recording by
+  Order id (006) is played as it is, because `TestProposerModes` pins that an answer with unresolved tokens is
+  refused.
+- **One flaky test was found and fixed:** `TestRunnerObserves.TestACaseThatDoesNotDecideInTimeIsNotDecided`
+  assumed two steps were enough. One earlier failure of `TestReport.TestRepetitionsGiveARangeAndAVariantCountsOnce`
+  in a combined run did not repeat in 3 further runs and has no known cause; it is noted here, not explained.
+- **The reference run needs test-set variants for the clean controls and the Dossier case too** (a reference run
+  takes test variants only): added to T054.
+
+### Quickstart walked (T074, 2026-11-01, container `signalnoir-010`, over real HTTP)
+
+- Steps 1 and 7 (Core suites, Replay) and 3 to 5 (Cases outside a run, automatic Approval, scoring) are pinned by
+  the suites above. Steps 2, 8 and the error paths were walked with `curl` against the running application.
+- `POST /benchmark-runs` (rules, one control and `P8b-tune-01`) answered `202` with the run; a second `POST` while it
+  ran answered `409`; `GET /benchmark-runs/{id}` followed it to `completed`; `GET …/report` answered `200` with
+  both parts; `GET /benchmark-reports?runId=&runId=` over two completed runs answered `200` with 4 agent-decision
+  rows and 12 guarantee rows (6 per run, tagged by run), one id answered `400`, an unknown one `404`.
+- **Time.** The first run took about two minutes because its first read of the Origin feed worked through the
+  backlog this container's Simulator holds from earlier tests; the second, identical run took **6 s**. A fresh
+  installation has an empty feed. The quick validation (three Cases) therefore fits its three minutes with room
+  (B7 still wants a measurement with a real key, T069).
+- `scripts/quick-validate.sh` against the real application chose `replay` (no provider configured), created
+  nothing and failed at once with the application's own message, because the reserved variants its request names
+  do not exist yet. That is the right failure.
+- The agent-decision part of that run shows the baseline's `HOLD` for `P8b-tune-01` (scored incorrect, no wrong
+  effect); see the finding above.
+
+### Review of the diff against the Constitution (T075)
+
+Checked by search over the new code, and by the suites: **I** `Core.Benchmark` references nothing outside the Core and is
+scanned for I/O by `TestCoreHasNoIo`; the Simulator is reached only through `Interop.SimulatorHttp`, and
+`TestNoCrossReference` passes. **II** no Tool and no Action added; the answer key is data compared by canonical value.
+**III** the run only pins the versions the one Validator uses. **IV** the actor `benchmark` is admitted only for a Case
+whose run is `running`, on both paths (`TestAutomaticApproval`); the runner and the report builder reference no
+approval or transition (scanned). **V** the runner writes only run and item records; the one thing it causes in a Case
+is the product's own intake opening it. **VI** untouched. **VII** "not decided" and "not exercised" are values with a
+reason; a refusal is a 400/404/409. **VIII** same Tools for both modes, freeze checked at creation, at the first step and
+in CI, Replay and touched Cases outside every metric, roles recorded and enforced. **Platform constraints**: no
+`api_key`, password or secret in any new runtime file, report or script; every datum is labelled synthetic;
+nothing in the runtime names iris-agentic-dev. No violation found. Two caveats stay open and are named above: the
+heuristics behind `staleExecutions` and `resentBeforeReconcile` have no failure-data test, and the one unexplained
+flake.

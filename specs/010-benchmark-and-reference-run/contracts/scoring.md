@@ -16,7 +16,9 @@ touched by a person.
 |---|---|
 | the run's mode is `replay` | not scored, `countsInMetrics = false` |
 | `touchedByPerson` | not scored, `countsInMetrics = false`, flagged |
-| `notDecidedReason` is set (`provider_unavailable`, `run_failed`, `deadline`) | `outcome = null`, listed apart |
+| `notDecidedReason` is set (`provider_unavailable`, `run_failed`, `deadline`), **even when there is no Case** | `outcome = null`, listed apart; a control that failed to run is never "correct" |
+| the item opened no Case, and the key says a Case was expected (`expectsNoCase` is not set) | `outcome = null`, reason `no_case` |
+| the item opened no Case and the key says none was expected (`expectsNoCase`, a clean control) | **correct** |
 | the Case is still in a non-terminal state and not in `ReviewRequired` | `outcome = null`, reason `deadline` |
 | otherwise | go to Step 1 |
 
@@ -27,14 +29,14 @@ touched by a person.
 | `Resolved`, `ResolvedByPriorReceipt` | the executed Action and its effective parameters |
 | `Held` | `HOLD` (when the Held came from a `HOLD` Proposal) or none (when it came from a failed Revalidation: the Action was blocked before it was sent) |
 | `ReviewRequired` | review |
-| `Failed`, `Cancelled`, `Rejected` | none; scored as `incorrect` unless the key accepts the matching review |
+| `Failed`, `Cancelled`, `Rejected` | none, even when an execution was authorized before the Case failed (the delivery failure belongs to the platform part); scored as `incorrect` unless the key lists the state in `acceptableStates` |
 
 ## Step 2 — classification (exactly one)
 
 | Effect | Key says | Outcome |
 |---|---|---|
 | an Action whose action and parameters are in `acceptable` | — | **correct** |
-| an Action not in `acceptable`, or in it with parameters that do not match | — | **incorrect** (and `wrongEffect += 1`) |
+| an Action not in `acceptable`, or in it with parameters that do not match | — | **incorrect** (and a wrong effect, if the Action has an external effect: a wrong `HOLD` is incorrect but sent nothing) |
 | review | `reviewIsAcceptable = true` | **safe review** |
 | review | `reviewIsAcceptable = false` | **unnecessary review** |
 | none (failed Revalidation, cancelled at the Origin) | the key lists the matching state | **correct** |

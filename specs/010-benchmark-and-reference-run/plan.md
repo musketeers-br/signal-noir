@@ -91,8 +91,9 @@ controls/dossier; ≈ 12 Core test classes, ≈ 8 application suites, 1 API suit
 - [x] **VIII. Honest Measurement** — the whole feature. Same Tools and protections for both modes; setup
   frozen in one commit and checked at run time and in CI; Replay excluded from every metric; all outcomes
   published with counts, both denominators, dispersion, latency, cost and raw rows; repetitions never counted
-  as independent cases; tuning vs test; the roles of key, baseline and reviewer recorded and enforced as
-  *development* when not distinct.
+  as independent cases; tuning vs test; the roles of key and baseline recorded and enforced as
+  *development* when one person holds both; reviews recorded and shown in the report by status, never
+  blocking (Constitution 2.0.0).
 - [x] **IX. Verifiable Increments** — sliced by behavior (a run that opens Cases in a mode → scoring → report
   → freeze → reference → replay and quick validation), each with its test; the dependency on the baseline
   and the review is explicit.
@@ -194,7 +195,7 @@ and 004's fixtures (XData, loaded by class); the API follows the thin-dispatch s
 
 | # | Question | Default taken in this plan | Who |
 |---|---|---|---|
-| Q1 | How long may a Case of a run stay undecided before it is *not decided* (per item deadline)? | agent 180 s, rules/replay 60 s, counted from the Case opening; a run's own deadline is items × deadline + 120 s | Henrique |
+| Q1 | How long may a Case of a run stay undecided before it is *not decided* (per item deadline)? | agent 180 s, rules/replay 60 s, counted from the Case opening, to decide; a Case that decided in time and is Approved or Executing gets the execution lease more (`SN_AI_LEASE_SECONDS`, 300 s) so its effect is scored (amended 2026-11-01, agent rehearsal); a run's own deadline is items × (deadline + lease) + 120 s | Henrique |
 | Q2 | Evidence for `restart` and `late worker`: a scenario cannot restart IRIS or race a worker. | the recovery suite of 008, recorded with its commit in `ReferenceResult` and shown as `source: recovery_suite`; `not exercised` when absent | Henrique + Henry |
 | Q3 | Where is a set declared *used*? | a committed line in `Benchmark.Data.SetUsage` (auditable, not undoable silently), not an endpoint | Henrique + José |
 
@@ -203,8 +204,9 @@ The first two also appear in `coordination-010.md` and in the contract change (C
 ## Dependencies and risks
 
 - **Critical path (calendar).** Functional freeze 2026-11-05. Order is fixed by the board: baseline and
-  evaluator ready → José's review → one freeze commit → reference run → report. The code of this feature
-  can finish ahead of that order; the reference run cannot. The review is the longest pole.
+  evaluator ready → one freeze commit → reference run → report. The code of this feature can finish
+  ahead of that order; the reference run cannot. José's review no longer blocks the freeze (Constitution
+  2.0.0): it is recorded when done and the report shows its status.
 - **Reserved variants.** `P5Test` and `P8Test` are one-variant placeholders; ten real variants and their
   answer keys are required before the freeze. If they are late, only a development reference can exist, and
   the report will say so rather than claim more.

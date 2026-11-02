@@ -1,0 +1,45 @@
+{
+  "runId": "run_000681",
+  "mode": "rules",
+  "purpose": "benchmark",
+  "status": "running",
+  "provider": null,
+  "model": null,
+  "repetitions": 1,
+  "seed": 7,
+  "policyVersion": "2026.10.1",
+  "mappingVersion": "2026.10.1",
+  "scenarios": [
+    {
+      "family": "P8",
+      "variants": [
+        "P8b-tune-01"
+      ],
+      "set": "tuning"
+    },
+    {
+      "family": "clean",
+      "variants": [
+        "clean-success-tune-01"
+      ],
+      "set": "tuning"
+    }
+  ],
+  "progress": {
+    "casesPlanned": 2,
+    "casesOpened": 0,
+    "casesTerminal": 0
+  },
+  "labels": {
+    "synthetic": true,
+    "replay": false
+  },
+  "createdAt": "2026-11-01T11:52:57.123Z",
+  "startedAt": "2026-11-01T11:52:57.123Z",
+  "completedAt": null,
+  "failureReason": null,
+  "development": false,
+  "developmentReasons": [],
+  "freezeId": null,
+  "serverTime": "2026-11-01T11:52:57.124Z"
+}

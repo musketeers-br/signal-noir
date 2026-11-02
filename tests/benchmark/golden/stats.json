@@ -1,0 +1,406 @@
+[
+ {
+  "blockedWrongProposals": {
+   "max": 1,
+   "min": 0
+  },
+  "counts": {
+   "correct": {
+    "max": 4,
+    "min": 2
+   },
+   "incorrect": {
+    "max": 1,
+    "min": 1
+   },
+   "notDecided": {
+    "max": 0,
+    "min": 0
+   },
+   "safe_review": {
+    "max": 1,
+    "min": 0
+   },
+   "unnecessary_review": {
+    "max": 1,
+    "min": 0
+   }
+  },
+  "denominator": {
+   "withNotDecided": {
+    "max": 5,
+    "min": 5
+   },
+   "withoutNotDecided": {
+    "max": 5,
+    "min": 5
+   }
+  },
+  "estCostUsdPerCase": {
+   "max": 0.003,
+   "min": 0.003
+  },
+  "family": "P5",
+  "latencyMsP50": {
+   "max": 2100,
+   "min": 1900
+  },
+  "latencyMsP95": {
+   "max": 2900,
+   "min": 2700
+  },
+  "mode": "agent",
+  "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases",
+  "outcomes": {
+   "correct": {
+    "max": 0.8,
+    "min": 0.4
+   },
+   "incorrect": {
+    "max": 0.2,
+    "min": 0.2
+   },
+   "safe_review": {
+    "max": 0.2,
+    "min": 0.0
+   },
+   "unnecessary_review": {
+    "max": 0.2,
+    "min": 0.0
+   }
+  },
+  "outcomesWithoutNotDecided": {
+   "correct": {
+    "max": 0.8,
+    "min": 0.4
+   },
+   "incorrect": {
+    "max": 0.2,
+    "min": 0.2
+   },
+   "safe_review": {
+    "max": 0.2,
+    "min": 0.0
+   },
+   "unnecessary_review": {
+    "max": 0.2,
+    "min": 0.0
+   }
+  },
+  "repetitionsCovered": 3,
+  "set": "test",
+  "subtype": "P5",
+  "toolCallsPerCase": {
+   "max": 3.4,
+   "min": 3.4
+  },
+  "variantCount": 5,
+  "wrongEffects": {
+   "max": 1,
+   "min": 1
+  }
+ },
+ {
+  "blockedWrongProposals": {
+   "max": 0,
+   "min": 0
+  },
+  "counts": {
+   "correct": {
+    "max": 1,
+    "min": 1
+   },
+   "incorrect": {
+    "max": 1,
+    "min": 1
+   },
+   "notDecided": {
+    "max": 0,
+    "min": 0
+   },
+   "safe_review": {
+    "max": 0,
+    "min": 0
+   },
+   "unnecessary_review": {
+    "max": 0,
+    "min": 0
+   }
+  },
+  "denominator": {
+   "withNotDecided": {
+    "max": 2,
+    "min": 2
+   },
+   "withoutNotDecided": {
+    "max": 2,
+    "min": 2
+   }
+  },
+  "estCostUsdPerCase": {
+   "max": 0.001,
+   "min": 0.001
+  },
+  "family": "P5",
+  "latencyMsP50": {
+   "max": 500,
+   "min": 500
+  },
+  "latencyMsP95": {
+   "max": 600,
+   "min": 600
+  },
+  "mode": "agent",
+  "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases",
+  "outcomes": {
+   "correct": {
+    "max": 0.5,
+    "min": 0.5
+   },
+   "incorrect": {
+    "max": 0.5,
+    "min": 0.5
+   },
+   "safe_review": {
+    "max": 0.0,
+    "min": 0.0
+   },
+   "unnecessary_review": {
+    "max": 0.0,
+    "min": 0.0
+   }
+  },
+  "outcomesWithoutNotDecided": {
+   "correct": {
+    "max": 0.5,
+    "min": 0.5
+   },
+   "incorrect": {
+    "max": 0.5,
+    "min": 0.5
+   },
+   "safe_review": {
+    "max": 0.0,
+    "min": 0.0
+   },
+   "unnecessary_review": {
+    "max": 0.0,
+    "min": 0.0
+   }
+  },
+  "repetitionsCovered": 2,
+  "set": "tuning",
+  "subtype": "P5",
+  "toolCallsPerCase": {
+   "max": 2.0,
+   "min": 2.0
+  },
+  "variantCount": 2,
+  "wrongEffects": {
+   "max": 1,
+   "min": 1
+  }
+ },
+ {
+  "blockedWrongProposals": {
+   "max": 0,
+   "min": 0
+  },
+  "counts": {
+   "correct": {
+    "max": 5,
+    "min": 3
+   },
+   "incorrect": {
+    "max": 1,
+    "min": 0
+   },
+   "notDecided": {
+    "max": 1,
+    "min": 0
+   },
+   "safe_review": {
+    "max": 1,
+    "min": 0
+   },
+   "unnecessary_review": {
+    "max": 0,
+    "min": 0
+   }
+  },
+  "denominator": {
+   "withNotDecided": {
+    "max": 5,
+    "min": 5
+   },
+   "withoutNotDecided": {
+    "max": 5,
+    "min": 4
+   }
+  },
+  "estCostUsdPerCase": {
+   "max": 0.003,
+   "min": 0.003
+  },
+  "family": "P8",
+  "latencyMsP50": {
+   "max": 2300,
+   "min": 1300
+  },
+  "latencyMsP95": {
+   "max": 3800,
+   "min": 1800
+  },
+  "mode": "agent",
+  "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases",
+  "outcomes": {
+   "correct": {
+    "max": 1.0,
+    "min": 0.6
+   },
+   "incorrect": {
+    "max": 0.2,
+    "min": 0.0
+   },
+   "safe_review": {
+    "max": 0.2,
+    "min": 0.0
+   },
+   "unnecessary_review": {
+    "max": 0.0,
+    "min": 0.0
+   }
+  },
+  "outcomesWithoutNotDecided": {
+   "correct": {
+    "max": 1.0,
+    "min": 0.75
+   },
+   "incorrect": {
+    "max": 0.2,
+    "min": 0.0
+   },
+   "safe_review": {
+    "max": 0.25,
+    "min": 0.0
+   },
+   "unnecessary_review": {
+    "max": 0.0,
+    "min": 0.0
+   }
+  },
+  "repetitionsCovered": 3,
+  "set": "test",
+  "subtype": "P8b",
+  "toolCallsPerCase": {
+   "max": 4.0,
+   "min": 4.0
+  },
+  "variantCount": 5,
+  "wrongEffects": {
+   "max": 1,
+   "min": 0
+  }
+ },
+ {
+  "blockedWrongProposals": {
+   "max": 0,
+   "min": 0
+  },
+  "counts": {
+   "correct": {
+    "max": 1,
+    "min": 1
+   },
+   "incorrect": {
+    "max": 0,
+    "min": 0
+   },
+   "notDecided": {
+    "max": 0,
+    "min": 0
+   },
+   "safe_review": {
+    "max": 2,
+    "min": 2
+   },
+   "unnecessary_review": {
+    "max": 0,
+    "min": 0
+   }
+  },
+  "denominator": {
+   "withNotDecided": {
+    "max": 3,
+    "min": 3
+   },
+   "withoutNotDecided": {
+    "max": 3,
+    "min": 3
+   }
+  },
+  "estCostUsdPerCase": {
+   "max": 0.0001,
+   "min": 0.0001
+  },
+  "family": "clean",
+  "latencyMsP50": {
+   "max": 350,
+   "min": 350
+  },
+  "latencyMsP95": {
+   "max": 400,
+   "min": 400
+  },
+  "mode": "agent",
+  "note": "p95 is the maximum of a repetition when it has fewer than 20 Cases",
+  "outcomes": {
+   "correct": {
+    "max": 0.3333333333333333,
+    "min": 0.3333333333333333
+   },
+   "incorrect": {
+    "max": 0.0,
+    "min": 0.0
+   },
+   "safe_review": {
+    "max": 0.6666666666666666,
+    "min": 0.6666666666666666
+   },
+   "unnecessary_review": {
+    "max": 0.0,
+    "min": 0.0
+   }
+  },
+  "outcomesWithoutNotDecided": {
+   "correct": {
+    "max": 0.3333333333333333,
+    "min": 0.3333333333333333
+   },
+   "incorrect": {
+    "max": 0.0,
+    "min": 0.0
+   },
+   "safe_review": {
+    "max": 0.6666666666666666,
+    "min": 0.6666666666666666
+   },
+   "unnecessary_review": {
+    "max": 0.0,
+    "min": 0.0
+   }
+  },
+  "repetitionsCovered": 2,
+  "set": "test",
+  "subtype": "clean.ambiguous_identity",
+  "toolCallsPerCase": {
+   "max": 1.0,
+   "min": 1.0
+  },
+  "variantCount": 3,
+  "wrongEffects": {
+   "max": 0,
+   "min": 0
+  }
+ }
+]

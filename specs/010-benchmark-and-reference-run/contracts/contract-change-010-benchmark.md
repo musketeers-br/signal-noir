@@ -1,6 +1,6 @@
 # Contract change proposal: Benchmark report and run (010)
 
-**Status**: proposed, not applied. `contracts/openapi-signalnoir.yaml` is frozen; nothing in it changes
+**Status**: applied by T011 (2026-11-01, PR #32); the points under *Applied (T011)* wait for Henry's confirmation in the review. `contracts/openapi-signalnoir.yaml` is frozen; nothing in it changes
 until the people named below accept. Every item is **additive** (new optional fields, one enum value,
 one type widened to allow `null`), so the fixtures and the console types keep working.
 
@@ -18,7 +18,7 @@ must stay green.
 | # | Schema | Change | Needed by |
 |---|---|---|---|
 | CC-1 | `AgentDecisionRow` | add optional `subtype` (string: `P8a`, `P8b`, `P5.injection`, `clean.success` …). Rows are per `(family, subtype, set, mode)` so P8b is reported apart from P8a. | FR-019 ("core families P5 and P8b") |
-| CC-2 | `AgentDecisionRow` | add `counts` (object: `correct`, `safe_review`, `unnecessary_review`, `incorrect`, `notDecided`, all integers), `denominator` (`{withNotDecided, withoutNotDecided}`), `repetitionsCovered` (integer), `blockedWrongProposals` and `wrongEffects` (each a `Range`, never added together), `note` (string \| null). | FR-016, FR-017, FR-022, FR-028 |
+| CC-2 | `AgentDecisionRow` | add `counts` (object: `correct`, `safe_review`, `unnecessary_review`, `incorrect`, `notDecided`, each a `Range` over the repetitions), `outcomesWithoutNotDecided` (the proportions again, over the Cases that decided), `denominator` (`{withNotDecided, withoutNotDecided}`, each a `Range`), `repetitionsCovered` (integer), `blockedWrongProposals` and `wrongEffects` (each a `Range`, never added together), `note` (string \| null). | FR-016, FR-017, FR-022, FR-028 |
 | CC-3 | `BenchmarkCaseResult` | add `subtype`, `actionParams` (object \| null), `notDecidedReason` (`provider_unavailable` \| `run_failed` \| `deadline` \| null), `touchedByPerson` (boolean), `blockedWrongProposals` (integer), `wrongEffect` (boolean). `outcome` stays `null` for a Case that did not decide (already allowed). | FR-017, FR-018, FR-022 |
 | CC-4 | `PlatformGuaranteeRow` | add `late_worker` to the `guarantee` enum; widen `passed` to `boolean \| null` where `null` means **not exercised** (never a pass); add `source` (`run` \| `recovery_suite`) and `evidenceCommit` (string \| null). | FR-020; Principle VII |
 | CC-5 | `BenchmarkRun`, `BenchmarkReport` | add `development` (boolean), `developmentReasons` (string[]), `freezeId` (string \| null). Report only: `publishableAsReference` (boolean). | FR-023, FR-026, FR-027 |
@@ -51,3 +51,46 @@ must stay green.
 
 **2026-10-31.** Henrique reported that Henry and José approved CC-1…CC-7 as proposed. The contract
 itself is changed only by T011, in one commit with the console types.
+
+## Refinement at implementation (2026-11-01)
+
+CC-2 as approved listed `counts` and `denominator` as integers. A repetition can cover fewer variants than
+another, so they are published as `Range` like every other measure, and the proportions are published twice
+(`outcomes` over all Cases, `outcomesWithoutNotDecided` over the ones that decided). The key of an answer key
+also gained two optional fields, `acceptableStates` and `expectsNoCase` (committed data, not a contract
+field). Nothing else changed; Henrique to confirm with Henry when CC-1…CC-7 are applied (T011).
+
+Also at implementation: a scenario that raises no exception (a clean control) opens no Case, so its row has
+an empty `caseId` and `finalState` is `null`; `BenchmarkCaseResult.finalState` must allow `null` (CC-3). Rows of
+the platform families (P3, idempotency) are kept as raw data with `countsInMetrics = false`: they feed the
+platform guarantees only.
+
+## Applied (T011, 2026-11-01)
+
+CC-1 to CC-7 are in `contracts/openapi-signalnoir.yaml`, with the refinement above. The contract was checked
+against what the implementation returns, not only against the proposal: a report, a comparison and a run
+captured from IRIS are in `tests/benchmark/contract-captures/` (not in `contracts/fixtures`, which holds only
+what the prototype exporter generates and is checked against it in CI), and
+`contracts/tools/validate_fixtures.py tests/benchmark/contract-captures` validates them (3 valid; the 31
+fixtures of `contracts/fixtures` stay valid). Running that line in CI is part of the integration-gate batch.
+
+**`ui/src/lib/api/types.ts` is unchanged.** It holds only the types the console uses, and the console reads no
+benchmark endpoint (FR-031: no entry point). Types for these schemas would be dead code.
+
+**Where the contract follows the implementation instead of the proposal (Henry to confirm):**
+
+1. `setup.independence` is `{roles: {<family>: {answerKeyBy, baselineBy}}, reviews: [{kind, family, author,
+   reviewer, commit, date, automated}], reviewStatus: {baseline: {<family>: status}, evaluator: status}}`: the
+   same names as CC-6, per family, with the review records of T055 in place of `reviewedBy[]`. `reviewStatus`
+   (`ReviewStatus`: other_member, self, automated, incomplete, missing) was added for Constitution 2.0.0,
+   under which a review is shown and never blocks. The new `BenchmarkSetup` schema describes it, and `variantSet` can also be `mixed`.
+2. The comparison carries `setups`, one short entry per run (runId, mode, purpose, provider, model,
+   development, versions), not the whole `setup` of each report.
+3. `notDecidedReason` also takes `no_case` (no Case where the key expected one) and `no_answer_key`.
+4. `BenchmarkCaseResult.caseId` and `QuickValidationResult.caseId` are `null` for a control that opened no Case.
+5. A measure that no Case had (`latencyMsP50`, `latencyMsP95`, `toolCallsPerCase`, `estCostUsdPerCase`) is
+   `null`; `reference.provider` and `reference.model` are `null` until a reference result is recorded.
+
+**Found while checking, fixed in the implementation:** a control's `finalState` and `caseId` were written as
+the string `NoCase` and `""`; missing measures as `""`; `labels.replay` (report and run) as a number; the
+comparison's `setups[].development` as a string. Tests now pin these types.

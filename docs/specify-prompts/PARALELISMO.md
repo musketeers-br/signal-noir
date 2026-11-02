@@ -49,7 +49,7 @@ José saiu da implementação em 2026-10-24 e volta só na última onda, para a 
 | 4 | 008 | 009 + baseline de regras do 010 | — | G3 |
 | 5 | 010 runner/scoring → execução de referência | 012 | revisão do baseline e do avaliador → 011 (condicional) | G4 |
 
-Ordem obrigatória na onda 5: baseline e avaliador prontos → revisão do José (registra commit e data) → commit único de congelamento (prompt, modelo, baseline, políticas, fixtures, avaliador, variantes reservadas P5Test/P8Test) → execução de referência → relatório com os metadados de independência. A revisão é caminho crítico do G4; a 011 só entra se sobrar tempo depois dela.
+Ordem obrigatória na onda 5: baseline e avaliador prontos → commit único de congelamento (prompt, modelo, baseline, políticas, fixtures, avaliador, variantes reservadas P5Test/P8Test) → execução de referência → relatório com os metadados de independência. Desde a Constituição 2.0.0 (PR #36) a revisão do José não bloqueia o congelamento nem a execução: é registrada quando feita (commit e data) e o relatório mostra como cada revisão foi feita. A 011 só entra se sobrar tempo depois dela.
 
 As ondas são sugestão de throughput, não donos. Se alguém terminar antes, puxa a próxima spec cujo pré-requisito já esteja satisfeito.
 
@@ -87,7 +87,7 @@ Mudanças neles são aplicadas em lote no gate de integração. Exceção: a 012
 | 007 approval-and-outbox | implementada (aguardando gate G2; assumida do Henrique em 28/10; política de Aprovação padrão até a 004, handler do `Execute` na 008, sweeper ligado no Bootstrap no gate) | Henry | 3 | no `master` (PR #14) |
 | 008 execution-and-recovery | implementada (aguardando gate G3; assumida do Henrique em 28/10; política de execução padrão até a 004, mapeamento só com o catálogo da 004) | Henry | 4 | no `master` (PR #17) |
 | 009 review-dossier-and-resolution | implementada (aguardando gate G3; Validador v1 até a 004; correção 009b no `master`; integração 008+009 verificada em 29/10 por `Tests.Recovery.TestGateG3`, 5/5, com um caso ao vivo) | Henry | 4 | no `master` |
-| 010 benchmark-and-reference-run | reservada | Henrique | 5 | |
+| 010 benchmark-and-reference-run | em implementação (01/11): spec, plano e tarefas no PR #31; código pronto de runs, pins de versão, runner, pontuação, relatório em duas partes, comparação, aprovação automática só em run `running`, congelamento (checagem e script), Replay por caso de referência e validação rápida; falta o que só as pessoas fazem: variantes reservadas e gabaritos (Henrique), baseline com sinônimos (Henry), revisão (José), congelamento, execução de referência | Henrique | 5 | PR #31 (`010-benchmark-and-reference-run`) |
 | 011 prior-receipt-p9 | condicional | José | 5 | |
 | 012 packaging-and-cross-install | parcial (29/10): imagem, compose, README, `.env.example`, smoke, scan de segredos e CI no repositório, verificados no ARM64; faltam a validação rápida (depende da 010), o cross-install do Henrique, o vídeo e a submissão | Henry | 5 | branch `g1-wiring-and-012` |
 | 014 liquid-console-redesign | no `master` (PR #24; tema claro/escuro, tokens, rail, vidro com fallbacks); verificação em navegador real concluída em 31/10 (T030–T041: axe com contraste sem violações, reflow a 320 px, fallbacks, impressão, `theme-init.js` no IRIS) na branch `014-browser-verification` | Henry | extra | no `master` |
@@ -96,7 +96,7 @@ Trilhas (002, 007 e 008 passaram para o Henry em 28/10): Henrique = validação 
 
 Papéis fixos fora do board:
 
-- **010 independência (Princípio VIII):** casos reservados e gabarito P5/P8b com Henrique; baseline de regras com Henry (escrito na onda 4); revisão do baseline e do avaliador com José. Henry (autor do Agente) não acessa as variantes reservadas até o congelamento. A revisão do José confirma que o baseline não foi enfraquecido e fica registrada no relatório.
+- **010 independência (Princípio VIII):** casos reservados e gabarito P5/P8b com Henrique; baseline de regras com Henry (escrito na onda 4); revisão do baseline e do avaliador com José. Henry (autor do Agente) não acessa as variantes reservadas até o congelamento. A revisão do José confirma que o baseline não foi enfraquecido e fica registrada no relatório; se for feita pelo próprio autor ou por um revisor automatizado, o relatório diz isso (`setup.independence.reviewStatus`).
 - **012 cross-install:** Henry escreve o README; Henrique instala em máquina limpa.
 - **011:** condicional. O José abre o `contract-change` de P9 na onda 5; sem contrato aprovado, ou sem tempo depois da revisão do 010, a 011 fica fora da submissão. Os dados de P9 já existem no Simulador (002, US7).
 
@@ -113,7 +113,7 @@ Pendências do gate G1 (aplicadas pelo Henry em 2026-10-29, branch `g1-wiring-an
 - Feito: `.env.example` com `SN_SIM_BASE_URL` e `SN_BACKGROUND_TASKS`.
 - Feito: a 004 (Proposta validada), PR #22 e #23. O cenário do gate roda ao vivo em `Tests.Gates.TestGateG1`: Pedido do Simulador, aceite, primeira entrega ao Parceiro (a resposta real abre o Caso), investigação com as ferramentas reais, Proposta, veredito v2 com as versões dos dados de referência e Caso em `PendingApproval`. O Caso é roteado para o proposer de regras, como um BenchmarkRun faria (010); sem BenchmarkRun, um Caso novo é do Agente e depende de provedor.
 - Aberto, não bloqueia o G1 (onda 4 do Henry): o baseline de regras ainda compara o tipo de espécime sem os sinônimos. Com um Pedido escrito `soro` ele pede revisão, e o Validator aceitaria o mapeamento de soro. A correção é o `Proposers/Rules` chamar `Core.Conditions.Matches`.
-- Aberto para a 010: gravar as versões de política e de mapeamento que um BenchmarkRun fixa. O Store já as respeita (`Store.For(run)`); `ResolutionValidator.RunFor` devolve `null` até a execução gravá-las.
+- Feito na 010 (PR #31): o BenchmarkRun grava as versões de política e de mapeamento que fixa, e `ResolutionValidator.RunFor` as devolve. Um Caso só guarda o `runId` de um run que existe e está `running`.
 - Aberto para a 008 (Henry): `ResolutionValidator.InputFor` passa `attemptCount = 0`. Quando a 008 gravar as Tentativas, é ali que o `RETRY_BUDGET_EXHAUSTED` passa a valer nos Casos reais.
 
 ## Merge

@@ -1,0 +1,14 @@
+{
+  "mode": "agent",
+  "purpose": "reference",
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "repetitions": 3,
+  "seed": 2026,
+  "label": "reference run",
+  "scenarios": [
+    {"family": "P5", "set": "test"},
+    {"family": "P8", "set": "test"},
+    {"family": "clean", "set": "test"}
+  ]
+}

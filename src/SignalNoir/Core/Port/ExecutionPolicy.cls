@@ -30,8 +30,9 @@ Method LeaseSeconds() As %Integer
 	Return 0
 }
 
-/// {policy, mapping}: the versions in force ("" = no reference data loaded)
-Method CurrentVersions() As %DynamicObject
+/// {policy, mapping}: the versions the Case is held to now ("" = no reference data loaded).
+/// run is the run the Case belongs to ({inRun, runId, policyVersion, mappingVersion}, or "").
+Method CurrentVersions(run As %DynamicObject = "") As %DynamicObject
 {
 	Return {"policy": "", "mapping": ""}
 }
