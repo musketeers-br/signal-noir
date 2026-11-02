@@ -116,6 +116,7 @@ ClassMethod Work(investigationId As %String)
 			}
 		}
 		If 'answer.ok {
+			If answer.code = "invalid_response" Do ..RecordInvalid(svc, inv.caseId, answer)
 			Do ..CloseOrDiscard(svc, investigationId, ..FailureReason(answer), meta)
 			Quit
 		}
@@ -134,6 +135,7 @@ ClassMethod Work(investigationId As %String)
 		}
 		Set converted = ##class(SignalNoir.Core.ProposalShape).Convert(answer.obj, ids, author, versions, metrics)
 		If 'converted.ok {
+			Do ..RecordInvalid(svc, inv.caseId, converted)
 			Do ..CloseOrDiscard(svc, investigationId, "invalid proposer response", meta)
 			Quit
 		}
@@ -224,6 +226,24 @@ ClassMethod RecordCascade(svc As SignalNoir.Application.CaseService, caseId As %
 	Set event.actor = "system"
 	Set event.refId = caseId
 	Set event.payload = cascade
+	Do svc.Append(caseId, event)
+}
+
+/// What was wrong with an answer that is not a Proposal, next to the review it leads to. The reason
+/// on the Case stays "invalid proposer response" (006 FR-018); this note keeps the message, the
+/// refusal reasons of ProposalShape and, from the Agent, the start of an answer that is not JSON.
+ClassMethod RecordInvalid(svc As SignalNoir.Application.CaseService, caseId As %String, r As SignalNoir.Core.Result) [ Private ]
+{
+	Set note = {"kind": "invalid_response", "message": (r.message)}
+	If $IsObject(r.details) {
+		If $IsObject(r.details.%Get("reasons")) Set note.reasons = r.details.reasons
+		If r.details.%Get("excerpt") '= "" Set note.excerpt = r.details.excerpt
+	}
+	Set event = ##class(SignalNoir.Core.Dto.TimelineEvent).%New()
+	Set event.type = "Annotation"
+	Set event.actor = "system"
+	Set event.refId = caseId
+	Set event.payload = note
 	Do svc.Append(caseId, event)
 }
 

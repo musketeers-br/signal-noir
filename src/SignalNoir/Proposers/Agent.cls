@@ -10,6 +10,9 @@ Class SignalNoir.Proposers.Agent Extends SignalNoir.Core.Port.Proposer
 /// criterion (specs/017-agent-prompt-v2/contracts/agent-v2-instructions.md).
 Parameter PROMPTVERSION = "agent-v2";
 
+/// Characters of an answer that is not JSON kept on the Timeline
+Parameter EXCERPT = 500;
+
 Property Runtime As SignalNoir.Core.Port.AgentRuntime;
 
 Method %OnNew() As %Status
@@ -78,10 +81,13 @@ Method Propose(context As SignalNoir.Core.Dto.InvestigationContext) As SignalNoi
 	If 'call.ok Return call
 	Set details = call.details
 	Do details.%Set("promptVersion", ..#PROMPTVERSION)
-	Set answer = ##class(SignalNoir.Core.ProposalShape).ParseText(details.content)
+	Set content = details.content
+	Set answer = ##class(SignalNoir.Core.ProposalShape).ParseText(content)
 	Do details.%Remove("content")
 	If '$IsObject(answer) {
 		Set r = ##class(SignalNoir.Core.Result).Error("invalid_response", "the agent answer is not one JSON object")
+		; the start of what came back, for the Timeline note of the review (not the whole answer)
+		Set details.excerpt = $Extract(content, 1, ..#EXCERPT)
 		Set r.details = details
 		Return r
 	}

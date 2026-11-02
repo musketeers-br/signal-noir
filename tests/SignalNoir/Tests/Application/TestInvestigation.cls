@@ -145,6 +145,8 @@ Method TestInvalidAnswersEndInReview()
 		Do $$$AssertEquals(c.state, "ReviewRequired", "review")
 		Do $$$AssertEquals(c.reviewReason, "invalid proposer response", "reason")
 		Do $$$AssertEquals(c.proposals.Count(), 0, "no Proposal")
+		Set note = $ClassMethod(S, "InvalidNote", svc, caseId)
+		Do $$$AssertTrue($IsObject(note) && $IsObject(note.%Get("reasons")) && (note.reasons.%Size() > 0), "the Timeline says what was wrong: " _ $Select($IsObject(note): note.%ToJSON(), 1: "none"))
 		Do $ClassMethod(S, "ClearScript", caseId)
 	}
 }

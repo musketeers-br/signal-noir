@@ -47,6 +47,12 @@ Method TestRefusalProseAndFailure()
 		Set expected = $Select(script [ "provider_unavailable": "provider unavailable: fake-ai-hub timed out", script [ "refused:": "proposer refused: content policy", 1: "invalid proposer response")
 		Do $$$AssertEquals(c.reviewReason, expected, "reason for " _ script)
 		Do $$$AssertEquals(c.proposals.Count(), 0, "nothing shown as a Proposal")
+		Set note = ##class(SignalNoir.Tests.Support).InvalidNote(svc, caseId)
+		If expected = "invalid proposer response" {
+			Do $$$AssertEquals($Select($IsObject(note): note.excerpt, 1: ""), $Piece(script, "|", 2, *), "the start of the answer on the Timeline for " _ script)
+		} Else {
+			Do $$$AssertEquals(note, "", "no invalid-answer note for " _ script)
+		}
 	}
 	Kill ^SignalNoir.TestScript("agent")
 }
