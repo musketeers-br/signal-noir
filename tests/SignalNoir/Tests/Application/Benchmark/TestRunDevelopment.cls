@@ -155,6 +155,17 @@ Method TestTheReportSaysWhyAndIsNotPublishable()
 	Do $$$AssertEquals(report.setup.independence.reviewStatus.baseline.%Get("P5"), "missing", "per core family of the run")
 }
 
+/// The Runner stores the final report just before it marks the run completed: a reference run
+/// that matches the freeze is publishable in that report (run_000241 was stored as not publishable)
+Method TestTheStoredReportOfAMatchingReferenceRunIsPublishable()
+{
+	Set r = ..Service(..Matching()).Create(..Reference())
+	Do $$$AssertEquals(r.obj.development, 0, "not development: " _ r.obj.developmentReasons.%ToJSON())
+	Do $$$AssertNotEquals(r.obj.status, "completed", "not completed yet, as when the Runner stores the report")
+	Set report = ##class(SignalNoir.Application.Benchmark.ReportBuilder).Store(r.obj.runId).obj
+	Do $$$AssertEquals(report.publishableAsReference, 1, "publishable as the reference")
+}
+
 Method TestTuningResultsAreLabelledApart()
 {
 	Set r = ..Service().Create({"mode": "rules", "purpose": "benchmark", "repetitions": 1, "scenarios": [{"family": "P5", "set": "tuning"}]})

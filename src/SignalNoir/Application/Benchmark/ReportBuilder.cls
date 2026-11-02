@@ -7,8 +7,9 @@ Class SignalNoir.Application.Benchmark.ReportBuilder Extends %RegisteredObject
 /// report exists only once the run has completed; it is built and stored once.
 Parameter SCORED = "clean,P5,P8,P9";
 
-/// Builds the report of a run from its items (any status of the run). Result.obj = the report
-ClassMethod Build(runId As %String) As SignalNoir.Core.Result
+/// Builds the report of a run from its items (any status of the run). Result.obj = the report.
+/// final: the report Store keeps, written by the Runner just before it marks the run completed
+ClassMethod Build(runId As %String, final As %Boolean = 0) As SignalNoir.Core.Result
 {
 	Set run = ##class(SignalNoir.Application.Model.BenchmarkRunRecord).%OpenId(runId)
 	If '$IsObject(run) Return ##class(SignalNoir.Core.Result).Error("NOT_FOUND", "no such BenchmarkRun: " _ runId)
@@ -29,7 +30,7 @@ ClassMethod Build(runId As %String) As SignalNoir.Core.Result
 	Do report.%Set("development", run.development, "boolean")
 	Do report.%Set("developmentReasons", $Select(run.developmentReasonsJson = "": [], 1: [].%FromJSON(run.developmentReasonsJson)))
 	Do report.%Set("freezeId", run.freezeId, $Select(run.freezeId = "": "null", 1: "string"))
-	Do report.%Set("publishableAsReference", ((run.purpose = "reference") && 'run.development && (run.status = "completed")), "boolean")
+	Do report.%Set("publishableAsReference", ((run.purpose = "reference") && 'run.development && (final || (run.status = "completed"))), "boolean")
 	Set report.reference = ..Reference(run, ##class(SignalNoir.Benchmark.Data.ReferenceResult).Load("Record"))
 	Set report.setup = ..Setup(run, cases)
 	If run.purpose = "quick_validation" Set report.quickValidation = ##class(SignalNoir.Application.Benchmark.QuickValidation).Results(cases, ##class(SignalNoir.Benchmark.Data.ReferenceResult).Load("Record"), report.reference.differsFromReference)
@@ -45,7 +46,7 @@ ClassMethod Store(runId As %String) As SignalNoir.Core.Result
 	Set run = ##class(SignalNoir.Application.Model.BenchmarkRunRecord).%OpenId(runId)
 	If '$IsObject(run) Return ##class(SignalNoir.Core.Result).Error("NOT_FOUND", "no such BenchmarkRun: " _ runId)
 	If run.reportJson '= "" Return ##class(SignalNoir.Core.Result).OkObj({}.%FromJSON(run.reportJson))
-	Set built = ..Build(runId)
+	Set built = ..Build(runId, 1)
 	If 'built.ok Return built
 	Set run.reportJson = built.obj.%ToJSON()
 	$$$ThrowOnError(run.%Save())
