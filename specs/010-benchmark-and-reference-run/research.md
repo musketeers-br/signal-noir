@@ -440,3 +440,34 @@ in CI, Replay and touched Cases outside every metric, roles recorded and enforce
 nothing in the runtime names iris-agentic-dev. No violation found. Two caveats stay open and are named above: the
 heuristics behind `staleExecutions` and `resentBeforeReconcile` have no failure-data test, and the one unexplained
 flake.
+
+## Reference run (T061, 2026-11-02, container `signalnoir-010`)
+
+Request `docs/benchmark/reference-request.json` (agent, `reference`, OpenAI `gpt-4o-mini`, 3 repetitions, seed 2026,
+P5, P8 and clean from the test set), on master `c75bd91`, freeze `freeze-2026-11-02` (`check-freeze.sh`: all 16 files
+match). Both reports recompute (`recompute.py`: "report matches raw data").
+
+| Run | Mode | Created → completed (UTC) | Wall time | correct | safe review | unnecessary review | incorrect |
+|---|---|---|---|---|---|---|---|
+| `run_000260` (the reference) | agent-v5, gpt-4o-mini | 22:38:44 → 22:43:14 | 4 min 30 s | 33 | 6 | 0 | 0 |
+| `run_000261` (baseline, same request with `mode: rules`) | rules-v2 | 23:00:28 → 23:03:47 | 3 min 19 s | 33 | 6 | 0 | 0 |
+| `run_000241` (discarded, see below) | agent-v5, gpt-4o-mini | 21:08:45 → 21:13:22 | 4 min 37 s | 33 | 6 | 0 | 0 |
+
+- `run_000260`: `development: false`, `publishableAsReference: true`, `reviewStatus` `other_member` for the baseline of
+  P5 and P8 and for the evaluator. 36 Proposals, all `agent-v5`; no invalid response; the platform replaced the
+  model's confidence in no Case (`confidence_calibrated`: 0); HIGH 15, MEDIUM 15, LOW 6. Idempotency passed (0
+  duplicate Receipts over 30 effects); the other guarantees are not exercised by these scenarios.
+- The six safe reviews are `P8b-test-05` and `clean-ambiguous-identity-test-01` in every repetition, both keyed
+  `reviewIsAcceptable` with no acceptable Action; each ended in `ReviewRequired` with a Dossier.
+- Agent and baseline took the same outcome and the same Action in every one of the 39 Cases: a tie. Latency p50 per
+  Case 2.2–2.6 s (agent) against 29–32 ms (rules); 6 tool calls per Case in both; the agent's cost is not estimated
+  (no price table for the model).
+- `run_000241` was the first reference run, same freeze, request and seed, with the same outcome in every Case. It
+  is not the reference: (1) its stored report had `publishableAsReference: false`, because `Runner.Finish` stores
+  the report before marking the run completed and the flag required `completed` (fixed in `ReportBuilder.Build`,
+  `final` argument, PR #52; `ReportBuilder.cls` is not frozen); (2) its `reviews` were empty, the governance
+  records (PR #50) not yet on master; (3) its run record was then deleted by running `TestRunDevelopment` and
+  `TestReport` in the same namespace (their `OnBeforeOneTest` kills the `BenchmarkRunRecord` and
+  `BenchmarkItemRecord` extents), so its report could not be stored again. Its API report and case data were
+  exported before and after, and its outcomes are those above. A real run is now exported before any test runs
+  in its container.
