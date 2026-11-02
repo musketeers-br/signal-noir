@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-01
 
-**Status**: Revised 2026-11-02 (agent-v4)
+**Status**: Revised 2026-11-02 (agent-v5)
 
 **Input**: Henry, 2026-11-01, after the first tuning rehearsal of the Agent mode (gpt-4o-mini, AI Hub
 build 154, tuning variants of P5, P8 and clean, one repetition): 12 Cases in about 5 minutes, 4
@@ -64,6 +64,28 @@ The instructions already said the right thing, so a longer text would not fix th
 - The instructions tell the model to read them, never to recompute them.
 
 Revised in place: FR-003, FR-006, FR-008, FR-010, FR-011, FR-014, FR-015, SC-005; new: FR-019, FR-020.
+
+## Revision 2026-11-02 c: agent-v5
+
+The `agent-v4` rehearsal (run_000193, gpt-4o-mini, same tuning, 3 repetitions, 7m42s): 26 correct,
+6 safe reviews, 4 unneeded reviews, no incorrect. SC-001, SC-002, SC-003, SC-005 and SC-006 pass;
+SC-004 does not.
+
+What remains:
+- **SC-004**: 20 of 32 Proposals were HIGH (62%). 12 of them were mappings whose candidate had
+  `exact: false` (soro, plasma). By the rule they are MEDIUM, which would give 8 HIGH of 32 (25%).
+- **P8a**: review in all 3 repetitions. CHECKS said `partner.unstable: true`, yet the model went on to
+  the Mapping step.
+- **clean-unavailable**, repetition 1: an invalid answer with an invented precondition name.
+
+Henry decided on 2026-11-02:
+- The platform sets the confidence by the FR-008 rule over CHECKS and records any correction; the
+  Action stays the model's.
+- CHECKS states whether each step applies, in order.
+- The instructions write out the preconditions of each Action.
+
+`agent-v5` ([contract](./contracts/agent-v5-instructions.md)) supersedes `agent-v4`. Revised in
+place: FR-008, FR-011, FR-014, FR-015, FR-019, SC-005; new: FR-021.
 
 ## Context
 
@@ -278,7 +300,7 @@ under, and the freeze cannot be checked (Constitution VIII).
   maintenance, and to APPLY_APPROVED_MAPPING whose every condition matched literally (no synonym, no
   letter-case difference); any other HOLD or Mapping is MEDIUM; REQUEST_REVIEW is LOW (revised for
   agent-v3). Since agent-v4 the two HIGH cases are `partner.downOrMaintenance` and the candidate's
-  `exact` in CHECKS.
+  `exact` in CHECKS. Since agent-v5 the platform applies this rule to the answer (FR-021).
 
 **Unchanged**
 
@@ -291,13 +313,13 @@ under, and the freeze cannot be checked (Constitution VIII).
 
 **Version and freeze**
 
-- **FR-011**: The prompt version recorded on every Agent Proposal MUST be `agent-v4`; earlier versions
-  MUST no longer be used by any proposer (revised for agent-v4).
+- **FR-011**: The prompt version recorded on every Agent Proposal MUST be `agent-v5`; earlier versions
+  MUST no longer be used by any proposer (revised for agent-v5).
 - **FR-012**: The instructions MUST NOT name a scenario family, a variant id, or answer-key text; they MUST
   be general criteria over the Evidence.
 - **FR-013**: `agent-v2` MUST be tuned only on tuning variants; nobody tuning it MAY read the reserved test
   variants or their answer key before the freeze (Constitution VIII).
-- **FR-014**: `agent-v4` MUST be merged before the freeze of 2026-11-05 and be the prompt version named in
+- **FR-014**: `agent-v5` MUST be merged before the freeze of 2026-11-05 and be the prompt version named in
   the freeze record.
 
 **Answer format (agent-v3)**
@@ -317,6 +339,7 @@ under, and the freeze cannot be checked (Constitution VIII).
   - every Mapping whose sourceCode is an exam code of the Order, with each condition's Order value and
     match, whether it applies, and whether it matched exactly.
 
+  Since agent-v5, CHECKS also MUST say, for steps 1 to 3 in order, whether each step applies.
   Each check MUST name the evidenceId it comes from. The block MUST be neutralized like the Evidence.
   The Evidence block itself does not change.
 - **FR-020**: The instructions MUST tell the Agent to take the CHECKS as written and not recompute them.
@@ -324,12 +347,21 @@ under, and the freeze cannot be checked (Constitution VIII).
   hypothesis means APPLY_APPROVED_MAPPING with that mappingId, and that REQUEST_REVIEW means no chosen
   hypothesis.
 
+- **FR-021**: The platform MUST set the confidence of an Agent answer by the FR-008 rule over CHECKS:
+  - REQUEST_REVIEW is LOW;
+  - HOLD is HIGH only with the Partner DOWN or in maintenance;
+  - a mapping is HIGH only when its candidate matched exactly.
+
+  A mappingId that is not an applicable candidate keeps the model's value. The platform MUST NOT change
+  the Action, and it MUST record a correction as an Annotation on the Timeline. The instructions MUST
+  write out the preconditions of each Action.
+
 **Evidence of the change**
 
 - **FR-015**: An automated test MUST check, with a scripted runtime and no live provider, that an Agent
-  Proposal records `agent-v4`, that the instructions contain the four steps of the decision order, the
+  Proposal records `agent-v5`, that the instructions contain the four steps of the decision order, the
   RETRY prohibition, the Mapping procedure and the confidence criterion, and that they name no scenario
-  family or variant (revised for agent-v4). The checks of FR-019 MUST be tested on the shapes of the
+  family or variant (revised for agent-v5). The checks of FR-019 MUST be tested on the shapes of the
   run_000146 misses (letter case, synonym, an Order with no candidate, one timeout out of one attempt).
 - **FR-016**: A tuning rehearsal with the real model MUST be run on `agent-v2` over the same tuning
   variants as the `agent-v1` rehearsal, and its outcomes recorded next to the `agent-v1` ones, labelled
@@ -358,7 +390,7 @@ under, and the freeze cannot be checked (Constitution VIII).
   the answer key expects another Action) in any repetition.
 - **SC-004**: Every Proposal of REQUEST_REVIEW for insufficient or ambiguous Evidence carries LOW
   confidence, and fewer than half of all Proposals carry HIGH.
-- **SC-005**: 100% of Agent Proposals recorded after the change carry the prompt version `agent-v4`.
+- **SC-005**: 100% of Agent Proposals recorded after the change carry the prompt version `agent-v5`.
 - **SC-006**: The rehearsal of 12 Cases still completes within 10 minutes per repetition.
 - **SC-007**: The reserved test variants are not run with, nor read for, `agent-v2` before the freeze.
 

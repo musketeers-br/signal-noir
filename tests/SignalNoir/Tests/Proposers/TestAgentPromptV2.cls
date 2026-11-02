@@ -1,9 +1,9 @@
 Class SignalNoir.Tests.Proposers.TestAgentPromptV2 Extends %UnitTest.TestCase
 {
 
-/// 017 - the Agent's instructions (agent-v4 since the run_000146 revision):
+/// 017 - the Agent's instructions (agent-v5 since the run_000193 revision):
 /// the version, the decision order and its criteria over the CHECKS block, and
-/// no scenario family or variant names (contracts/agent-v4-instructions.md). Model behaviour is
+/// no scenario family or variant names (contracts/agent-v5-instructions.md). Model behaviour is
 /// measured by the tuning rehearsal, not here.
 /// Text() returns the instructions with every run of white space collapsed to
 /// one space, so the checks do not depend on line breaks.
@@ -32,18 +32,18 @@ Method TestNoFamilyOrVariantNames()
 	For part = "tune", "clean-", "injection-", "GLIC", "glic", "HBA1C", "map_" Do $$$AssertNotTrue(text [ part, "no tuning wording: " _ part)
 }
 
-/// FR-011: every Agent Proposal records agent-v4
-Method TestVersionIsAgentV4()
+/// FR-011: every Agent Proposal records agent-v5
+Method TestVersionIsAgentV5()
 {
-	Do $$$AssertEquals(##class(SignalNoir.Proposers.Agent).#PROMPTVERSION, "agent-v4", "prompt version")
+	Do $$$AssertEquals(##class(SignalNoir.Proposers.Agent).#PROMPTVERSION, "agent-v5", "prompt version")
 	Kill ^SignalNoir.TestScript("agent")
 	Set ^SignalNoir.TestScript("agent", "content") = "{""diagnosis"": {""summary"": ""s"", ""claims"": [], ""hypotheses"": []}, ""action"": ""REQUEST_REVIEW"", ""params"": {}, ""confidence"": ""LOW"", ""preconditions"": []}"
 	Set agent = ##class(SignalNoir.Tests.Fakes.AgentWithFakeRuntime).%New()
 	Set context = ##class(SignalNoir.Core.Dto.InvestigationContext).%New()
 	Set context.case = ##class(SignalNoir.Core.Dto.Case).%New()
-	Set context.investigationId = "inv_prompt_v4"
+	Set context.investigationId = "inv_prompt_v5"
 	Set r = agent.Propose(context)
-	Do $$$AssertEquals(r.details.promptVersion, "agent-v4", "recorded on the answer")
+	Do $$$AssertEquals(r.details.promptVersion, "agent-v5", "recorded on the answer")
 	Kill ^SignalNoir.TestScript("agent")
 }
 
@@ -75,7 +75,7 @@ Method TestMappingStep()
 Method TestHoldAndNoRetry()
 {
 	Set text = ..Text()
-	For part = "partner.unstable is true, propose HOLD", "DOWN", "maintenance is active", "timeouts are half or more", "one attempt that timed out counts", "Answered errors", "Never propose RETRY" {
+	For part = "DOWN", "maintenance is active", "timeouts are half or more", "one attempt that timed out counts", "Answered errors", "Never propose RETRY" {
 		Do ..AssertHas(text, part)
 	}
 	Do $$$AssertNotTrue(text [ "Propose RETRY only", "no condition under which RETRY is proposed")
@@ -128,6 +128,40 @@ Method TestChecksInInput()
 	Do $$$AssertEquals(checks.mapping.applicableCount, 1, "plasma is PLASMA")
 	Do $$$AssertEquals(checks.mapping.candidates.%Get(0).mappingId, "map_glicj_plasma", "the candidate")
 	Do $$$AssertEquals(checks.mapping.catalogEvidenceId, "evid_cat", "cites the catalog")
+	Do $$$AssertNotTrue($Piece(input, $Char(10), 6) [ "[embedded instruction removed]", "the platform's own words are never taken for an instruction")
+	Do $$$AssertEquals(checks.steps.%Get(2).applies, 1, "step 3 applies")
+}
+
+/// agent-v5 (run_000193): steps in order, preconditions per Action, MEDIUM when not exact
+Method TestStepsAndPreconditions()
+{
+	Set text = ..Text()
+	Do ..AssertHas(text, "stop at the first whose applies is true")
+	Do ..AssertHas(text, "If partner.unstable is true, stop and propose HOLD; do not look at the mappings")
+	Do ..AssertHas(text, "for HOLD, [{""check"": ""PARTNER_HEALTHY_WINDOW"", ""expected"": false}]")
+	Do ..AssertHas(text, "for APPLY_APPROVED_MAPPING, [{""check"": ""MAPPING_VERSION_UNCHANGED""")
+	Do ..AssertHas(text, "for REQUEST_REVIEW, []")
+	Do ..AssertHas(text, "an applicable candidate with exact false is MEDIUM")
+	Do ..AssertHas(text, "The platform sets it from CHECKS")
+}
+
+/// agent-v5: the platform corrects the confidence and says so; the Action never changes
+Method TestCalibrate()
+{
+	Set facts = ##class(SignalNoir.Tests.Core.TestDecisionFacts).Facts(##class(SignalNoir.Tests.Core.TestDecisionFacts).Order("GLIC-J", "plasma"))
+	Set answer = {"action": "APPLY_APPROVED_MAPPING", "params": {"mappingId": "map_glicj_plasma", "mappingVersion": "2026.10.1"}, "confidence": "HIGH"}
+	Set details = {}
+	Do ##class(SignalNoir.Proposers.Agent).Calibrate(answer, facts, details)
+	Do $$$AssertEquals(answer.confidence, "MEDIUM", "not exact: MEDIUM")
+	Do $$$AssertEquals(answer.action, "APPLY_APPROVED_MAPPING", "the Action is the model's")
+	Do $$$AssertEquals(details.confidence.model, "HIGH", "what the model wrote")
+	Do $$$AssertEquals(details.confidence.kind, "confidence_calibrated", "for the Timeline")
+	Set answer = {"action": "REQUEST_REVIEW", "params": {}, "confidence": "LOW"}, details = {}
+	Do ##class(SignalNoir.Proposers.Agent).Calibrate(answer, facts, details)
+	Do $$$AssertEquals(details.%IsDefined("confidence"), 0, "nothing to correct, nothing recorded")
+	Set answer = {"action": "APPLY_APPROVED_MAPPING", "params": {"mappingId": "map_tsh_legacy"}, "confidence": "HIGH"}, details = {}
+	Do ##class(SignalNoir.Proposers.Agent).Calibrate(answer, facts, details)
+	Do $$$AssertEquals(answer.confidence, "HIGH", "no rule: left for the Validator to judge")
 }
 
 }

@@ -21,7 +21,38 @@ ClassMethod Compute(evidence As %ListOfObjects, order As %DynamicObject, partner
 		If ev.source = "tool.receipts_and_orders_by_patient" Set receipts = ev
 	}
 	Set order = $Select($IsObject(order): order, 1: {})
-	Return {"identity": (..Identity(evidence, order, receipts)), "partner": (..Partner(health, history, policies, partnerId, now)), "mapping": (..Mapping(order, catalog))}
+	Set facts = {"identity": (..Identity(evidence, order, receipts)), "partner": (..Partner(health, history, policies, partnerId, now)), "mapping": (..Mapping(order, catalog))}
+	Set facts.steps = ..Steps(facts)
+	Return facts
+}
+
+/// Whether each step of the decision order applies, in that order (agent-v5:
+/// in run_000193 the model went past an unstable partner to the Mapping step)
+ClassMethod Steps(facts As %DynamicObject) As %DynamicArray [ Private ]
+{
+	Set steps = []
+	Do steps.%Push({"step": 1, "name": "identity"}.%Set("applies", facts.identity.patientRecordCollisions > 0, "boolean"))
+	Do steps.%Push({"step": 2, "name": "partner instability"}.%Set("applies", facts.partner.unstable, "boolean"))
+	; never "approved mapping": Core.Suspicion would read "approve" as an instruction
+	Do steps.%Push({"step": 3, "name": "mapping"}.%Set("applies", facts.mapping.applicableCount = 1, "boolean"))
+	Return steps
+}
+
+/// The confidence the decision order gives an Action (017 FR-008), or "" when
+/// no rule covers it (a mappingId that is not a candidate, an unknown Action):
+/// REQUEST_REVIEW is LOW; HOLD is HIGH only with the partner DOWN or in
+/// maintenance; a mapping is HIGH only when its candidate matched exactly
+ClassMethod Confidence(facts As %DynamicObject, action As %String, params) As %String
+{
+	If action = "REQUEST_REVIEW" Return "LOW"
+	If action = "HOLD" Return $Select(facts.partner.downOrMaintenance: "HIGH", 1: "MEDIUM")
+	If action '= "APPLY_APPROVED_MAPPING" Return ""
+	Set mappingId = $Select($IsObject(params): params.%Get("mappingId"), 1: "")
+	For i = 0 : 1 : facts.mapping.candidates.%Size() - 1 {
+		Set c = facts.mapping.candidates.%Get(i)
+		If (c.mappingId = mappingId) && c.applicable Return $Select(c.exact: "HIGH", 1: "MEDIUM")
+	}
+	Return ""
 }
 
 ClassMethod Identity(evidence As %ListOfObjects, order As %DynamicObject, receipts) As %DynamicObject [ Private ]

@@ -131,4 +131,36 @@ Method TestOnlyFacts()
 	Do $$$AssertEquals(facts.mapping.orderExamCodes.%Size(), 0, "no Order")
 }
 
+/// agent-v5: whether each step applies, in order (P8a: unstable partner, no mapping)
+Method TestSteps()
+{
+	Set facts = ..Facts(..Order("HEMO", "SERUM"), , {"window": {"total": 1, "errors": 0, "timeouts": 1, "errorRate": 1}})
+	Do $$$AssertEquals(facts.steps.%Size(), 3, "steps 1 to 3")
+	Do $$$AssertEquals(facts.steps.%Get(0).applies, 0, "identity does not apply")
+	Do $$$AssertEquals(facts.steps.%Get(1).name, "partner instability", "step 2")
+	Do $$$AssertEquals(facts.steps.%Get(1).applies, 1, "the partner is unstable")
+	Do $$$AssertEquals(facts.steps.%Get(2).applies, 0, "no mapping for HEMO")
+	Set facts = ..Facts(..Order("GLIC-J", "plasma"))
+	Do $$$AssertEquals(facts.steps.%Get(1).applies, 0, "an answered error is not instability")
+	Do $$$AssertEquals(facts.steps.%Get(2).applies, 1, "one mapping applies")
+}
+
+/// agent-v5: the confidence rule of FR-008 (run_000193: 12 HIGH on mappings that were not exact)
+Method TestConfidence()
+{
+	Set DF = "SignalNoir.Core.DecisionFacts"
+	Set plasma = ..Facts(..Order("GLIC-J", "plasma"))
+	Do $$$AssertEquals($ClassMethod(DF, "Confidence", plasma, "APPLY_APPROVED_MAPPING", {"mappingId": "map_glicj_plasma"}), "MEDIUM", "plasma against PLASMA is not exact")
+	Set serum = ..Facts(..Order("GLIC-J", "SERUM"))
+	Do $$$AssertEquals($ClassMethod(DF, "Confidence", serum, "APPLY_APPROVED_MAPPING", {"mappingId": "map_glicj_soro"}), "HIGH", "SERUM as written is exact")
+	Do $$$AssertEquals($ClassMethod(DF, "Confidence", serum, "APPLY_APPROVED_MAPPING", {"mappingId": "map_glicj_plasma"}), "", "a candidate that does not apply has no rule")
+	Do $$$AssertEquals($ClassMethod(DF, "Confidence", serum, "APPLY_APPROVED_MAPPING", {"mappingId": "map_tsh_legacy"}), "", "not a candidate")
+	Do $$$AssertEquals($ClassMethod(DF, "Confidence", serum, "REQUEST_REVIEW", {}), "LOW", "review is LOW")
+	Set down = ..Facts(..Order("HEMO", "SERUM"), {"status": "DOWN", "maintenance": null})
+	Do $$$AssertEquals($ClassMethod(DF, "Confidence", down, "HOLD", {}), "HIGH", "DOWN")
+	Set timeout = ..Facts(..Order("HEMO", "SERUM"), , {"window": {"total": 1, "errors": 0, "timeouts": 1, "errorRate": 1}})
+	Do $$$AssertEquals($ClassMethod(DF, "Confidence", timeout, "HOLD", {}), "MEDIUM", "a timeout is MEDIUM")
+	Do $$$AssertEquals($ClassMethod(DF, "Confidence", timeout, "RETRY", {}), "", "no rule for RETRY")
+}
+
 }

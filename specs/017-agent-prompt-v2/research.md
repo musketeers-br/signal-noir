@@ -135,3 +135,36 @@
   - `TestRecoverySuite:TestRestartDuringExecuting` failed while an earlier test session was still
     running in the same container; run alone, `TestRecoverySuite` passes 6 of 6.
 
+## R9 — agent-v5 after run_000193 (2026-11-02)
+
+- **Decision**:
+  - The platform sets the confidence from CHECKS (`DecisionFacts.Confidence`, `Agent.Calibrate`) and
+    records a correction on the Timeline.
+  - CHECKS gains `steps`, saying whether steps 1 to 3 apply, in order.
+  - The instructions write out the preconditions of each Action.
+- **Rationale**: run_000193 left three gaps that more text did not close.
+  - The model wrote HIGH on 12 mappings whose candidate said `exact: false`, although agent-v4 named
+    `exact` as the HIGH criterion. Confidence is a function of CHECKS, so computing it is exact.
+  - On P8a it went to the Mapping step with `partner.unstable: true` in all 3 repetitions.
+  - Once it invented a precondition name.
+- **Kept with the model**: the Action, the hypotheses, the diagnosis and the citations. Overriding the
+  Action from CHECKS would make the Agent the Rules baseline; a wrong Action still meets the Validator,
+  and an unneeded review is a safe outcome.
+- **Alternatives considered**:
+  - Only the sentence "applicable with exact false is MEDIUM": it is also in the text now, but agent-v4
+    already said it in other words.
+  - A Validator rule on confidence: that would change the Core for every origin.
+  - A `firstApplicableStep` field: it states the Action outright. `steps` gives each step's result and
+    leaves the decision order to the model.
+- **T025 (2026-11-02)**: compile without errors; 672 passed, 2 failed. The 2 failures are the
+  environmental ones of T015 (`TestCaseOpening` and `TestGateG4`, `SN_PROPOSER_MODE=hybrid` in the
+  container).
+  - Found on the way: step 3 was first named "approved mapping" in `steps`. `Core.Suspicion` reads
+    "approve" as an instruction, so CHECKS reached the model with `[embedded instruction removed]`
+    (`TestToolGateway:TestModelInputCarriesNoInstruction` counted 3 markers instead of 2). It is now
+    named "mapping", and `TestChecksInInput` asserts that CHECKS carries no marker.
+  - The same run fixed the flaky `TestResolution:TestNoteIsRecordedAsEvidenceWithoutDossierEvidence`:
+    `Support.SeedEvidence` made ids outside the `IdFactory` sequence (`evid_seed_N`). Evidence recorded
+    in the same millisecond is listed by evidenceId, so the Operator's note sorted before them in 11 of
+    40 tries. The seed now takes its ids from `IdFactory`; 0 of 40.
+

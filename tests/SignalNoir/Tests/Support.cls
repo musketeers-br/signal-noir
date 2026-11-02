@@ -270,7 +270,9 @@ ClassMethod SeedEvidence(caseId As %String)
 	Set now = ##class(SignalNoir.Application.SystemClock).%New().NowUtc()
 	For spec = "tool.policies:PoliciesResult", "tool.partner_failure_history:HistoryResult", "tool.partner_health:HealthResult", "tool.mapping_catalog:CatalogResult" {
 		Set row = ##class(SignalNoir.Application.Model.EvidenceRecord).%New()
-		Set row.evidenceId = "evid_seed_" _ $Increment(^SignalNoir.TestSeq)
+		; ids from the product's factory: Evidence recorded in the same millisecond is
+		; listed by evidenceId, so an id outside its sequence sorts out of recording order
+		Set row.evidenceId = ##class(SignalNoir.Application.IdFactory).%New().New("evid_")
 		Set row.caseId = caseId
 		Set row.source = $Piece(spec, ":", 1)
 		Set row.kind = "fact"
