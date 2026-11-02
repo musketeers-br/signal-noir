@@ -34,8 +34,6 @@ Method TestEveryScoredVariantHasAKey()
 	For i = 0 : 1 : catalog.obj.%Size() - 1 {
 		Set v = catalog.obj.%Get(i)
 		If '..Scored(v.family) Continue
-		; the placeholders of the reserved set carry no key until the freeze (T054)
-		If v.variant [ "-test-00" Continue
 		Set checked = checked + 1
 		Do $$$AssertTrue(keys.%IsDefined(v.variant), v.variant _ " has an answer key")
 	}
