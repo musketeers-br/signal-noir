@@ -49,6 +49,11 @@ contracts/contract-change-013-decisions-mode.md, quickstart)
 - [X] T015 README (proposer modes, Decisions route outside AI Hub, variables) and `.env.example`
 - [X] T016 Full ObjectScript suite + contract validators green; results in research.md (R9)
 
+## Phase 9: Embedded Python transport (2026-11-02)
+
+- [X] T017 `DecisionsHttp.Request`/`Post` in Embedded Python (`httpx`); drop `Payload` and `EnsureTls`;
+  `Proposers.TestDecisionsHttp`; live smoke recorded in research (R10)
+
 ## Dependencies
 
 T002–T004 → T005–T006 → T007 → T008 → T009–T012; T013–T014 after T007; T015–T016 last.

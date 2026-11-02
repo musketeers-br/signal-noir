@@ -121,3 +121,27 @@ work (declared dependency).
   claims; converted to a `MEDIUM` Proposal answer. Synthetic data only.
 - Not done: a live Investigation with `SN_PROPOSER_MODE=decisions` set on the container (it needs a
   container recreate); thresholds are uncalibrated start values.
+
+## R10 — Transport in Embedded Python (2026-11-02)
+
+- **Decision**: `DecisionsHttp` sends the request through Embedded Python with `httpx`, which ships with
+  build 154 (Python 3.12.3; the `openai` SDK does not ship and is not needed for one POST).
+  `Request` builds the request without sending it, so tests can inspect it. `Post` sends it and returns
+  `{status, data}`, or `{error}` with only the exception's class name. `Decide`, the key handling, the
+  error codes and the `DecisionsRuntime` seam are unchanged.
+- **Rationale**:
+  - TLS uses the certifi bundle, so the `SignalNoirTLS` configuration is no longer created in `%SYS`.
+  - Python encodes the body as UTF-8, so the manual conversion that fixed the 400 `invalid_json`
+    (016) goes away.
+  - Embedded Python is a technology bonus of the contest (3 points).
+- **Tests**: `Proposers.TestDecisionsHttp`:
+  - the body is UTF-8 and round-trips;
+  - the key appears only in the Authorization header;
+  - a transport failure returns only `ConnectError`.
+
+  It is kept out of the Core suite because the public IRIS image of CI may lack `httpx`.
+  `Core.TestDecisionQuestions` lost its `Payload` test; `TestDecisionsProposer` (6) and
+  `TestHybridProposer` (5) pass.
+- **Live smoke (labelled live)**, `DecisionsHttp.Smoke()` through Python: HTTP 200 in 1530 ms,
+  `gpt-6-luna`, partner `DOWN` + timeout -> `HOLD` at 0.73 (confidence 0.64), as in R9. Synthetic data
+  only.
