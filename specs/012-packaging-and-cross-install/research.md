@@ -143,3 +143,35 @@ Node image). The README's command is `docker compose build`; `--no-cache` only k
 
 These fixes trigger a new cross-install from the corrected README; T022 stays open until it passes. An Approval
 kept through `restart` (T021) was not checked here.
+
+## T022 — Cross-install from the corrected README (2026-11-03 02:12 UTC)
+
+After the two README fixes (PR #57), the first container and its clone were removed and the install ran again
+the same way: a fresh clone of master `3382841` into `C:\Users\henri\sncross` (a short path, as the README now
+says), the Install section with step 4 as `docker buildx use "$(docker context show)"` (it selected
+`desktop-linux` with no error), Henrique's OpenAI key, then `sh scripts/smoke.sh`:
+
+| Step | Elapsed |
+|---|---|
+| `git clone` | 3 s |
+| 1. `docker load` (x64 file) | 1 min 41 s |
+| 2. retag, 3. `.env` | 1 min 42 s |
+| 4. `docker buildx use "$(docker context show)"`, `docker compose build --no-cache` | 2 min 9 s |
+| 5. `docker compose up -d`; `/health` alive, provider configured | 2 min 17 s |
+| smoke: Order emitted, first Case open (`Investigating`) | **3 min 9 s** |
+
+No README step failed, so no new fix and no further cross-install: **T022 passes** (SC-001, first Case ≤ 15 min).
+The caveats of the first attempt still hold: same machine, Docker's layer cache (base image, Node) not cleared.
+
+**T021, on the same install** (the dev containers on this machine use other host ports, so 1972 and 52773 were
+the compose service's):
+- `docker compose ps`: `signalnoir-cross-iris-1 ... (healthy)`; smoke PASS (above).
+- The Case reached `PendingApproval` 4 s after the smoke; `prop_000001` was approved through
+  `POST /cases/case_000001/proposals/prop_000001/decision` (201), and the Case was `Executing`.
+- `docker compose restart` right away; `/health` alive 5 s later. The Case ended `Resolved` with the one
+  Approval (`approved`, `prop_000001`), one Execution (`exec_000001`) and the Receipt
+  `rcp_MXNNSQ6XFQI7DLFWUIGG5PN4BI_1`: the Approval was kept through the restart, and nothing was sent twice.
+  This covers the two items of R3 "not verified here".
+
+**T020, on the same install**: `sh scripts/quick-validate.sh` in agent mode (`run_000001`) passed, 3 of 3 Cases
+matching the reference, in 17 s; the README lists it under "Start, check, stop" (timings in 010's T069).

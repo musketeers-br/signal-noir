@@ -7,7 +7,7 @@
 **Tests**: TDD for the ObjectScript changes (`%UnitTest` via iris-agentic-dev). The packaging is
 verified by building and running the image locally (research R1–R5).
 
-**Open tasks**: T020 waits on 010. T021–T024 are steps for team members.
+**Open tasks**: T023–T024 are steps for team members.
 
 ## Phase 1: Setup
 
@@ -66,12 +66,12 @@ verified by building and running the image locally (research R1–R5).
 
 ## Phase 7: User Story 5 - Quick validation (P3)
 
-- [ ] T020 [US5] **Waits on 010.** Quick validation command: a BenchmarkRun over 3 reference cases, ≤ 3 minutes, match or diverged with a reason per case; listed in the README (FR-011, SC-006)
+- [x] T020 [US5] **Waits on 010.** Quick validation command: a BenchmarkRun over 3 reference cases, ≤ 3 minutes, match or diverged with a reason per case; listed in the README (FR-011, SC-006)
 
 ## Phase 8: User Story 6 - Cross-install, video, submission (P3) — team members
 
-- [ ] T021 [US6] On a machine without the dev container, `docker compose up -d` on the fixed ports, `docker compose ps` healthy, smoke PASS, an Approval kept through `restart` (research R3, "not verified here")
-- [ ] T022 [US6] **Henrique**: cross-install on a clean x64 machine from the README alone, with his own key, first Case ≤ 15 min (SC-001); record the time and any README fix (which triggers a new cross-install)
+- [x] T021 [US6] On a machine without the dev container, `docker compose up -d` on the fixed ports, `docker compose ps` healthy, smoke PASS, an Approval kept through `restart` (research R3, "not verified here")
+- [x] T022 [US6] **Henrique**: cross-install on a clean x64 machine from the README alone, with his own key, first Case ≤ 15 min (SC-001); record the time and any README fix (which triggers a new cross-install)
 - [ ] T023 [US6] **Team**: the video (≤ 5 min): demo script; decision, platform guarantee, dossier and resilience moments; synthetic and Replay labeled; its link in the README
 - [ ] T024 [US6] **Team**: Open Exchange page → the public repository; contest entry verified; DC profiles in the README; published results match the benchmark report (after 010)
 
