@@ -488,5 +488,21 @@ source). The answers were read from the Proposal records of `signalnoir-010`; th
   among them) on master `64fba34`, in the key-less container `signalnoir-freeze`.
 - Quick validation in Replay (`signalnoir-freeze`, no key): `sh scripts/quick-validate.sh` passed, 3 of 3 Cases
   matching the reference, in 16 s (17 s wall). Each line says "the provider or model differs from the reference's",
-  because a Replay run has no provider; it does not make a Case diverge. The run with a real key (T069) is still
-  to be measured.
+  because a Replay run has no provider; it does not make a Case diverge. The run with a real key is in T069 below.
+
+## Quick validation timed (T069, 2026-11-02)
+
+`time sh scripts/quick-validate.sh` on master `f8f19fa` (`ReferenceResult` as recorded in T062), with the
+Simulator of each container:
+
+| | mode | run | result | script | wall |
+|---|---|---|---|---|---|
+| `signalnoir-freeze`, no key | replay | `run_000243` | PASS, 3 of 3 match | 11 s | 10.9 s |
+| `signalnoir-010`, OpenAI key | agent (`gpt-4o-mini`, `agent-v5`) | `run_000262` | PASS, 3 of 3 match | 16 s | 17.0 s |
+
+Both are far under the 180 s of FR-033, so the per-item budget of the quick purpose in `RunService` is unchanged.
+Neither container was freshly built: `signalnoir-freeze` holds no run that matters and the master sources;
+`signalnoir-010` holds the reference runs (`run_000260`, `run_000261`), which this run did not touch (no test
+ran there). The time of a first start (image build, Simulator load) is not in these figures. In Replay each line
+still says "the provider or model differs from the reference's"; with the key no line says so, as the provider
+and model are the reference's.
