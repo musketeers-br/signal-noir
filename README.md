@@ -304,7 +304,10 @@ what is listed above.
   (`SignalNoir.Interop.Service.OrderIn`). The Production that holds it runs in a portable shape, not
   as an `Ens.Production`, so its steps do not appear in the Visual Trace (see
   [Community idea](#community-idea-dpi-i-689)).
-- **Benchmark numbers.** The reference run has not been made yet, so no figures are published.
+- **Benchmark numbers.** On the reference run (39 Cases, five reserved variants each of P5 and P8b and
+  three clean controls, three times) the Agent and the rules baseline tie: 33 correct, 6 safe reviews,
+  0 incorrect, the same Action in every Case. A tie, not a win, on small synthetic data; see
+  [`docs/benchmark/README.md`](docs/benchmark/README.md) for what it shows and what it does not.
 - Demo instance: the web applications accept unauthenticated requests on your machine. Do not
   expose the ports to a network.
 

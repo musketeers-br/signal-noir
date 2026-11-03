@@ -25,6 +25,21 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv run --with jsonschema --with pyyaml python tests/sim-contract/validate_sim_captures.py
 
+  benchmark-scripts:
+    # the benchmark scripts prove their outcomes, and the frozen source files are still the frozen ones:
+    # a change to one of them fails the build (010 T073)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sh tests/benchmark/test-check-freeze.sh
+      - run: sh tests/benchmark/test-quick-validate.sh
+      - run: python -I scripts/benchmark/test_recompute.py
+      - run: python -I scripts/benchmark/test_freeze_record.py
+      - run: sh scripts/benchmark/check-freeze.sh
+
   console:
     runs-on: ubuntu-latest
     defaults:
