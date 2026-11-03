@@ -155,7 +155,8 @@ The console is at `http://localhost:52773/signalnoir/`, and the API at
 
 ## What you need
 
-- Docker with the `docker compose` plugin, using the **default** builder.
+- Docker with the `docker compose` plugin, building with the builder of your Docker context (the
+  `docker` driver, not `docker-container`).
 - The **InterSystems IRIS AI Hub EAP build 154** Docker file for your machine. The build is
   pre-release and is not in any public registry: request it from the EAP portal,
   <https://evaluation.intersystems.com/Eval/early-access/AIHub>. **Build 162 is not supported.**
@@ -170,7 +171,9 @@ built inside the image.
 
 ## Install
 
-From a clone of this repository:
+From a clone of this repository. On Windows, clone to a short path such as `C:\src`, or run
+`git config --global core.longpaths true` first: under a deep folder, some paths of the repository
+pass Windows' 260-character limit.
 
 ```bash
 # 1. Load the build 154 file (it is a plain tar despite the .gz name)
@@ -188,8 +191,9 @@ cp .env.example .env
 ```
 
 ```bash
-# 4. Build with the default builder: a docker-container driver cannot see the local image
-docker buildx use default
+# 4. Build with your context's builder (Linux: default; Docker Desktop: desktop-linux):
+#    a docker-container driver cannot see the local image
+docker buildx use "$(docker context show)"
 docker compose build
 ```
 
@@ -315,7 +319,9 @@ what is listed above.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `pull access denied` for `docker.iscinternal.com` or `signalnoir/iris-aihub` | buildx with a `docker-container` driver, or the retag was skipped | `docker buildx use default`; check `docker images signalnoir/iris-aihub` |
+| `pull access denied` for `docker.iscinternal.com` or `signalnoir/iris-aihub` | buildx with a `docker-container` driver, or the retag was skipped | `docker buildx use "$(docker context show)"`; check `docker images signalnoir/iris-aihub` |
+| `ERROR: run docker context use default` from `docker buildx use default` | Docker Desktop: its context is `desktop-linux` | `docker buildx use "$(docker context show)"` |
+| `Filename too long` when cloning on Windows | the clone is in a deep folder | clone to a short path, or `git config --global core.longpaths true` and clone again |
 | `env file .env not found` | `.env` was not created | `cp .env.example .env` |
 | Health stays `starting` | the instance is still starting | wait for the 60 s start period; `docker compose logs iris` |
 | `port is already allocated` | 1972 or 52773 is in use | stop the other service |

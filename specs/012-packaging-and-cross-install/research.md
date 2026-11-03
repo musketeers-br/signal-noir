@@ -110,3 +110,36 @@ expired"). Community images carry a license with an end date, so the tag will ne
 scored against the reference answers (`POST /benchmark-runs`, `GET /benchmark-reports`), and the
 runner and scoring are feature 010's. The README lists the command as *pending*. Nothing is
 announced that does not exist yet.
+
+## T022 — Cross-install, first attempt (2026-11-03 02:02 UTC)
+
+Henrique has no second machine, so the cross-install ran on his Windows 11 x64 machine (Docker Desktop) as a
+fresh clone of master `ded4ce6` from GitHub, in a new folder and compose project (`signalnoir-cross`), following
+the README's Install section with his own OpenAI key (`gpt-4o-mini`), then `sh scripts/smoke.sh`:
+
+| Step | Elapsed |
+|---|---|
+| `git clone` | 3 s |
+| 1. `docker load` (x64 file) | 1 min 42 s |
+| 2. retag, 3. `.env` | 1 min 43 s |
+| 4. `docker compose build --no-cache` | 2 min 16 s |
+| 5. `docker compose up -d`; `/health` alive, provider configured | 2 min 25 s |
+| smoke: Order emitted, first Case open (`Investigating`) | **3 min 17 s** |
+
+The Case then reached `PendingApproval` with the Agent's Proposal. SC-001 (first Case ≤ 15 min) holds with room.
+This also verifies `docker compose up` on the fixed ports 1972 and 52773 (R3, "not verified here").
+
+**Not a clean machine.** Docker already held the base image's layers, so `docker load` was faster than on a new
+machine, and the build reused no project layer (`--no-cache`) but did not download what Docker had cached (the
+Node image). The README's command is `docker compose build`; `--no-cache` only kept earlier builds out of it.
+
+**README fixes found**, both on Windows:
+1. The first clone, into a deep folder, failed with `Filename too long`: some paths under `_bmad-output/` exceed
+   the 260-character limit. The README now says to clone to a short path or set `core.longpaths`.
+2. `docker buildx use default` fails on Docker Desktop (`ERROR: run docker context use default`), whose context is
+   `desktop-linux`. The build still worked, since that builder also uses the `docker` driver, but the step reads
+   as broken. Step 4 is now `docker buildx use "$(docker context show)"`, which selects `default` on Linux and
+   `desktop-linux` on Docker Desktop; checked on this machine.
+
+These fixes trigger a new cross-install from the corrected README; T022 stays open until it passes. An Approval
+kept through `restart` (T021) was not checked here.
