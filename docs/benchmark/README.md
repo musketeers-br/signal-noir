@@ -93,8 +93,10 @@ sh scripts/benchmark/check-freeze.sh
 
 `reference-request.json` is the request of the reference run (5 test variants of each of P5 and P8b, 3
 repetitions, the clean controls and the Dossier case, with the provider and model fixed at the freeze).
-`quick-validation-request.json` is the request of the quick validation; its three variants are set when the
-reference result is recorded. A report from another provider or model than the reference's says so.
+`quick-validation-request.json` is the request of the quick validation; its three variants are the `quickCases`
+of the recorded reference result (`Benchmark.Data.ReferenceResult`): the control `clean-success-test-01`, the
+P8b case `P8b-test-01` and the Dossier case `clean-ambiguous-identity-test-01`. In Replay (no key) it passes in
+about 16 seconds. A report from another provider or model than the reference's says so.
 
 ## Rules the numbers rest on
 

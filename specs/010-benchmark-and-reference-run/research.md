@@ -471,3 +471,22 @@ match). Both reports recompute (`recompute.py`: "report matches raw data").
   `BenchmarkItemRecord` extents), so its report could not be stored again. Its API report and case data were
   exported before and after, and its outcomes are those above. A real run is now exported before any test runs
   in its container.
+
+## Reference result recorded (T062, 2026-11-02)
+
+`Benchmark.Data.ReferenceResult` holds `run_000260`: provider `openai`, model `gpt-4o-mini`, seed 2026, the 39
+reference cases (final state, Action and parameters as in the report's Case rows; `NoCase` for the three
+`clean.success` repetitions) and, for the 36 that held an investigation, the Agent's answer as recorded in its
+Proposal (diagnosis, Action, parameters, confidence, preconditions), with every Evidence id written
+`@ev:<source>` (each one was the first Evidence of its source in its Case, so Replay resolves it to the same
+source). The answers were read from the Proposal records of `signalnoir-010`; the run had not been touched.
+
+- `quickCases`: `clean-success-test-01/1` (the control), `P8b-test-01/1` (Resolved, `APPLY_APPROVED_MAPPING`) and
+  `clean-ambiguous-identity-test-01/1` (`ReviewRequired`, Dossier), the variants `quick-validation-request.json`
+  already named. `QuickValidation.Plan` accepts them.
+- `recoverySuite`: `Tests.Recovery.TestRecoverySuite` passed 6/6 (`TestRestartDuringExecuting` and `TestLateWorker`
+  among them) on master `64fba34`, in the key-less container `signalnoir-freeze`.
+- Quick validation in Replay (`signalnoir-freeze`, no key): `sh scripts/quick-validate.sh` passed, 3 of 3 Cases
+  matching the reference, in 16 s (17 s wall). Each line says "the provider or model differs from the reference's",
+  because a Replay run has no provider; it does not make a Case diverge. The run with a real key (T069) is still
+  to be measured.

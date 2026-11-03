@@ -151,8 +151,10 @@ Method TestTheReportSaysWhyAndIsNotPublishable()
 	}
 	Do $$$AssertEquals(report.setup.variantSet, "test", "the set it covered")
 	Do $$$AssertTrue(report.setup.independence.%IsDefined("roles") && report.setup.independence.%IsDefined("reviews"), "and the independence metadata")
-	Do $$$AssertEquals(report.setup.independence.reviewStatus.evaluator, "missing", "how each review was done: none is committed yet")
-	Do $$$AssertEquals(report.setup.independence.reviewStatus.baseline.%Get("P5"), "missing", "per core family of the run")
+	; since T055 the committed Reviews.cls holds the reviews, and the report reads them
+	Set expected = ##class(SignalNoir.Core.Benchmark.FreezeCheck).ReviewStatus(##class(SignalNoir.Benchmark.Data.Reviews).Load("Records"), "P5,P8")
+	Do $$$AssertEquals(report.setup.independence.reviewStatus.evaluator, expected.evaluator, "how each review was done, from the committed reviews")
+	Do $$$AssertEquals(report.setup.independence.reviewStatus.baseline.%Get("P5"), expected.baseline.%Get("P5"), "per core family of the run")
 }
 
 /// The Runner stores the final report just before it marks the run completed: a reference run
