@@ -43,9 +43,11 @@ sh scripts/smoke.sh
 1. The smoke check emits one synthetic Order whose exam code the partner has discontinued, and waits
    for its Case.
 2. Open the Case in the console. The **Proposal** shows the Action, its **Claims** with the Evidence
-   they cite, and its **Hypotheses**: every candidate mapping, chosen or discarded with the reason.
-3. **Versions and metrics** shows the provider, model, prompt version, tool calls, tokens and the
-   **Estimated cost** of that call.
+   they cite, and its **Hypotheses**: the chosen one with its reason, and those it discarded when
+   the Agent lists them (its text changes from one run to the next; its Action did not, in our
+   rehearsals).
+3. **Versions and metrics** shows the provider, model, prompt version, tool calls and tokens of that
+   call. **Estimated cost** shows `—`: no price table is recorded for the model.
 4. Press **Approve this version**. The Order is sent with the approved mapping, the partner's Receipt
    comes back, and the **Timeline** records every step.
 5. Without a key, the same Case ends in `ReviewRequired`, and its **Review dossier** says the provider
@@ -64,7 +66,7 @@ Videos: [hybrid use case](docs/video/signal-noir-hybrid-use-case.mp4)
 | `sh scripts/quick-validate.sh` | 3 reference Cases in at most 3 minutes, each "matches the reference" or "diverged" | [Start, check, stop](#start-check-stop) |
 | `SN_PROPOSER_MODE=rules` | The same Cases decided by the deterministic baseline, through the same Validator | [Configuration](#configuration) |
 | `SN_PROPOSER_MODE=hybrid` | The OpenAI Decisions API answers first through a client in **Embedded Python** (`httpx`); when its answer is not decisive, the AI Hub Agent investigates | [`DecisionsHttp.cls`](src/SignalNoir/Proposers/DecisionsHttp.cls) |
-| The model-call record on any Case | Provider, model, prompt version, tokens and cost next to the Evidence and the Validator's verdict ([DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689)) | [Community idea](#community-idea-dpi-i-689) |
+| The model-call record on any Case | Provider, model, prompt version and tokens next to the Evidence and the Validator's verdict ([DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689)) | [Community idea](#community-idea-dpi-i-689) |
 
 #### An Order with a hidden instruction
 
@@ -82,7 +84,8 @@ Its Case opens in the console within about a minute.
 
 - **[Limitations](#limitations)**:
   - The Production runs in a portable shape, not as an `Ens.Production`.
-  - No benchmark figures are published yet.
+  - On the reference benchmark the Agent and the rules baseline tie (33 correct, 6 safe reviews,
+    0 incorrect): a tie, not a win, on small synthetic data.
   - Only OpenAI `gpt-4o-mini` is validated.
   - All data is synthetic.
 - **Build 154 is not public**: request it from the EAP portal. There is no image in any registry,
@@ -286,8 +289,8 @@ Signal Noir implements part of the InterSystems Ideas Portal idea
 What is covered:
 
 - Every model call of an Investigation is recorded on the Case with provider, model, prompt
-  version, duration, tool calls, tokens and estimated cost, next to the Evidence it used and the
-  Validator's verdict.
+  version, duration, tool calls and tokens, next to the Evidence it used and the Validator's
+  verdict. The estimated cost has its field, empty until a price table is recorded for the model.
 - Every vector search (precedents) adds a Timeline event with who asked (console or Agent), the
   mode (provider or lexical), the embedding model, the number of results, the precedent Case ids
   and the duration. No key and no free text are written.
