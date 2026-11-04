@@ -2,6 +2,7 @@
 	// The console: top bar, hash routes (#/cases, #/cases/<id>), polling every 1.5 s, toasts.
 	// Route changes move focus to the main region and announce the page title.
 	import { onDestroy, onMount, tick } from 'svelte';
+	import { asset } from '$app/paths';
 	import { COPY } from '../copy';
 	import { CaseDetailState } from '../stores/caseDetail.svelte';
 	import { CaseListState } from '../stores/cases.svelte';
@@ -90,7 +91,7 @@
 
 <div class="shell">
 <header class="topbar">
-	<a class="wordmark" href="#/cases">Signal Noir</a>
+	<a class="wordmark" href="#/cases"><img class="logo" src={asset('signal-noir-logo.png')} alt="" width="28" height="28" />Signal Noir</a>
 	<nav class="rail-nav" aria-label="Main"><a href="#/cases" aria-current="page">Cases</a></nav>
 	<label class="name-field">Acting as (declared name)
 		<input type="text" value={operator.name} oninput={(e) => operator.set((e.currentTarget as HTMLInputElement).value)} aria-invalid={problem === 'colon'} autocomplete="name" />
