@@ -3,8 +3,8 @@
   <Document name="signalnoir.ZPM">
     <Module>
       <Name>signalnoir</Name>
-      <Version>0.1.58</Version>
-      <Description>Signal Noir — runtime skeleton and shared seams (feature 001)</Description>
+      <Version>1.0.0</Version>
+      <Description>Signal Noir</Description>
       <Packaging>module</Packaging>
       <SourcesRoot>src</SourcesRoot>
       <Resource Name="SignalNoir.PKG"/>

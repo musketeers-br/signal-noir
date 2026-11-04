@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "console-mock",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "ui", "run", "dev:mock", "--", "--port", "5173", "--strictPort"],
+      "port": 5173
+    }
+  ]
+}
