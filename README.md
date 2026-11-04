@@ -1,5 +1,7 @@
 # Signal Noir
 
+![signal-noir](./assets/signal_noir_logo.png)
+
 AI exception resolution for synthetic lab Orders, on InterSystems IRIS with AI Hub.
 
 When an Order sent to a partner lab fails, Signal Noir opens a **Case**. An Agent investigates it
@@ -10,6 +12,29 @@ a Review Dossier.
 
 > **All data is synthetic.** Orders, patients and partners come from the built-in scenario
 > Simulator. Signal Noir makes no clinical decision.
+
+## Signal Noir at a glance
+
+**AI proposes. The platform guarantees.** A lab Order fails on its way to a partner lab, and Signal
+Noir takes it from the failure to a confirmed Receipt, with a person in control:
+
+1. **Order failed.** A delivery without a valid Receipt opens a Case.
+2. **AI investigates and proposes.** The Agent reads partner health, the Order, the mapping catalog,
+   the policies and the Receipts with read-only tools, and proposes one Action, citing its sources.
+3. **Validator checks.** Every Proposal goes through the same deterministic rules, whoever wrote it.
+4. **A person approves.** The Approval binds the exact version the Operator saw and lasts 15 minutes.
+5. **The platform executes.** It checks again that the partner is healthy and the Order is active,
+   then sends at most one effect.
+6. **The partner confirms.** An uncertain answer is reconciled against the Receipts before anything
+   is sent again.
+
+The Agent chooses from a closed catalog (approved mapping, hold, request review); resending is left to
+the platform's recovery. The same safeguards hold in all three modes (Agent, Rules, Hybrid), and the
+infographic closes with the benchmark result and the demo's limits, both detailed below.
+
+<p align="center">
+  <img src="./assets/info.jpeg" alt="Signal Noir infographic: the six steps from a failed Order to the partner's confirmation, the closed catalog of Actions, the safeguards (blocked instructions, at most one effect, review with a Dossier, precedents that are never Evidence, the Timeline), the three modes, the benchmark tie with the rules baseline (33 correct, 6 safe reviews, 0 incorrect) and the demo's limits" width="720">
+</p>
 
 ## ⚖️ For judges: two minutes
 
