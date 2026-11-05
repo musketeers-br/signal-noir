@@ -2,7 +2,7 @@
 
 *Um Agente de IA que investiga pedidos de exame com falha no InterSystems IRIS, e uma plataforma que não o deixa agir sozinho.*
 
-Musketeers Team: José Roberto Pereira, Henry Pereira e Henrique Dias · novembro de 2026
+Musketeers Team: José Roberto Pereira, Henry Pereira e Henrique Dias · novembro de 2026 · [English version](signal-noir-golden-circle.en.md)
 
 ---
 
