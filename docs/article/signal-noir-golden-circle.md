@@ -142,7 +142,7 @@ propôs.
 Quatro trechos reais do repositório, cada um sustentando um princípio. Foram encurtados para caber aqui, e os comentários
 são os do próprio código.
 
-**1. A chamada ao Agente no AI Hub** ([`AiHubRuntime.cls`](https://github.com/musketeers-br/congenial-waffle/blob/master/src/SignalNoir/Proposers/AiHubRuntime.cls))
+**1. A chamada ao Agente no AI Hub** ([`AiHubRuntime.cls`](https://github.com/musketeers-br/signal-noir/blob/master/src/SignalNoir/Proposers/AiHubRuntime.cls))
 
 ```objectscript
 Set provider = $ClassMethod("%AI.Provider", "Create", providerName, {"api_key": (..Env("SN_AI_API_KEY"))})
@@ -161,7 +161,7 @@ O que observar: o `%AI.Agent` é chamado por *dispatch* dinâmico, então a clas
 responde "provedor indisponível". A chave é lida do ambiente na hora da chamada e nunca é gravada. A temperatura é zero,
 e cada investigação tem sua própria sessão. Se a chamada falhar, o Case vai para revisão humana.
 
-**2. A plataforma decide se um mapeamento se aplica** ([`DecisionFacts.cls`](https://github.com/musketeers-br/congenial-waffle/blob/master/src/SignalNoir/Core/DecisionFacts.cls))
+**2. A plataforma decide se um mapeamento se aplica** ([`DecisionFacts.cls`](https://github.com/musketeers-br/signal-noir/blob/master/src/SignalNoir/Core/DecisionFacts.cls))
 
 ```objectscript
 /// Every approved mapping whose sourceCode is one of the Order's exam codes,
@@ -174,7 +174,7 @@ Do candidate.%Set("applicable", applicable, "boolean")
 O que observar: "plasma" contra `PLASMA`, ou "soro" contra `SERUM`, é decidido aqui, com normalização e sinônimos do
 catálogo. O modelo recebe `applicable: true` ou `false` e escolhe a partir disso. É o fim do erro de maiúsculas.
 
-**3. A revalidação logo antes do envio** ([`ExecutionPolicy.cls`](https://github.com/musketeers-br/congenial-waffle/blob/master/src/SignalNoir/Core/ExecutionPolicy.cls))
+**3. A revalidação logo antes do envio** ([`ExecutionPolicy.cls`](https://github.com/musketeers-br/signal-noir/blob/master/src/SignalNoir/Core/ExecutionPolicy.cls))
 
 ```objectscript
 If cancelled {
@@ -195,7 +195,7 @@ If cancelled {
 O que observar: a aprovação não congela o mundo. Entre o clique e o envio, a plataforma lê de novo a Origem e o parceiro,
 e qualquer mudança desvia o Case para `Cancelled` ou `Held`. O trecho foi um pouco simplificado no último `reason`.
 
-**4. A chave de idempotência** ([`EffectKey.cls`](https://github.com/musketeers-br/congenial-waffle/blob/master/src/SignalNoir/Core/EffectKey.cls))
+**4. A chave de idempotência** ([`EffectKey.cls`](https://github.com/musketeers-br/signal-noir/blob/master/src/SignalNoir/Core/EffectKey.cls))
 
 ```objectscript
 /// The identity of an effect on the Partner: H(orderId, partnerId, canonical payload).
@@ -375,7 +375,7 @@ comandos e confere em 17 segundos.
 
 ## Fontes
 
-- Repositório: [github.com/musketeers-br/congenial-waffle](https://github.com/musketeers-br/congenial-waffle)
+- Repositório: [github.com/musketeers-br/signal-noir](https://github.com/musketeers-br/signal-noir)
 - Benchmark e reprodução: `docs/benchmark/README.md`, `reference-report.json` e `baseline-report.json`
 - Roteiro e ensaio do vídeo: `docs/video/demo-script.md`
 - Ideia da comunidade: [DPI-I-689, "Use InterSystems Interoperability as a traceability tool for GenAI LLM pipelines"](https://ideas.intersystems.com/ideas/DPI-I-689)

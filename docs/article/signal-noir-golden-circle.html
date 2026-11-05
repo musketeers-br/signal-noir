@@ -245,7 +245,7 @@ figure .flow svg .lbl { font-size: 10.5px; fill: var(--muted); }
 <h3>O código por trás dos princípios</h3>
 <p>Quatro trechos reais do repositório, cada um sustentando um princípio. Foram encurtados para caber aqui, e os comentários são os do próprio código.</p>
 
-<p class="snippet-title">1. A chamada ao Agente no AI Hub · <a href="https://github.com/musketeers-br/congenial-waffle/blob/master/src/SignalNoir/Proposers/AiHubRuntime.cls">AiHubRuntime.cls</a></p>
+<p class="snippet-title">1. A chamada ao Agente no AI Hub · <a href="https://github.com/musketeers-br/signal-noir/blob/master/src/SignalNoir/Proposers/AiHubRuntime.cls">AiHubRuntime.cls</a></p>
 <pre><code><span class="k">Set</span> provider = $ClassMethod("%AI.Provider", "Create", providerName, {"api_key": (..Env("SN_AI_API_KEY"))})
 <span class="k">Set</span> agent = $ClassMethod("%AI.Agent", "%New", provider)
 <span class="k">Set</span> $Property(agent, "Model") = model
@@ -258,7 +258,7 @@ figure .flow svg .lbl { font-size: 10.5px; fill: var(--muted); }
 <span class="k">Set</span> content = $Property(response, "Content")</code></pre>
 <p class="observe"><strong>O que observar:</strong> o <code>%AI.Agent</code> é chamado por <em>dispatch</em> dinâmico, então a classe compila mesmo num IRIS sem AI Hub e responde "provedor indisponível". A chave é lida do ambiente na hora da chamada e nunca é gravada. A temperatura é zero, e cada investigação tem sua própria sessão. Se a chamada falhar, o Case vai para revisão humana.</p>
 
-<p class="snippet-title">2. A plataforma decide se um mapeamento se aplica · <a href="https://github.com/musketeers-br/congenial-waffle/blob/master/src/SignalNoir/Core/DecisionFacts.cls">DecisionFacts.cls</a></p>
+<p class="snippet-title">2. A plataforma decide se um mapeamento se aplica · <a href="https://github.com/musketeers-br/signal-noir/blob/master/src/SignalNoir/Core/DecisionFacts.cls">DecisionFacts.cls</a></p>
 <pre><code><span class="c">/// Every approved mapping whose sourceCode is one of the Order's exam codes,
 /// each condition checked with Core.Conditions (trim, upper-case, synonyms)</span>
 <span class="k">Set</span> applicable = ##class(SignalNoir.Core.Conditions).Matches(m.conditions, order, synonyms)
@@ -266,7 +266,7 @@ figure .flow svg .lbl { font-size: 10.5px; fill: var(--muted); }
 <span class="k">Do</span> candidate.%Set("applicable", applicable, "boolean")</code></pre>
 <p class="observe"><strong>O que observar:</strong> "plasma" contra <code>PLASMA</code>, ou "soro" contra <code>SERUM</code>, é decidido aqui, com normalização e sinônimos do catálogo. O modelo recebe <code>applicable: true</code> ou <code>false</code> e escolhe a partir disso. É o fim do erro de maiúsculas.</p>
 
-<p class="snippet-title">3. A revalidação logo antes do envio · <a href="https://github.com/musketeers-br/congenial-waffle/blob/master/src/SignalNoir/Core/ExecutionPolicy.cls">ExecutionPolicy.cls</a></p>
+<p class="snippet-title">3. A revalidação logo antes do envio · <a href="https://github.com/musketeers-br/signal-noir/blob/master/src/SignalNoir/Core/ExecutionPolicy.cls">ExecutionPolicy.cls</a></p>
 <pre><code><span class="k">If</span> cancelled {
 	<span class="k">Set</span> out.destination = "Cancelled", out.reason = "order cancelled at the origin"
 } <span class="k">ElseIf</span> 'approvalOk {
@@ -282,7 +282,7 @@ figure .flow svg .lbl { font-size: 10.5px; fill: var(--muted); }
 }</code></pre>
 <p class="observe"><strong>O que observar:</strong> a aprovação não congela o mundo. Entre o clique e o envio, a plataforma lê de novo a Origem e o parceiro, e qualquer mudança desvia o Case para <code>Cancelled</code> ou <code>Held</code>. O trecho foi um pouco simplificado no último <code>reason</code>.</p>
 
-<p class="snippet-title">4. A chave de idempotência · <a href="https://github.com/musketeers-br/congenial-waffle/blob/master/src/SignalNoir/Core/EffectKey.cls">EffectKey.cls</a></p>
+<p class="snippet-title">4. A chave de idempotência · <a href="https://github.com/musketeers-br/signal-noir/blob/master/src/SignalNoir/Core/EffectKey.cls">EffectKey.cls</a></p>
 <pre><code><span class="c">/// The identity of an effect on the Partner: H(orderId, partnerId, canonical payload).
 /// Two Proposals that send the same payload get the same key; the key never
 /// depends on the Proposal. Pure.</span>
@@ -402,7 +402,7 @@ sh scripts/quick-validate.sh    <span class="c"># confere 3 Cases contra a refer
 
 <h2>Fontes</h2>
 <ul class="sources">
-  <li>Repositório: <a href="https://github.com/musketeers-br/congenial-waffle">github.com/musketeers-br/congenial-waffle</a></li>
+  <li>Repositório: <a href="https://github.com/musketeers-br/signal-noir">github.com/musketeers-br/signal-noir</a></li>
   <li>Benchmark e reprodução: <code>docs/benchmark/README.md</code>, <code>reference-report.json</code> e <code>baseline-report.json</code></li>
   <li>Roteiro e ensaio do vídeo: <code>docs/video/demo-script.md</code></li>
   <li>Ideia da comunidade: <a href="https://ideas.intersystems.com/ideas/DPI-I-689">DPI-I-689, "Use InterSystems Interoperability as a traceability tool for GenAI LLM pipelines"</a></li>
