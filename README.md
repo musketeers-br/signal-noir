@@ -230,10 +230,11 @@ docker compose build
 docker compose up -d
 ```
 
-The fixed tag `signalnoir/iris-aihub:2026.3.0AI.154.0` is the only base image the
-[`Dockerfile`](Dockerfile) and [`docker-compose.yml`](docker-compose.yml) use, on both
-architectures. The build never pulls it from a registry. Nothing is ever pushed: not the base
-image, and not the product image `signalnoir/app:local`.
+[`docker-compose.yml`](docker-compose.yml) builds on the fixed tag
+`signalnoir/iris-aihub:2026.3.0AI.154.0`, on both architectures, and never pulls it from a registry.
+Nothing is ever pushed: not the base image, and not the product image `signalnoir/app:local`. The
+[`Dockerfile`](Dockerfile)'s own default base is the build 154 image that only InterSystems DevCloud
+can pull, for the online demo; compose always overrides it.
 
 ## Start, check, stop
 
